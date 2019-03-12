@@ -10,7 +10,6 @@
 		A66A9CBF22316CF3006602AB /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = A66A9CBE22316CF3006602AB /* main.m */; };
 		A66A9CC922316D7F006602AB /* miscellaneous.m in Sources */ = {isa = PBXBuildFile; fileRef = A66A9CC822316D7F006602AB /* miscellaneous.m */; };
 		A66A9CCC22316EA5006602AB /* DSXRLibrary.m in Sources */ = {isa = PBXBuildFile; fileRef = A66A9CCB22316EA5006602AB /* DSXRLibrary.m */; };
-		A66A9CCE22319F18006602AB /* fishhook.c in Sources */ = {isa = PBXBuildFile; fileRef = A66A9CCD22319F18006602AB /* fishhook.c */; };
 		A674F3E82231C26B0005BD40 /* DSXRExecutable.m in Sources */ = {isa = PBXBuildFile; fileRef = A674F3E72231C26B0005BD40 /* DSXRExecutable.m */; };
 		A674F3EA2231DD0E0005BD40 /* xref in Copy File */ = {isa = PBXBuildFile; fileRef = A66A9CBB22316CF3006602AB /* xref */; };
 		A6F6CDF622370F0A00913E35 /* libcapstone.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A6F6CDF522370F0A00913E35 /* libcapstone.a */; };
@@ -47,7 +46,6 @@
 		A66A9CC822316D7F006602AB /* miscellaneous.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = miscellaneous.m; sourceTree = "<group>"; };
 		A66A9CCA22316EA5006602AB /* DSXRLibrary.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = DSXRLibrary.h; sourceTree = "<group>"; };
 		A66A9CCB22316EA5006602AB /* DSXRLibrary.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = DSXRLibrary.m; sourceTree = "<group>"; };
-		A66A9CCD22319F18006602AB /* fishhook.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = fishhook.c; sourceTree = "<group>"; };
 		A674F3E62231C26B0005BD40 /* DSXRExecutable.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = DSXRExecutable.h; sourceTree = "<group>"; };
 		A674F3E72231C26B0005BD40 /* DSXRExecutable.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = DSXRExecutable.m; sourceTree = "<group>"; };
 		A674F3EB2233449F0005BD40 /* dyld_cache_format.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = dyld_cache_format.h; sourceTree = "<group>"; };
@@ -103,7 +101,6 @@
 				A6F6CDF7223712EC00913E35 /* capstone */,
 				A6F6CDF522370F0A00913E35 /* libcapstone.a */,
 				A674F3EB2233449F0005BD40 /* dyld_cache_format.h */,
-				A66A9CCD22319F18006602AB /* fishhook.c */,
 				A66A9CBE22316CF3006602AB /* main.m */,
 				A66A9CCA22316EA5006602AB /* DSXRLibrary.h */,
 				A66A9CCB22316EA5006602AB /* DSXRLibrary.m */,
@@ -218,7 +215,6 @@
 				A66A9CCC22316EA5006602AB /* DSXRLibrary.m in Sources */,
 				A66A9CC922316D7F006602AB /* miscellaneous.m in Sources */,
 				A674F3E82231C26B0005BD40 /* DSXRExecutable.m in Sources */,
-				A66A9CCE22319F18006602AB /* fishhook.c in Sources */,
 				A66A9CBF22316CF3006602AB /* main.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
