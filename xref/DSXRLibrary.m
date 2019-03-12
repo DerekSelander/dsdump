@@ -496,7 +496,7 @@
     for (int i = 0; i < addresses.count; i++) {
         
         uintptr_t cur = addresses[i].longValue;
-        for (int j = 1; j < self.function_starts.count - 1; j++) {
+        for (int j = 1; j < self.function_starts.count; j++) {
             uintptr_t start =  self.function_starts[j - 1].longValue;
             uintptr_t stop =  self.function_starts[j].longValue;
             

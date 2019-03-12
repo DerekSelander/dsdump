@@ -68,7 +68,7 @@
          </CommandLineArgument>
          <CommandLineArgument
             argument = "-s _strcmp"
-            isEnabled = "YES">
+            isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
             argument = "--verbose"
@@ -80,6 +80,10 @@
          </CommandLineArgument>
          <CommandLineArgument
             argument = "$(TARGET_BUILD_DIR)/xref"
+            isEnabled = "NO">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = " --symbol _dlsym /Applications/Xcode.app/Contents/MacOS/Xcode "
             isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
