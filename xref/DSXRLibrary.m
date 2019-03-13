@@ -413,35 +413,23 @@
 
     }
     for (int i = 0; i < count; i++) {
-//    while (cs_disasm_iter(handle, &buffer_ptr, &code_size, &out_address, insn)) {
-//        cs_insn ins =  insn[0];
-        
         cs_insn insn =  instructions[i];
         if (!insn.detail) { continue; }
         cs_x86_op *ops = insn.detail->x86.operands;
         
-        // The destination operand should be referenced as the second op...
-        cs_x86_op op = ops[1];
-        cs_x86_op call_op = ops[0];
-        
-        if (op.type == X86_OP_MEM && op.mem.base == X86_REG_RIP) {
-            if (xref_options.address &&  ( op.mem.disp + insn.address + insn.size) == address ) {
+        for (int z = 0; z < 8; z++) {
+            cs_x86_op op = ops[z];
+            if (op.type == X86_OP_INVALID) { break; }
+            
+            if (op.type == X86_OP_MEM && op.mem.base == X86_REG_RIP && ( op.mem.disp + insn.address + insn.size)  == address) {
+                [foundAddresses addObject:@(insn.address)];
+            } else if (op.type == X86_OP_IMM && insn.detail->x86.opcode[0] == 0xe8 && op.imm == address)  {
                 [foundAddresses addObject:@(insn.address)];
             }
-        } else if (call_op.type == X86_OP_IMM && insn.detail->x86.opcode[0] == 0xe8 && call_op.imm == address) {
-            [foundAddresses addObject:@(insn.address)];
-            
         }
     }
     
-//    int test = cs_errno(handle);
-    
-    
-    
-    
-//    cs_free(insn, 1);
 
-    
     
     if (foundAddresses.count == 0) {
         printf("Couldn't find any references\n");
@@ -496,9 +484,11 @@
     for (int i = 0; i < addresses.count; i++) {
         
         uintptr_t cur = addresses[i].longValue;
-        for (int j = 1; j < self.function_starts.count; j++) {
-            uintptr_t start =  self.function_starts[j - 1].longValue;
-            uintptr_t stop =  self.function_starts[j].longValue;
+        
+        uintptr_t func_count = self.function_starts.count;
+        for (int j = 0; j < func_count; j++) {
+            uintptr_t start =  self.function_starts[j].longValue;
+            uintptr_t stop =  j >= func_count - 1 ? UINTPTR_MAX :  self.function_starts[j + 1].longValue;
             
             if (start <= cur && cur <= stop) {
                 BOOL found_symbol_name = NO;
@@ -508,20 +498,20 @@
                     if (self.symbols[z].n_value == start  && strlen(chr) > 1) {
                         
                         printf(" %s%s%s\n", dcolor(DSCOLOR_CYAN), &self.str_symbols[self.symbols[z].n_un.n_strx], colorEnd());
-                    
+                        
                         found_symbol_name = YES;
                         break;
                     }
                 }
                 // Found where it resides in, but couldn't obtain the name...
                 if (!found_symbol_name) {
-                    printf(" %s___lldb_unnamed_symbol%d$$%s%s\n", dcolor(DSCOLOR_CYAN), j, [[self.path lastPathComponent] UTF8String], colorEnd());
+                    printf(" %s___lldb_unnamed_symbol%d$$%s%s\n", dcolor(DSCOLOR_CYAN), j + 1, [[self.path lastPathComponent] UTF8String], colorEnd());
                     
                 }
             }
             
-            
         }
+        
     }
 }
 
