@@ -83,14 +83,33 @@
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = " --symbol _dlsym /Applications/Xcode.app/Contents/MacOS/Xcode "
+            argument = " --symbol _parseSystemVersionPList /Applications/Xcode.app/Contents/MacOS/Xcode "
+            isEnabled = "NO">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "-s objc_retain ${SRCROOT}/xref/binaries/some_app"
             isEnabled = "YES">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "-x ${SRCROOT}/xref/binaries/some_app"
+            isEnabled = "NO">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "-s _xcselect_invoke_xcrun /usr/bin/lldb"
+            isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
             argument = "-s xs"
             isEnabled = "NO">
          </CommandLineArgument>
       </CommandLineArguments>
+      <EnvironmentVariables>
+         <EnvironmentVariable
+            key = "fuck"
+            value = "yeah"
+            isEnabled = "YES">
+         </EnvironmentVariable>
+      </EnvironmentVariables>
       <AdditionalOptions>
       </AdditionalOptions>
    </LaunchAction>

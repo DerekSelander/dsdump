@@ -24,7 +24,6 @@ static void handleARGS(int argc, const char * argv[]);
 
 int main(int argc, const char * argv[], const char*envp[]) {
     
-
     
     handleARGS(argc, argv);
     if (argc < 2) {
@@ -44,7 +43,7 @@ int main(int argc, const char * argv[], const char*envp[]) {
     if (xref_options.external) {
         [mainExecutable dumpExternalSymbols];
     } else if (xref_options.address) {
-        [mainExecutable findAddressInCode:xref_options.address];
+        [mainExecutable findAddressInCode_x86:xref_options.address];
     }  else if (xref_options.symbol) {
         [mainExecutable findAddressesForSymbolInCode:[NSString stringWithUTF8String:xref_options.symbol]];
     } else {

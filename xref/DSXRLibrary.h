@@ -69,7 +69,7 @@ typedef struct {
 - (instancetype)initWithPath:(NSString*)path;
 - (void)dumpSymbols;
 - (void)dumpExternalSymbols;
-- (void)findAddressInCode:(uintptr_t)address;
+- (void)findAddressInCode_x86:(uintptr_t)address;
 - (void)findAddressesForSymbolInCode:(NSString *)symbol;
 @end
 
