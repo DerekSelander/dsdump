@@ -33,6 +33,8 @@
         self.section_cmds = [NSMutableArray array];
         [self.section_cmds addObject:(NSNumber*)[NSNull null]];
         
+        self.segment_cmds = [NSMutableArray array];
+        
         self.function_starts = [NSMutableArray array];
         self.file_offset = 0;
         
@@ -122,6 +124,8 @@
                     self.dysymtab = (struct dysymtab_command *)ld_cmd;
                     
                 }  else if (ld_cmd->cmd == LC_SEGMENT_64) {
+                    
+                    [self.segment_cmds addObject:@(cur)];
                     struct segment_command_64 * cmd = (struct segment_command_64 *)ld_cmd;
                     struct section_64 *sections = (struct section_64 *)(cur + sizeof(struct segment_command_64));
                     
@@ -438,7 +442,6 @@
         [self printFunctionsContainingAddresses:foundAddresses];
     }
     
-    
     free(buffer);
     close(fd);
 }
@@ -527,6 +530,48 @@
     
     free(buffer);
     close(fd);
+}
+
+- (void)findOffsetsInCode:(uintptr_t)file_offset {
+    uintptr_t resolvedAddress = 0;
+    for (NSNumber *s in self.segment_cmds) {
+        if ([s isEqual:[NSNull null]]) { continue; }
+        struct segment_command_64 *seg = (struct segment_command_64 *)s.longValue;
+        uintptr_t start = seg->fileoff;
+        uintptr_t stop = seg->filesize + start;
+  
+        if (file_offset >= start && file_offset <= stop) {
+            
+            printf("found offset in %s\n", seg->segname);
+            struct section_64 *cur = (struct section_64 *)(s.longValue + sizeof(struct segment_command_64));
+            for (int i = 0; i < seg->nsects; i++) {
+                struct section_64 sec = cur[i];
+                
+                uintptr_t sec_start = sec.offset;
+                uintptr_t sec_stop = sec.size + sec_start;
+                
+                if (file_offset >= sec_start && file_offset < sec_stop) {
+                    resolvedAddress = seg->vmaddr + file_offset;
+                    break;
+                }
+            }
+        }
+    }
+    
+    if (!resolvedAddress) {
+        printf("Couldn't find address 0x%lx\n", resolvedAddress);
+    } else if (self.header.h64.cputype == CPU_TYPE_ARM64) {
+        [self findAddressInCode_ARM64:resolvedAddress];
+    } else if (self.header.h64.cputype == CPU_TYPE_X86_64) {
+        [self findAddressInCode_x86:resolvedAddress];
+    } else {
+        printf("cputype 0x%x not supported... womp womp\n", self.header.h64.cputype);
+        return;
+    }
+    
+//    if (!resolvedAddress) { printf("Couldn't resolve offset %d\n", file_offset); return ;}
+    
+    
 }
 
 - (void)findAddressesForSymbolInCode:(NSString *)symbol {

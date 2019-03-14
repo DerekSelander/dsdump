@@ -76,6 +76,7 @@ typedef struct {
     int use_regex;
     int external;
     uintptr_t address;
+    uintptr_t file_offset;
     char * symbol;
     char * library;
     char * showSymbolReferences;

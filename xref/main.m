@@ -46,9 +46,13 @@ int main(int argc, const char * argv[], const char*envp[]) {
         [mainExecutable findAddressInCode_x86:xref_options.address];
     }  else if (xref_options.symbol) {
         [mainExecutable findAddressesForSymbolInCode:[NSString stringWithUTF8String:xref_options.symbol]];
-    } else {
+    }   else if (xref_options.file_offset) {
+            [mainExecutable findOffsetsInCode:xref_options.file_offset];
+        }
+     else {
         [mainExecutable dumpSymbols];
     }
+    
     
 //    NSMutableDictionary *libs = [NSMutableDictionary dictionary];
 //    [libs setObject:mainExecutable forKey:mainExecutable.path];
@@ -84,6 +88,7 @@ static void handleARGS(int argc, const char * argv[]) {
         static struct option long_options[] = {
             {"library", required_argument, 0,  0 },
             {"symbol",  required_argument, 0,  0 },
+            {"file_offset",  required_argument, 0,  0 },
             {"regex",   no_argument,       &xref_options.use_regex,  1},
             {"verbose", no_argument,       &xref_options.verbose,  1 },
             {"external", no_argument,      &xref_options.external,  1 },
@@ -92,7 +97,7 @@ static void handleARGS(int argc, const char * argv[]) {
             {0,         0,                 0,  0 }
         };
         
-        c = getopt_long(argc, (char * const *)argv, "xcvs:l:a:bd:012",
+        c = getopt_long(argc, (char * const *)argv, "xcvs:o:l:a:bd:012",
                         long_options, &option_index);
         if (c == -1)
             break;
@@ -106,6 +111,8 @@ static void handleARGS(int argc, const char * argv[]) {
                      xref_options.library = optarg;
                 }  else if (strcmp(long_options[option_index].name, "address") == 0) {
                     xref_options.address = strtol(optarg, 0, 0);
+                } else if (strcmp(long_options[option_index].name, "file_offset") == 0) {
+                    xref_options.file_offset = strtol(optarg, 0, 0);
                 }
 //                if (optarg)
 //                    printf(" with arg %s", optarg);
@@ -133,8 +140,11 @@ static void handleARGS(int argc, const char * argv[]) {
                 xref_options.symbol = optarg;
                 break;
             case 'a':
-//                printf("option a\n");
                 xref_options.address = strtol(optarg, 0, 0);
+                break;
+            case 'o':
+                
+                xref_options.file_offset = strtol(optarg, 0, 0);
                 break;
                 
             case 'x':

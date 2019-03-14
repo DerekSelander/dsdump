@@ -39,6 +39,7 @@ typedef struct {
 
 /// Offsets into each load command struct section
 @property (nonatomic, strong) NSMutableArray <NSNumber *>* section_cmds;
+@property (nonatomic, strong) NSMutableArray <NSNumber *>* segment_cmds;
 
 @property (nonatomic, strong) NSMutableArray <NSNumber *>* function_starts;
 @property (nonatomic, assign) struct build_version_command *build_cmd;
@@ -71,6 +72,7 @@ typedef struct {
 - (void)dumpExternalSymbols;
 - (void)findAddressInCode_x86:(uintptr_t)address;
 - (void)findAddressesForSymbolInCode:(NSString *)symbol;
+- (void)findOffsetsInCode:(uintptr_t)file_offset;
 @end
 
 NS_ASSUME_NONNULL_END
