@@ -56,8 +56,13 @@ typedef struct {
 /// __DATA.__la_symbol_ptr
 @property (nonatomic, assign) struct section_64 *lazy_ptr_section;
 
+@property (nonatomic, assign) struct dyld_info_command *dyldinfo;
+
 /// __TEXT.__stubs
 @property (nonatomic, assign) struct section_64 *stubs_section;
+
+/// __TEXT.__stub_helper
+@property (nonatomic, assign) struct section_64 *stub_helper_section;
 
 /// __TEXT.__text
 @property (nonatomic, assign) struct section_64 *code_section;
@@ -76,3 +81,46 @@ typedef struct {
 @end
 
 NS_ASSUME_NONNULL_END
+
+
+/*
+ * The following are used to encode binding information
+ */
+#define BIND_TYPE_POINTER                    1
+#define BIND_TYPE_TEXT_ABSOLUTE32                2
+#define BIND_TYPE_TEXT_PCREL32                    3
+
+#define BIND_SPECIAL_DYLIB_SELF                     0
+#define BIND_SPECIAL_DYLIB_MAIN_EXECUTABLE            -1
+#define BIND_SPECIAL_DYLIB_FLAT_LOOKUP                -2
+
+#define BIND_SYMBOL_FLAGS_WEAK_IMPORT                0x1
+#define BIND_SYMBOL_FLAGS_NON_WEAK_DEFINITION            0x8
+
+#define BIND_OPCODE_MASK                    0xF0
+#define BIND_IMMEDIATE_MASK                    0x0F
+#define BIND_OPCODE_DONE                    0x00
+#define BIND_OPCODE_SET_DYLIB_ORDINAL_IMM            0x10
+#define BIND_OPCODE_SET_DYLIB_ORDINAL_ULEB            0x20
+#define BIND_OPCODE_SET_DYLIB_SPECIAL_IMM            0x30
+#define BIND_OPCODE_SET_SYMBOL_TRAILING_FLAGS_IMM        0x40
+#define BIND_OPCODE_SET_TYPE_IMM                0x50
+#define BIND_OPCODE_SET_ADDEND_SLEB                0x60
+#define BIND_OPCODE_SET_SEGMENT_AND_OFFSET_ULEB            0x70
+#define BIND_OPCODE_ADD_ADDR_ULEB                0x80
+#define BIND_OPCODE_DO_BIND                    0x90
+#define BIND_OPCODE_DO_BIND_ADD_ADDR_ULEB            0xA0
+#define BIND_OPCODE_DO_BIND_ADD_ADDR_IMM_SCALED            0xB0
+#define BIND_OPCODE_DO_BIND_ULEB_TIMES_SKIPPING_ULEB        0xC0
+
+
+/*
+ * The following are used on the flags byte of a terminal node
+ * in the export information.
+ */
+#define EXPORT_SYMBOL_FLAGS_KIND_MASK                0x03
+#define EXPORT_SYMBOL_FLAGS_KIND_REGULAR            0x00
+#define EXPORT_SYMBOL_FLAGS_KIND_THREAD_LOCAL            0x01
+#define EXPORT_SYMBOL_FLAGS_WEAK_DEFINITION            0x04
+#define EXPORT_SYMBOL_FLAGS_REEXPORT                0x08
+#define EXPORT_SYMBOL_FLAGS_STUB_AND_RESOLVER            0x10

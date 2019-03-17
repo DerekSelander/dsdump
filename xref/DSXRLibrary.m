@@ -120,6 +120,9 @@
                     self.str_symbols = calloc(self.symtab->strsize, sizeof(char));
                     pread(fd, self.str_symbols, self.symtab->strsize, self.symtab->stroff + _file_offset);
                     
+                } else if (ld_cmd->cmd == LC_DYLD_INFO || ld_cmd->cmd == LC_DYLD_INFO_ONLY) {
+                    self.dyldinfo = (struct dyld_info_command *)ld_cmd;
+                    
                 } else if (ld_cmd->cmd == LC_DYSYMTAB) {
                     self.dysymtab = (struct dysymtab_command *)ld_cmd;
                     
@@ -146,6 +149,9 @@
                         }  else if ( strcmp(sec.segname, "__TEXT") == 0 && strcmp(sec.sectname, "__stubs") == 0) {
                             
                             self.stubs_section = &sections[j];
+                            
+                        }  else if ( strcmp(sec.segname, "__TEXT") == 0 && strcmp(sec.sectname, "__stub_helper") == 0) {
+                            self.stub_helper_section = &sections[j];
                             
                         } else if ( strcmp(sec.segname, "__DATA") == 0 && strcmp(sec.sectname, "__la_symbol_ptr") == 0) {
                             self.lazy_ptr_section = &sections[j]; //calloc(1, sizeof(struct section_64));
@@ -427,7 +433,7 @@
             
             if (op.type == X86_OP_MEM && op.mem.base == X86_REG_RIP && ( op.mem.disp + insn.address + insn.size)  == address) {
                 [foundAddresses addObject:@(insn.address)];
-            } else if (op.type == X86_OP_IMM && insn.detail->x86.opcode[0] == 0xe8 && op.imm == address)  {
+            } else if (op.type == X86_OP_IMM && op.imm == address && insn.id == X86_INS_CALL)  {
                 [foundAddresses addObject:@(insn.address)];
             }
         }
@@ -514,7 +520,7 @@
             }
         } else if (insn.id == ARM64_INS_BL || insn.id == ARM64_INS_B) {
             if (ops[0].type == ARM64_OP_IMM && ops[0].imm == address) {
-                [foundAddresses addObject:@(insn_next->address)];
+                [foundAddresses addObject:@(insn.address)];
             }
         }
     }
@@ -542,7 +548,6 @@
   
         if (file_offset >= start && file_offset <= stop) {
             
-            printf("found offset in %s\n", seg->segname);
             struct section_64 *cur = (struct section_64 *)(s.longValue + sizeof(struct segment_command_64));
             for (int i = 0; i < seg->nsects; i++) {
                 struct section_64 sec = cur[i];
@@ -551,6 +556,7 @@
                 uintptr_t sec_stop = sec.size + sec_start;
                 
                 if (file_offset >= sec_start && file_offset < sec_stop) {
+                    printf("Found file offset 0x%lx in %s,%s\n", file_offset, sec.segname, sec.sectname);
                     resolvedAddress = seg->vmaddr + file_offset;
                     break;
                 }
@@ -598,7 +604,7 @@
     // It's in the symbol table, so now see what exactly it is
     uintptr_t resolvedAddress = 0;
     if (foundSymbol->n_type & N_EXT) {
-        resolvedAddress = [self externalSymbolAddress:symbol];
+        resolvedAddress = [self externalSymbolStubAddress:symbol];
     } else {
         resolvedAddress = foundSymbol->n_value;
     }
@@ -610,13 +616,79 @@
     
     
     if (self.header.h64.cputype == CPU_TYPE_ARM64) {
-        [self findAddressInCode_ARM64:resolvedAddress];
+        uintptr_t resolvedStub = [self findStub_ARM64:resolvedAddress];
+        if (!resolvedStub) {
+            printf("Couldn't find symbol \"%s%s%s\" in code...\n", dcolor(DSCOLOR_RED), search_symbol, colorEnd());
+            return;
+            
+        }
+        
+        [self findAddressInCode_ARM64:resolvedStub];
     } else if (self.header.h64.cputype == CPU_TYPE_X86_64) {
+        uintptr_t resolvedStub = [self findStub_x86_64:resolvedAddress];
         [self findAddressInCode_x86:resolvedAddress];
     } else {
         printf("cputype 0x%x not supported... womp womp\n", self.header.h64.cputype);
         return;
     }
+}
+
+- (uintptr_t)findStub_x86_64:(uintptr_t)stubAddress {
+    return 0;
+}
+
+- (uintptr_t)findStub_ARM64:(uintptr_t)stubAddress {
+    
+    void* buf = calloc(sizeof(char), self.stubs_section->size);
+    int fd = open(self.realizedPath.UTF8String, O_RDONLY);
+    pread(fd, buf, self.stubs_section->size, self.stubs_section->offset + self.file_offset);
+    
+    
+    cs_insn *instructions = NULL;
+    csh handle = 0;
+    int err = cs_open(CS_ARCH_ARM64, CS_MODE_ARM, &handle);
+    if (err != CS_ERR_OK) {
+        assert(NO);
+    }
+    
+    //    struct platform platforms;
+    cs_option(handle, CS_OPT_DETAIL, CS_OPT_ON);
+    cs_option(handle, CS_OPT_SKIPDATA, CS_OPT_ON);
+
+    //    size_t code_size = self.code_section->size;
+    //    uint64_t out_address = self.code_section->addr;
+    
+    size_t count = cs_disasm(handle, buf, self.stubs_section->size, self.stubs_section->addr, 0, &instructions);
+    
+    if (count == 0) {
+        printf("error!! %d\n", cs_errno(handle));
+        
+    }
+    for (int i = 0; i < count; i++) {
+        cs_insn insn =  instructions[i];
+        if (!insn.detail || insn.id  != ARM64_INS_LDR || insn.detail->arm64.operands[1].type != ARM_OP_IMM) { continue; }
+        
+        
+        
+        if (insn.detail->arm64.operands[1].imm == stubAddress) {
+//            printf("omg found it\n");
+            return insn.address - insn.size;
+        }
+        
+        
+//        printf("%d  %p, %s %s\n", insn.size, insn.address, insn.mnemonic, insn.op_str);
+
+    }
+
+    
+    //    size_t code_size = self.code_section->size;
+    //    uint64_t out_address = self.code_section->addr;
+    
+//    size_t count = cs_disasm(handle, buffer, self.code_section->size, self.code_section->addr, 0, &instructions);
+    
+    
+    close(fd);
+    return 0;
 }
 
 - (void)printFunctionsContainingAddresses:(NSArray <NSNumber*>*)addresses {
@@ -672,20 +744,39 @@
     return [self.path hash];
 }
 
-- (uintptr_t)externalSymbolAddress:(NSString *)symbol {
-    uintptr_t base = self.stubs_section->addr;
-    size_t size = 6;// 2 << (self.stubs_section->align - 1);
+- (uintptr_t)externalSymbolStubAddress:(NSString *)symbol {
+//    uintptr_t base = self.stubs_section->addr;
+//
+//
+////    size_t size = 1 << self.stubs_section->align;
+//    size_t size = 6; // 1 << (self.stubs_section->align - 1);
+
+    
     const char *searched_symbol = [symbol UTF8String];
     for (int i = 0; i < self.indirect_symbols.count; i++) {
         int offset = self.indirect_symbols.indirect_sym[i];
-        struct nlist_64 symbol = self.symbols[offset];
-        char * chr = &self.str_symbols[symbol.n_un.n_strx];
+        struct nlist_64 sym = self.symbols[offset];
+        
+        char * chr = &self.str_symbols[sym.n_un.n_strx];
         
         
+
         if (strcmp(chr, searched_symbol) == 0 || strcmp(&chr[1], searched_symbol) == 0 ) {
-            return base + (size * i);
+            uintptr_t buf_stub_helper;
+            int fd = open(self.realizedPath.UTF8String, O_RDONLY);
+            pread(fd, &buf_stub_helper, sizeof(uintptr_t), self.file_offset + self.lazy_ptr_section->offset + (8 * i));
+            
+            
+            // search for references that point to buf_stub_helper in __TEXT.__stubs
+            
+            
+            
+            close(fd);
+            return self.lazy_ptr_section->addr + (8 * i);
+            return buf_stub_helper;
         }
     }
+    
     return 0;
 }
 

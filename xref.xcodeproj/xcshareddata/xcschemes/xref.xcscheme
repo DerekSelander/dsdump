@@ -79,7 +79,7 @@
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = "$(TARGET_BUILD_DIR)/xref"
+            argument = "-s printf $(TARGET_BUILD_DIR)/xref"
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
@@ -87,8 +87,12 @@
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = "-s objc_retain ${SRCROOT}/xref/binaries/some_app"
+            argument = "-s _\$S10Foundation9IndexPathV19_bridgeToObjectiveCSo07NSIndexC0CyF ${SRCROOT}/xref/binaries/some_app"
             isEnabled = "YES">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "-o 19177 /bin/ls"
+            isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
             argument = "-x ${SRCROOT}/xref/binaries/some_app"
