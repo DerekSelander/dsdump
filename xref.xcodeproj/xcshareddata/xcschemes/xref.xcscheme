@@ -80,7 +80,7 @@
          </CommandLineArgument>
          <CommandLineArgument
             argument = "-s printf $(TARGET_BUILD_DIR)/xref"
-            isEnabled = "NO">
+            isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
             argument = " --symbol _parseSystemVersionPList /Applications/Xcode.app/Contents/MacOS/Xcode "
@@ -88,7 +88,7 @@
          </CommandLineArgument>
          <CommandLineArgument
             argument = "-s _\$S10Foundation9IndexPathV19_bridgeToObjectiveCSo07NSIndexC0CyF ${SRCROOT}/xref/binaries/some_app"
-            isEnabled = "YES">
+            isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
             argument = "-o 19177 /bin/ls"

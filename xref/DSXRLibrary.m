@@ -264,7 +264,7 @@
 
 - (void)dumpExternalSymbols {
     uintptr_t base = self.lazy_ptr_section->addr;
-    size_t size = 2 << (self.lazy_ptr_section->align - 1);
+    size_t align_size = 1 << (self.lazy_ptr_section->align);
     for (int i = 0; i < self.indirect_symbols.count; i++) {
         int offset = self.indirect_symbols.indirect_sym[i];
         struct nlist_64 symbol = self.symbols[offset];
@@ -272,9 +272,9 @@
         char * chr = &self.str_symbols[symbol.n_un.n_strx];
         
         if (xref_options.verbose) {
-            printf(" 0x%-8lx  %s%s%s: %s%-40s%s\n", base + (size * i), dcolor(DSCOLOR_YELLOW), [self.depdencies[libIndex] UTF8String], colorEnd(), dcolor(DSCOLOR_CYAN), chr, colorEnd() );
+            printf(" 0x%-8lx  %s%s%s: %s%-40s%s\n", base + (align_size * i), dcolor(DSCOLOR_YELLOW), [self.depdencies[libIndex] UTF8String], colorEnd(), dcolor(DSCOLOR_CYAN), chr, colorEnd() );
         } else {
-            printf(" 0x%-8lx  %s%-40s%s\n", base + (size * i), dcolor(DSCOLOR_CYAN), chr, colorEnd() );
+            printf(" 0x%-8lx  %s%-40s%s\n", base + (align_size * i), dcolor(DSCOLOR_CYAN), chr, colorEnd() );
         }
     }
 }
@@ -626,7 +626,7 @@
         [self findAddressInCode_ARM64:resolvedStub];
     } else if (self.header.h64.cputype == CPU_TYPE_X86_64) {
         uintptr_t resolvedStub = [self findStub_x86_64:resolvedAddress];
-        [self findAddressInCode_x86:resolvedAddress];
+        [self findAddressInCode_x86:resolvedStub];
     } else {
         printf("cputype 0x%x not supported... womp womp\n", self.header.h64.cputype);
         return;
@@ -634,7 +634,58 @@
 }
 
 - (uintptr_t)findStub_x86_64:(uintptr_t)stubAddress {
+    
+    void* buf = calloc(sizeof(char), self.stubs_section->size);
+    int fd = open(self.realizedPath.UTF8String, O_RDONLY);
+    pread(fd, buf, self.stubs_section->size, self.stubs_section->offset + self.file_offset);
+    
+    
+    cs_insn *instructions = NULL;
+    csh handle = 0;
+    int err = cs_open(CS_ARCH_X86, CS_MODE_64, &handle);
+    if (err != CS_ERR_OK) {
+        assert(NO);
+    }
+    
+    //    struct platform platforms;
+    cs_option(handle, CS_OPT_DETAIL, CS_OPT_ON);
+    cs_option(handle, CS_OPT_SKIPDATA, CS_OPT_ON);
+    
+    //    size_t code_size = self.code_section->size;
+    //    uint64_t out_address = self.code_section->addr;
+    
+    size_t count = cs_disasm(handle, buf, self.stubs_section->size, self.stubs_section->addr, 0, &instructions);
+    
+    if (count == 0) {
+        printf("error!! %d\n", cs_errno(handle));
+        
+    }
+    for (int i = 0; i < count; i++) {
+        cs_insn insn =  instructions[i];
+        if (!insn.detail || insn.id  != X86_INS_JMP || insn.detail->x86.operands[0].type != X86_OP_MEM) { continue; }
+        
+        
+//         insn.detail->x86.operands[0].imm
+        if (insn.detail->x86.operands[0].mem.disp + insn.address + insn.size == stubAddress) {
+            //            printf("omg found it\n");
+            return insn.address;
+        }
+        
+        
+        //        printf("%d  %p, %s %s\n", insn.size, insn.address, insn.mnemonic, insn.op_str);
+        
+    }
+    
+    
+    //    size_t code_size = self.code_section->size;
+    //    uint64_t out_address = self.code_section->addr;
+    
+    //    size_t count = cs_disasm(handle, buffer, self.code_section->size, self.code_section->addr, 0, &instructions);
+    
+    
+    close(fd);
     return 0;
+    
 }
 
 - (uintptr_t)findStub_ARM64:(uintptr_t)stubAddress {
