@@ -216,7 +216,10 @@
             uintptr_t syms = (_file_offset + self.dysymtab->indirectsymoff);
             _indirect_symbols.count = self.dysymtab->nindirectsyms;
             _indirect_symbols.indirect_sym = calloc(self.indirect_symbols.count, sizeof(uint32_t));
-            pread(fd, _indirect_symbols.indirect_sym, _indirect_symbols.count * sizeof(uint32_t), (long)(syms + self.lazy_ptr_section->reserved1 * sizeof(uint32_t)));
+//            pread(fd, _indirect_symbols.indirect_sym, _indirect_symbols.count * sizeof(uint32_t), (long)(syms + self.lazy_ptr_section->reserved1 * sizeof(uint32_t)));
+             pread(fd, _indirect_symbols.indirect_sym, _indirect_symbols.count * sizeof(uint32_t), syms);
+            
+            
         }
         
         //        [self disassembleCodeFromFD:fd offset:file_offset];
@@ -625,8 +628,8 @@
         return;
     }
     
-    printf("Searching for: %s\n", search_symbol);
-//    [self printSymbol:foundSymbol];
+    printf("Searching for: ");
+    [self printSymbol:foundSymbol];
     
     // It's in the symbol table, so now see what exactly it is
     uintptr_t resolvedAddress = 0;
@@ -834,11 +837,18 @@
 
     
     const char *searched_symbol = [symbol UTF8String];
-    for (int i = 0; i < self.indirect_symbols.count; i++) {
-        int offset = self.indirect_symbols.indirect_sym[i];
-        if (INDIRECT_SYMBOL_LOCAL & offset) { continue; }
-        struct nlist_64 sym = self.symbols[offset];
+    
+//    self.lazy_ptr_section->reserved1;
+    size_t count  = (self.lazy_ptr_section->size / (1 << self.lazy_ptr_section->align));
+    
+    int start = self.lazy_ptr_section->reserved1;
+    for (int i = 0; i < count; i++) {
+        int offset = self.indirect_symbols.indirect_sym[i + start];
         
+        // If stripped' local symbol, you're not gonna find it by name
+        if (INDIRECT_SYMBOL_LOCAL & offset) { continue; }
+        
+        struct nlist_64 sym = self.symbols[offset];
         char * chr = &self.str_symbols[sym.n_un.n_strx];
         
         

@@ -40,9 +40,7 @@ int main(int argc, const char * argv[], const char*envp[]) {
     
     mainExecutable = [[DSXRExecutable alloc] initWithPath:path];
     
-    if (xref_options.external) {
-        [mainExecutable dumpExternalSymbols];
-    } else if (xref_options.address) {
+    if (xref_options.address) {
         [mainExecutable findAddressInCode_x86:xref_options.address];
     }  else if (xref_options.symbol) {
         [mainExecutable findAddressesForSymbolInCode:[NSString stringWithUTF8String:xref_options.symbol]];
@@ -91,9 +89,11 @@ static void handle_args(int argc, const char * argv[]) {
             {"file_offset",  required_argument, 0,  0 },
             {"regex",   no_argument,       &xref_options.use_regex,  1},
             {"verbose", no_argument,       &xref_options.verbose,  1 },
-            {"external", no_argument,      &xref_options.external,  1 },
+//            {"external", no_argument,      &xref_options.external,  1 },
             {"address",  required_argument, 0, 'c'},
             {"color",    no_argument, &xref_options.color,  1 },
+            {"defined",    no_argument, &xref_options.defined,  1 },
+            {"undefined",    no_argument, &xref_options.undefined,  1 },
             {0,         0,                 0,  0 }
         };
         
@@ -153,10 +153,10 @@ static void handle_args(int argc, const char * argv[]) {
                 xref_options.file_offset = strtol(optarg, 0, 0);
                 break;
                 
-            case 'x':
-                xref_options.external = 1;
-//                printf("option b\n");
-                break;
+//            case 'x':
+//                xref_options.external = 1;
+////                printf("option b\n");
+//                break;
                 
          
                 
