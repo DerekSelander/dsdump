@@ -160,12 +160,14 @@
                             
                             
                             // get indirect symbol table
-                            _indirect_symbols.count = self.lazy_ptr_section->size / (2 << (self.lazy_ptr_section->align - 1));
-                            _indirect_symbols.indirect_sym = calloc(self.indirect_symbols.count, sizeof(uint32_t));
+//                            _indirect_symbols.count = self.lazy_ptr_section->size / (1 << (self.lazy_ptr_section->align));
+                            
+                            
+//                            _indirect_symbols.indirect_sym = calloc(self.indirect_symbols.count, sizeof(uint32_t));
                             
                             
                             
-                            //                            memcpy(_indirect_symbols.indirect_sym, <#const void *__src#>, _indirect_symbols.count * sizeof(uint32_t));
+//                            memcpy(_indirect_symbols.indirect_sym, <#const void *__src#>, _indirect_symbols.count * sizeof(uint32_t));
                             
                         }
                         
@@ -210,10 +212,11 @@
             assert(0);
         }
         
-        
-        if (self.lazy_ptr_section && self.dysymtab && self.indirect_symbols.count > 0) {
-            int *syms = (int *)(_file_offset + self.dysymtab->indirectsymoff);
-            pread(fd, _indirect_symbols.indirect_sym, _indirect_symbols.count * sizeof(uint32_t), (long)&syms[self.lazy_ptr_section->reserved1]);
+        if (self.lazy_ptr_section && self.dysymtab) {
+            uintptr_t syms = (_file_offset + self.dysymtab->indirectsymoff);
+            _indirect_symbols.count = self.dysymtab->nindirectsyms;
+            _indirect_symbols.indirect_sym = calloc(self.indirect_symbols.count, sizeof(uint32_t));
+            pread(fd, _indirect_symbols.indirect_sym, _indirect_symbols.count * sizeof(uint32_t), (long)(syms + self.lazy_ptr_section->reserved1 * sizeof(uint32_t)));
         }
         
         //        [self disassembleCodeFromFD:fd offset:file_offset];
@@ -222,11 +225,12 @@
     
     [exploredSet addObject:path];
     
-    
-    for (int i = 1; i < self.depdencies.count; i++) {
-        
-        _maxlibNameLength =  MAX((int)self.depdencies[i].length, _maxlibNameLength);
-    }
+
+//    Had this for print formatting, dunno of you still want it though for future idea...
+//    for (int i = 1; i < self.depdencies.count; i++) {
+//
+//        _maxlibNameLength =  MAX((int)self.depdencies[i].length, _maxlibNameLength);
+//    }
     
     return self;
 }
@@ -784,7 +788,7 @@
             
             if (start <= cur && cur <= stop) {
                 BOOL found_symbol_name = NO;
-                printf(" 0x%lx + %-5lu (0x%lx)", start, cur - start, cur);
+                printf(" 0x%011lx + %-5lu (0x%011lx)", start, cur - start, cur);
                 for (int z = self.dysymtab->ilocalsym; z < self.dysymtab->nlocalsym; z++) {
                     char * chr = &self.str_symbols[self.symbols[z].n_un.n_strx];
                     if (self.symbols[z].n_value == start  && strlen(chr) > 1) {
@@ -832,6 +836,7 @@
     const char *searched_symbol = [symbol UTF8String];
     for (int i = 0; i < self.indirect_symbols.count; i++) {
         int offset = self.indirect_symbols.indirect_sym[i];
+        if (INDIRECT_SYMBOL_LOCAL & offset) { continue; }
         struct nlist_64 sym = self.symbols[offset];
         
         char * chr = &self.str_symbols[sym.n_un.n_strx];
