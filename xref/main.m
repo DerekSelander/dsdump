@@ -20,14 +20,14 @@ static NSArray <NSString *>* exc_rpaths = nil;
 
 
 
-static void handleARGS(int argc, const char * argv[]);
+static void handle_args(int argc, const char * argv[]);
 
 int main(int argc, const char * argv[], const char*envp[]) {
     
     
-    handleARGS(argc, argv);
+    handle_args(argc, argv);
     if (argc < 2) {
-        printUsage();
+        print_usage();
         exit(1);
     }
     const char * p = argv[optind++];
@@ -37,7 +37,7 @@ int main(int argc, const char * argv[], const char*envp[]) {
         printf("File doesn't exist at \"%s\"\n", argv[1]);
         exit(1);
     }
-    _dyld_image_count();
+    
     mainExecutable = [[DSXRExecutable alloc] initWithPath:path];
     
     if (xref_options.external) {
@@ -78,7 +78,7 @@ int main(int argc, const char * argv[], const char*envp[]) {
 }
 
 
-static void handleARGS(int argc, const char * argv[]) {
+static void handle_args(int argc, const char * argv[]) {
     int c;
     int digit_optind = 0;
     
@@ -97,7 +97,7 @@ static void handleARGS(int argc, const char * argv[]) {
             {0,         0,                 0,  0 }
         };
         
-        c = getopt_long(argc, (char * const *)argv, "xcvs:o:l:a:bd:012",
+        c = getopt_long(argc, (char * const *)argv, "uUxcvs:o:l:a:bd:012",
                         long_options, &option_index);
         if (c == -1)
             break;
@@ -128,10 +128,16 @@ static void handleARGS(int argc, const char * argv[]) {
                 printf("option %c\n", c);
                 break;
             case 'v':
-                xref_options.verbose = 1;
+                xref_options.verbose++;
                 break;
             case 'c':
                 xref_options.color = 1;
+                break;
+            case 'u':
+                xref_options.undefined = 1;
+                break;
+            case 'U':
+                xref_options.defined = 1;
                 break;
             case 'l':
                 xref_options.library = optarg;
@@ -166,13 +172,6 @@ static void handleARGS(int argc, const char * argv[]) {
         }
     }
     
-//    if (optind < argc) {
-//        printf("non-option ARGV-elements: ");
-//        while (optind < argc)
-//            printf("%s ", argv[optind++]);
-//        printf("\n");
-//    }
-    
-    
+
     
 }

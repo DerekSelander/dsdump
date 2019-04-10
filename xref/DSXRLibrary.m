@@ -15,6 +15,7 @@
 
 @interface DSXRLibrary ()
 @property (nonatomic, readonly) NSString *realizedPath;
+@property (nonatomic, assign) int maxlibNameLength;
 @end
 
 
@@ -68,7 +69,7 @@
             for (int i = 0; i < _header.h64.ncmds; i++) {
                 struct load_command *ld_cmd = (struct load_command *)cur;
                 
-                if (ld_cmd->cmd == LC_LOAD_DYLIB || ld_cmd->cmd == LC_LOAD_WEAK_DYLIB || ld_cmd->cmd == LC_REEXPORT_DYLIB) {
+                if (ld_cmd->cmd == LC_LOAD_DYLIB || ld_cmd->cmd == LC_LOAD_WEAK_DYLIB || ld_cmd->cmd == LC_REEXPORT_DYLIB || ld_cmd->cmd == LC_LOAD_UPWARD_DYLIB) {
                     struct dylib_command *dylib_cmd = (struct dylib_command *)cur;
                     NSString * libPath = [NSString stringWithUTF8String:(char *)(cur + dylib_cmd->dylib.name.offset)];
                     [pathsSet addObject:libPath];
@@ -190,7 +191,6 @@
             struct fat_arch *arches = calloc(numArchs, sizeof(struct fat_arch));
             pread(fd, arches, sizeof(struct fat_arch) * numArchs, sizeof(struct fat_header));
             
-            uintptr_t cur = sizeof(struct fat_header);
             for (int j = 0; j < numArchs; j++) {
                 if (arches[j].cputype == 0x07000001) {
                     _file_offset = htonl(arches[j].offset);
@@ -223,43 +223,69 @@
     [exploredSet addObject:path];
     
     
+    for (int i = 1; i < self.depdencies.count; i++) {
+        
+        _maxlibNameLength =  MAX((int)self.depdencies[i].length, _maxlibNameLength);
+    }
+    
     return self;
 }
 
 - (void)dumpSymbols {
     for (int i = 0; i < self.symtab->nsyms; i++) {
         
+        struct nlist_64 symbol = self.symbols[i];
         
         // if stripped
-        if (!self.symbols[i].n_un.n_strx)  { continue; }
+        if (!symbol.n_un.n_strx)  { continue; }
         
         
-        char * chr = &self.str_symbols[self.symbols[i].n_un.n_strx];
+        char * chr = &self.str_symbols[symbol.n_un.n_strx];
+        // If not a valid symbol
         if (strlen(chr) < 2) { continue; }
         
-        [self printSymbol:&self.symbols[i]];
+        // If a debugging symbol only print if really verbose
+        if ((symbol.n_type & N_TYPE & N_STAB) && xref_options.verbose < 2) { continue; }
+        
+        if (xref_options.defined || xref_options.undefined) {
+            
+            if ((xref_options.defined && symbol.n_type & N_TYPE & N_SECT) || (xref_options.undefined && (symbol.n_type & N_TYPE) == N_UNDF)) {
+                [self printSymbol:&self.symbols[i]];
+            }
+            
+            
+        } else {
+            [self printSymbol:&self.symbols[i]];
+        }
+        
     }
 }
 
 - (void)printSymbol:(struct nlist_64 *)sym {
+    printf("0x%011llx ", sym->n_value);
+    
     if (xref_options.verbose) {
-        printf("%.2x %.2x %.2x 0x%llx ", sym->n_type, sym->n_sect, sym->n_desc, sym->n_value);
-        //        printf("0x%09llx ", sym->n_value);
+        printf("%02x %02x %04x ", sym->n_type, sym->n_sect, sym->n_desc);
     }
+    
     char * chr = &self.str_symbols[sym->n_un.n_strx];
     int libIndex = GET_LIBRARY_ORDINAL(sym->n_desc);
     
+//    int len = 0;
     if (sym->n_type & N_SECT && sym->n_sect) {
         struct section_64 * sec = ( struct section_64 * )self.section_cmds[sym->n_sect].longValue;
-        
         printf("%s%s.%s%s ", dcolor(DSCOLOR_GRAY), sec->segname, sec->sectname, colorEnd());
-    }
-    if (libIndex < 1) {
-        printf("%s%s%s: \n", dcolor(DSCOLOR_CYAN), chr, colorEnd());
-    } else {
-        printf("%s%s%s:  %s%s%s\n", dcolor(DSCOLOR_YELLOW), [self.depdencies[libIndex] UTF8String], colorEnd(), dcolor(DSCOLOR_CYAN), chr, colorEnd());
+//        len = (int)strlen(sec->segname) + (int)strlen(sec->sectname);
         
     }
+    else if (libIndex > 0 && (sym->n_type & N_TYPE) == N_UNDF) {
+        const char *libName = [self.depdencies[libIndex] UTF8String];
+        printf("%s%s%s: ", dcolor(DSCOLOR_YELLOW), libName, colorEnd());
+//        len = (int)strlen(libName);
+        
+    }
+//    printf("%*s%s%s%s: \n", (_maxlibNameLength - len), "", dcolor(DSCOLOR_CYAN), chr, colorEnd());
+        printf("%s%s%s: \n", dcolor(DSCOLOR_CYAN), chr, colorEnd());
 }
 
 - (void)dumpExternalSymbols {
@@ -417,11 +443,8 @@
     //    uint64_t out_address = self.code_section->addr;
     
     size_t count = cs_disasm(handle, buffer, self.code_section->size, self.code_section->addr, 0, &instructions);
+
     
-    if (count == 0) {
-        printf("error!! %d\n", cs_errno(handle));
-        
-    }
     for (int i = 0; i < count; i++) {
         cs_insn insn =  instructions[i];
         if (!insn.detail) { continue; }
@@ -598,8 +621,8 @@
         return;
     }
     
-    printf("Searching for: ");
-    [self printSymbol:foundSymbol];
+    printf("Searching for: %s\n", search_symbol);
+//    [self printSymbol:foundSymbol];
     
     // It's in the symbol table, so now see what exactly it is
     uintptr_t resolvedAddress = 0;
@@ -615,8 +638,10 @@
     }
     
     
+    
+    BOOL isInternal = !!((foundSymbol->n_type & N_TYPE) & N_SECT);
     if (self.header.h64.cputype == CPU_TYPE_ARM64) {
-        uintptr_t resolvedStub = [self findStub_ARM64:resolvedAddress];
+        uintptr_t resolvedStub = isInternal ? resolvedAddress : [self findStub_ARM64:resolvedAddress];
         if (!resolvedStub) {
             printf("Couldn't find symbol \"%s%s%s\" in code...\n", dcolor(DSCOLOR_RED), search_symbol, colorEnd());
             return;
@@ -625,7 +650,8 @@
         
         [self findAddressInCode_ARM64:resolvedStub];
     } else if (self.header.h64.cputype == CPU_TYPE_X86_64) {
-        uintptr_t resolvedStub = [self findStub_x86_64:resolvedAddress];
+        
+        uintptr_t resolvedStub = isInternal ? resolvedAddress : [self findStub_x86_64:resolvedAddress];
         [self findAddressInCode_x86:resolvedStub];
     } else {
         printf("cputype 0x%x not supported... womp womp\n", self.header.h64.cputype);

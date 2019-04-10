@@ -26,8 +26,14 @@ static void __attribute__((constructor))InitializeStuff() {
 }
 
 
-void printUsage() {
-    
+void print_usage() {
+    static char* desc =
+    "Usage: xref <options> file\n\
+    \t-s symbol\tsearches for references for that symbol in code\n\
+    \t-x \t\texternal symbols, lists undefined symbols\n\
+    \t-v \t\tverbose\n\
+    \t-c \t\tUse color, alternatively export DSCOLOR environment var\n";
+    printf("%s\n", desc);
 }
 
 

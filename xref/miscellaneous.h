@@ -10,7 +10,7 @@
 #import "DSXRExecutable.h"
 
 /// Usage deets
-void printUsage(void);
+void print_usage(void);
 
 extern NSMutableSet <NSString*> *pathsSet;
 extern NSMutableSet <NSString*> *exploredSet;
@@ -72,6 +72,8 @@ void ErrorMessageThenDie(const char *message, ...);
 typedef struct {
     int showLibReferences;
     int verbose;
+    int undefined;
+    int defined;
     int color;
     int use_regex;
     int external;
