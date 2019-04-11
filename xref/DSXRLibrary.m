@@ -156,19 +156,10 @@
                             
                         } else if ( strcmp(sec.segname, "__DATA") == 0 && strcmp(sec.sectname, "__la_symbol_ptr") == 0) {
                             self.lazy_ptr_section = &sections[j]; //calloc(1, sizeof(struct section_64));
-                            
-                            
-                            
-                            // get indirect symbol table
-//                            _indirect_symbols.count = self.lazy_ptr_section->size / (1 << (self.lazy_ptr_section->align));
-                            
-                            
-//                            _indirect_symbols.indirect_sym = calloc(self.indirect_symbols.count, sizeof(uint32_t));
-                            
-                            
-                            
-//                            memcpy(_indirect_symbols.indirect_sym, <#const void *__src#>, _indirect_symbols.count * sizeof(uint32_t));
-                            
+
+                        } else if ( strcmp(sec.segname, "__DATA") == 0 && strcmp(sec.sectname, "__cfstring") == 0) {
+//                            self.lazy_ptr_section = &sections[j];
+                            self.cfstring_buffer = calloc(1, (long)&sections[j].size);
                         }
                         
                     }
@@ -216,13 +207,8 @@
             uintptr_t syms = (_file_offset + self.dysymtab->indirectsymoff);
             _indirect_symbols.count = self.dysymtab->nindirectsyms;
             _indirect_symbols.indirect_sym = calloc(self.indirect_symbols.count, sizeof(uint32_t));
-//            pread(fd, _indirect_symbols.indirect_sym, _indirect_symbols.count * sizeof(uint32_t), (long)(syms + self.lazy_ptr_section->reserved1 * sizeof(uint32_t)));
              pread(fd, _indirect_symbols.indirect_sym, _indirect_symbols.count * sizeof(uint32_t), syms);
-            
-            
         }
-        
-        //        [self disassembleCodeFromFD:fd offset:file_offset];
         close(fd);
     }
     
@@ -292,7 +278,7 @@
         
     }
 //    printf("%*s%s%s%s: \n", (_maxlibNameLength - len), "", dcolor(DSCOLOR_CYAN), chr, colorEnd());
-        printf("%s%s%s: \n", dcolor(DSCOLOR_CYAN), chr, colorEnd());
+        printf("%s%s%s \n", dcolor(DSCOLOR_CYAN), chr, colorEnd());
 }
 
 - (void)dumpExternalSymbols {
@@ -354,10 +340,6 @@
     } else if (YES || [self isSimulatorLibrary] || [mainExecutable isSimulatorLibrary]) {
         _realizedPath = [[self simulatorPath] stringByAppendingPathComponent:self.path];
         return _realizedPath;
-    } else if (![[NSFileManager defaultManager] fileExistsAtPath:self.path]) {
-        
-        
-        
     }
     
     return self.path;
@@ -424,6 +406,17 @@
     return nil;
 }
 
+- (void)findAddressInCode:(uintptr_t)address {
+    if (self.header.h64.cputype == CPU_TYPE_ARM64) {
+        [self findAddressInCode_ARM64:address];
+    } else if(self.header.h64.cputype == CPU_TYPE_X86_64) {
+        [self findAddressInCode_x86:address];
+    } else {
+        perror("not implemented\n");
+    }
+    
+}
+
 - (void)findAddressInCode_x86:(uintptr_t)address {
     if (!self.code_section) { return; }
     
@@ -449,8 +442,7 @@
     //    size_t code_size = self.code_section->size;
     //    uint64_t out_address = self.code_section->addr;
     
-    size_t count = cs_disasm(handle, buffer, self.code_section->size, self.code_section->addr, 0, &instructions);
-
+    size_t count = cs_disasm(handle, buffer, self.                                                                              code_section->size, self.code_section->addr, 0, &instructions);
     
     for (int i = 0; i < count; i++) {
         cs_insn insn =  instructions[i];
@@ -474,7 +466,6 @@
     if (foundAddresses.count == 0) {
         printf("Couldn't find any references\n");
     } else {
-        
         [self printFunctionsContainingAddresses:foundAddresses];
     }
     
@@ -507,11 +498,10 @@
     //    uint64_t out_address = self.code_section->addr;
     
     size_t count = cs_disasm(handle, buffer, self.code_section->size, self.code_section->addr, 0, &instructions);
-    
     if (count == 0) {
         printf("error!! %d\n", cs_errno(handle));
-        
     }
+    
     for (int i = 0; i < count; i++) {
         cs_insn insn =  instructions[i];
         if (!insn.detail) { continue; }
@@ -555,11 +545,12 @@
         }
     }
     
+//    for (int i = )
+    
     
     if (foundAddresses.count == 0) {
         printf("Couldn't find any references\n");
     } else {
-        
         [self printFunctionsContainingAddresses:foundAddresses];
     }
     
@@ -586,8 +577,8 @@
                 uintptr_t sec_stop = sec.size + sec_start;
                 
                 if (file_offset >= sec_start && file_offset < sec_stop) {
-                    printf("Found file offset 0x%lx in %s,%s\n", file_offset, sec.segname, sec.sectname);
                     resolvedAddress = seg->vmaddr + file_offset;
+                    printf("Found file offset 0x%0lx in 0x%011lx in %s,%s\n", file_offset, resolvedAddress, sec.segname, sec.sectname);
                     break;
                 }
             }
@@ -633,7 +624,7 @@
     
     // It's in the symbol table, so now see what exactly it is
     uintptr_t resolvedAddress = 0;
-    if (foundSymbol->n_type & N_EXT) {
+    if ((foundSymbol->n_type & N_TYPE) == NO_SECT) {
         resolvedAddress = [self externalSymbolStubAddress:symbol];
     } else {
         resolvedAddress = foundSymbol->n_value;

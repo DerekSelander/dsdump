@@ -77,6 +77,8 @@ typedef struct {
     int color;
     int use_regex;
     int external;
+    int save_data;
+    int all_sections;
     uintptr_t address;
     uintptr_t file_offset;
     char * symbol;

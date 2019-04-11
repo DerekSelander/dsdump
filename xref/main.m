@@ -41,8 +41,8 @@ int main(int argc, const char * argv[], const char*envp[]) {
     mainExecutable = [[DSXRExecutable alloc] initWithPath:path];
     
     if (xref_options.address) {
-        [mainExecutable findAddressInCode_x86:xref_options.address];
-    }  else if (xref_options.symbol) {
+        [mainExecutable findAddressInCode:xref_options.address];
+    } else if (xref_options.symbol) {
         [mainExecutable findAddressesForSymbolInCode:[NSString stringWithUTF8String:xref_options.symbol]];
     }   else if (xref_options.file_offset) {
             [mainExecutable findOffsetsInCode:xref_options.file_offset];
@@ -51,26 +51,6 @@ int main(int argc, const char * argv[], const char*envp[]) {
         [mainExecutable dumpSymbols];
     }
     
-    
-//    NSMutableDictionary *libs = [NSMutableDictionary dictionary];
-//    [libs setObject:mainExecutable forKey:mainExecutable.path];
-//
-//
-//    while ([pathsSet count]) {
-//        NSSet <NSString*> *s = [pathsSet objectsPassingTest:^BOOL(NSString * _Nonnull obj, BOOL * _Nonnull stop) {
-//            if (![exploredSet containsObject:obj]) {
-//                *stop = YES;
-//                return YES;
-//            }
-//            return NO;
-//        }];
-//
-//        NSString *anyPath = [s anyObject];
-//        if (!anyPath) { break; }
-//        DSXRLibrary *lib = [[DSXRLibrary alloc] initWithPath:anyPath];
-//        [pathsSet removeObject:anyPath];
-//        [libs setObject:lib forKey:lib.path];
-//    }
     
     return 0;
 }
@@ -89,7 +69,7 @@ static void handle_args(int argc, const char * argv[]) {
             {"file_offset",  required_argument, 0,  0 },
             {"regex",   no_argument,       &xref_options.use_regex,  1},
             {"verbose", no_argument,       &xref_options.verbose,  1 },
-//            {"external", no_argument,      &xref_options.external,  1 },
+            {"save", no_argument,       &xref_options.save_data,  1 },
             {"address",  required_argument, 0, 'c'},
             {"color",    no_argument, &xref_options.color,  1 },
             {"defined",    no_argument, &xref_options.defined,  1 },
@@ -97,7 +77,7 @@ static void handle_args(int argc, const char * argv[]) {
             {0,         0,                 0,  0 }
         };
         
-        c = getopt_long(argc, (char * const *)argv, "uUxcvs:o:l:a:bd:012",
+        c = getopt_long(argc, (char * const *)argv, "uUxcvSs:o:l:a:bd:012",
                         long_options, &option_index);
         if (c == -1)
             break;
@@ -145,14 +125,17 @@ static void handle_args(int argc, const char * argv[]) {
             case 's':
                 xref_options.symbol = optarg;
                 break;
+            case 'S':
+                xref_options.save_data = 1;
             case 'a':
                 xref_options.address = strtol(optarg, 0, 0);
                 break;
             case 'o':
-                
                 xref_options.file_offset = strtol(optarg, 0, 0);
                 break;
-                
+            case 'A':
+                xref_options.all_sections = 1;
+                break; 
 //            case 'x':
 //                xref_options.external = 1;
 ////                printf("option b\n");

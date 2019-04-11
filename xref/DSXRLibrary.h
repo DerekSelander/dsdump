@@ -46,10 +46,13 @@ typedef struct {
 @property (nonatomic, assign) struct version_min_command *version_cmd;
 @property (nonatomic, assign) struct uuid_command *uuid_cmd; 
 
+@property (nonatomic, assign) uintptr_t *cfstring_buffer; 
 @property (nonatomic, assign) struct symtab_command *symtab;
 @property (nonatomic, assign) struct dysymtab_command *dysymtab;
 @property (nonatomic, assign) struct nlist_64 *symbols;
 @property (nonatomic, assign) char *str_symbols;
+
+
 
 @property (nonatomic, assign) struct linkedit_data_command *function_starts_cmd;
 
@@ -75,7 +78,8 @@ typedef struct {
 - (instancetype)initWithPath:(NSString*)path;
 - (void)dumpSymbols;
 - (void)dumpExternalSymbols;
-- (void)findAddressInCode_x86:(uintptr_t)address;
+
+- (void)findAddressInCode:(uintptr_t)address;
 - (void)findAddressesForSymbolInCode:(NSString *)symbol;
 - (void)findOffsetsInCode:(uintptr_t)file_offset;
 @end

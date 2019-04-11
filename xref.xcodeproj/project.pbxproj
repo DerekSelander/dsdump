@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		3F98C3B3225F06E900606F97 /* DSXRLibrary+FileManagement.m in Sources */ = {isa = PBXBuildFile; fileRef = 3F98C3B2225F06E900606F97 /* DSXRLibrary+FileManagement.m */; };
 		A66A9CBF22316CF3006602AB /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = A66A9CBE22316CF3006602AB /* main.m */; };
 		A66A9CC922316D7F006602AB /* miscellaneous.m in Sources */ = {isa = PBXBuildFile; fileRef = A66A9CC822316D7F006602AB /* miscellaneous.m */; };
 		A66A9CCC22316EA5006602AB /* DSXRLibrary.m in Sources */ = {isa = PBXBuildFile; fileRef = A66A9CCB22316EA5006602AB /* DSXRLibrary.m */; };
@@ -40,6 +41,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		3F98C3B1225F06E900606F97 /* DSXRLibrary+FileManagement.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "DSXRLibrary+FileManagement.h"; sourceTree = "<group>"; };
+		3F98C3B2225F06E900606F97 /* DSXRLibrary+FileManagement.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = "DSXRLibrary+FileManagement.m"; sourceTree = "<group>"; };
 		A66A9CBB22316CF3006602AB /* xref */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = xref; sourceTree = BUILT_PRODUCTS_DIR; };
 		A66A9CBE22316CF3006602AB /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		A66A9CC722316D7F006602AB /* miscellaneous.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = miscellaneous.h; sourceTree = "<group>"; };
@@ -104,6 +107,8 @@
 				A66A9CBE22316CF3006602AB /* main.m */,
 				A66A9CCA22316EA5006602AB /* DSXRLibrary.h */,
 				A66A9CCB22316EA5006602AB /* DSXRLibrary.m */,
+				3F98C3B1225F06E900606F97 /* DSXRLibrary+FileManagement.h */,
+				3F98C3B2225F06E900606F97 /* DSXRLibrary+FileManagement.m */,
 				A674F3E62231C26B0005BD40 /* DSXRExecutable.h */,
 				A674F3E72231C26B0005BD40 /* DSXRExecutable.m */,
 				A66A9CC722316D7F006602AB /* miscellaneous.h */,
@@ -216,6 +221,7 @@
 				A66A9CC922316D7F006602AB /* miscellaneous.m in Sources */,
 				A674F3E82231C26B0005BD40 /* DSXRExecutable.m in Sources */,
 				A66A9CBF22316CF3006602AB /* main.m in Sources */,
+				3F98C3B3225F06E900606F97 /* DSXRLibrary+FileManagement.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
