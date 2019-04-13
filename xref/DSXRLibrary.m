@@ -439,6 +439,8 @@ extern DSXRLibrary *mainExecutable;
 }
 
 - (void)dumpReferencesForAddress:(uintptr_t)address {
+    
+    printf("Searching for references to: %s%p%s\n", dcolor(DSCOLOR_CYAN), (void*)address, colorEnd());
     NSArray <NSNumber *>*foundAddresses = nil;
     if (self.header.h64.cputype == CPU_TYPE_ARM64) {
         foundAddresses = [self findAddressInCode_ARM64:address];
