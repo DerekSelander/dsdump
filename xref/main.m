@@ -14,22 +14,23 @@
 #import "DSXRLibrary.h"
 #import "capstone/capstone.h"
 #import "capstone/platform.h"
-@import MachO;
+#import "DSXRExecutable.h"
 
+@import MachO;
 static NSArray <NSString *>* exc_rpaths = nil;
 
-
+extern DSXRLibrary *mainExecutable;
 
 static void handle_args(int argc, const char * argv[]);
 
 int main(int argc, const char * argv[], const char*envp[]) {
-    
     
     handle_args(argc, argv);
     if (argc < 2) {
         print_usage();
         exit(1);
     }
+    
     const char * p = argv[optind++];
     NSString *path = [NSString stringWithUTF8String:p];
     [pathsSet addObject:path];
@@ -40,17 +41,22 @@ int main(int argc, const char * argv[], const char*envp[]) {
     
     mainExecutable = [[DSXRExecutable alloc] initWithPath:path];
     
-    if (xref_options.address) {
-        [mainExecutable findAddressInCode:xref_options.address];
-    } else if (xref_options.symbol) {
-        [mainExecutable findAddressesForSymbolInCode:[NSString stringWithUTF8String:xref_options.symbol]];
-    }   else if (xref_options.file_offset) {
-            [mainExecutable findOffsetsInCode:xref_options.file_offset];
-        }
-     else {
-        [mainExecutable dumpSymbols];
-    }
     
+    if (! (xref_options.address || xref_options.symbol || xref_options.file_offset  || xref_options.analyze)) {
+        [mainExecutable dumpSymbols];
+        return 0;
+    }
+
+    // Go through the options
+    if (xref_options.address) {
+        [mainExecutable dumpReferencesForAddress:xref_options.address];
+    }
+    if (xref_options.symbol) {
+        [mainExecutable dumpReferencesForSymbol:[NSString stringWithUTF8String:xref_options.symbol]];
+    }
+    if (xref_options.file_offset) {
+        [mainExecutable dumpReferencesForFileOffset:xref_options.file_offset];
+    }
     
     return 0;
 }
@@ -69,7 +75,7 @@ static void handle_args(int argc, const char * argv[]) {
             {"file_offset",  required_argument, 0,  0 },
             {"regex",   no_argument,       &xref_options.use_regex,  1},
             {"verbose", no_argument,       &xref_options.verbose,  1 },
-            {"save", no_argument,       &xref_options.save_data,  1 },
+            {"analyze", no_argument,       &xref_options.analyze,  1 },
             {"address",  required_argument, 0, 'c'},
             {"color",    no_argument, &xref_options.color,  1 },
             {"defined",    no_argument, &xref_options.defined,  1 },
@@ -77,7 +83,7 @@ static void handle_args(int argc, const char * argv[]) {
             {0,         0,                 0,  0 }
         };
         
-        c = getopt_long(argc, (char * const *)argv, "uUxcvSs:o:l:a:bd:012",
+        c = getopt_long(argc, (char * const *)argv, "AuUxcvSs:o:l:a:bd:012",
                         long_options, &option_index);
         if (c == -1)
             break;
@@ -125,15 +131,17 @@ static void handle_args(int argc, const char * argv[]) {
             case 's':
                 xref_options.symbol = optarg;
                 break;
-            case 'S':
-                xref_options.save_data = 1;
+            case 'A':
+//                xref_options.analyze = 1;
+//                Disabled for now, till I can find something I am happy with
+                break;
             case 'a':
                 xref_options.address = strtol(optarg, 0, 0);
                 break;
             case 'o':
                 xref_options.file_offset = strtol(optarg, 0, 0);
                 break;
-            case 'A':
+            case 'S':
                 xref_options.all_sections = 1;
                 break; 
 //            case 'x':

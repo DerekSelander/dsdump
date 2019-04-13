@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		3F334FB82260C8C500129638 /* progressbar.c in Sources */ = {isa = PBXBuildFile; fileRef = 3F334FB42260C8C400129638 /* progressbar.c */; };
+		3F334FB92260C8C500129638 /* statusbar.c in Sources */ = {isa = PBXBuildFile; fileRef = 3F334FB52260C8C500129638 /* statusbar.c */; };
 		3F98C3B3225F06E900606F97 /* DSXRLibrary+FileManagement.m in Sources */ = {isa = PBXBuildFile; fileRef = 3F98C3B2225F06E900606F97 /* DSXRLibrary+FileManagement.m */; };
 		A66A9CBF22316CF3006602AB /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = A66A9CBE22316CF3006602AB /* main.m */; };
 		A66A9CC922316D7F006602AB /* miscellaneous.m in Sources */ = {isa = PBXBuildFile; fileRef = A66A9CC822316D7F006602AB /* miscellaneous.m */; };
@@ -41,7 +43,10 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		3F98C3B1225F06E900606F97 /* DSXRLibrary+FileManagement.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "DSXRLibrary+FileManagement.h"; sourceTree = "<group>"; };
+		3F334FB42260C8C400129638 /* progressbar.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = progressbar.c; path = "Progress Bar/progressbar.c"; sourceTree = "<group>"; };
+		3F334FB52260C8C500129638 /* statusbar.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = statusbar.c; path = "Progress Bar/statusbar.c"; sourceTree = "<group>"; };
+		3F334FB62260C8C500129638 /* statusbar.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = statusbar.h; path = "Progress Bar/statusbar.h"; sourceTree = "<group>"; };
+		3F334FB72260C8C500129638 /* progressbar.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = progressbar.h; path = "Progress Bar/progressbar.h"; sourceTree = "<group>"; };
 		3F98C3B2225F06E900606F97 /* DSXRLibrary+FileManagement.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = "DSXRLibrary+FileManagement.m"; sourceTree = "<group>"; };
 		A66A9CBB22316CF3006602AB /* xref */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = xref; sourceTree = BUILT_PRODUCTS_DIR; };
 		A66A9CBE22316CF3006602AB /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
@@ -107,12 +112,15 @@
 				A66A9CBE22316CF3006602AB /* main.m */,
 				A66A9CCA22316EA5006602AB /* DSXRLibrary.h */,
 				A66A9CCB22316EA5006602AB /* DSXRLibrary.m */,
-				3F98C3B1225F06E900606F97 /* DSXRLibrary+FileManagement.h */,
 				3F98C3B2225F06E900606F97 /* DSXRLibrary+FileManagement.m */,
 				A674F3E62231C26B0005BD40 /* DSXRExecutable.h */,
 				A674F3E72231C26B0005BD40 /* DSXRExecutable.m */,
 				A66A9CC722316D7F006602AB /* miscellaneous.h */,
 				A66A9CC822316D7F006602AB /* miscellaneous.m */,
+				3F334FB42260C8C400129638 /* progressbar.c */,
+				3F334FB72260C8C500129638 /* progressbar.h */,
+				3F334FB52260C8C500129638 /* statusbar.c */,
+				3F334FB62260C8C500129638 /* statusbar.h */,
 			);
 			path = xref;
 			sourceTree = "<group>";
@@ -220,7 +228,9 @@
 				A66A9CCC22316EA5006602AB /* DSXRLibrary.m in Sources */,
 				A66A9CC922316D7F006602AB /* miscellaneous.m in Sources */,
 				A674F3E82231C26B0005BD40 /* DSXRExecutable.m in Sources */,
+				3F334FB92260C8C500129638 /* statusbar.c in Sources */,
 				A66A9CBF22316CF3006602AB /* main.m in Sources */,
+				3F334FB82260C8C500129638 /* progressbar.c in Sources */,
 				3F98C3B3225F06E900606F97 /* DSXRLibrary+FileManagement.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -350,6 +360,7 @@
 					"$(PROJECT_DIR)/xref",
 				);
 				ONLY_ACTIVE_ARCH = YES;
+				OTHER_LDFLAGS = "-lncurses";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				VALID_ARCHS = "i386 x86_64";
 			};
@@ -365,6 +376,7 @@
 					"$(inherited)",
 					"$(PROJECT_DIR)/xref",
 				);
+				OTHER_LDFLAGS = "-lncurses";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				VALID_ARCHS = "i386 x86_64";
 			};

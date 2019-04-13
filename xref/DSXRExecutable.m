@@ -8,6 +8,8 @@
 
 #import "DSXRExecutable.h"
 
+DSXRExecutable *mainExecutable;
+
 @implementation DSXRExecutable
 
 - (instancetype)initWithPath:(NSString*)path {
@@ -21,3 +23,6 @@
 }
 
 @end
+
+
+

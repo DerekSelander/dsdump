@@ -7,6 +7,9 @@
 //
 
 #import <Foundation/Foundation.h>
+#import "miscellaneous.h"
+#import "DSXRLibrary.h"
+
 @import MachO;
 
 NS_ASSUME_NONNULL_BEGIN
@@ -24,12 +27,18 @@ typedef struct {
 } indirect_symbols_t;
 
 @interface DSXRLibrary : NSObject {
-
+//    ds_ins * _ins;
+//    size_t _ins_count;
+    size_t _instructions_count;
+//    
 }
 
 /// Library dependencies
 @property (nonatomic, strong) NSMutableArray <NSString *>*depdencies;
 @property (nonatomic, copy) NSString *path;
+
+@property (nonatomic, assign) cs_insn *instructions;
+@property (nonatomic, assign) size_t instructions_count;
 
 @property (nonatomic, assign) macho_generic_header header;
 
@@ -54,6 +63,8 @@ typedef struct {
 
 
 
+
+
 @property (nonatomic, assign) struct linkedit_data_command *function_starts_cmd;
 
 /// __DATA.__la_symbol_ptr
@@ -68,20 +79,30 @@ typedef struct {
 @property (nonatomic, assign) struct section_64 *stub_helper_section;
 
 /// __TEXT.__text
-@property (nonatomic, assign) struct section_64 *code_section;
+@property (nonatomic, assign) struct section_64 *__text_section;
 @property (nonatomic, assign) struct segment_command_64 *code_segment;
-@property (nonatomic, assign) struct section_64 *sections;
+//@property (nonatomic, assign) struct section_64 *sections;
 
 /// The indirect symbol table *int that points to actual symbols
 @property (nonatomic, assign) indirect_symbols_t indirect_symbols;
 @property (nonatomic, assign) uintptr_t file_offset;
+
 - (instancetype)initWithPath:(NSString*)path;
 - (void)dumpSymbols;
 - (void)dumpExternalSymbols;
+- (NSString *)realizedPath;
+- (void)dumpReferencesForAddress:(uintptr_t)address;
+- (void)dumpReferencesForSymbol:(NSString *)symbol;
+- (void)dumpReferencesForFileOffset:(uintptr_t)file_offset;
+@end
 
-- (void)findAddressInCode:(uintptr_t)address;
-- (void)findAddressesForSymbolInCode:(NSString *)symbol;
-- (void)findOffsetsInCode:(uintptr_t)file_offset;
+
+/// File handling logic
+@interface DSXRLibrary (FileManagement)
+
+- (BOOL)saveInstructions:(cs_insn *)instructions count:(NSUInteger)count;
+- (BOOL)parseData;
+
 @end
 
 NS_ASSUME_NONNULL_END

@@ -9,13 +9,10 @@
 #import "miscellaneous.h"
 
 
-
-
 BOOL quiet_mode = NO;
 NSMutableSet <NSString*> *pathsSet = nil;
 NSMutableSet <NSString*> *exploredSet = nil;
 NSMutableSet <NSString*> *rpathSet;
-DSXRExecutable *mainExecutable = nil;
 
 xref_options_t xref_options;
 

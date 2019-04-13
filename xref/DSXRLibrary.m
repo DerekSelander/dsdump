@@ -8,6 +8,7 @@
 
 #import "DSXRLibrary.h"
 #import "miscellaneous.h"
+#import "DSXRLibrary.h"
 #import "dyld_cache_format.h"
 #import "capstone/capstone.h"
 
@@ -19,9 +20,10 @@
 @end
 
 
+extern DSXRLibrary *mainExecutable;
+
 @implementation DSXRLibrary
 
-- (void)doShit { atoi("yo"); printf("dyayyyyyy broooooo\n"); }
 
 - (instancetype)initWithPath:(NSString*)path
 {
@@ -144,7 +146,7 @@
                         struct section_64 sec = sections[j];
                         
                         if ( strcmp(sec.segname, "__TEXT") == 0 && strcmp(sec.sectname, "__text") == 0) {
-                            self.code_section = &sections[j]; //calloc(1, sizeof(struct section_64));
+                            self.__text_section = &sections[j]; //calloc(1, sizeof(struct section_64));
                             
                             
                         }  else if ( strcmp(sec.segname, "__TEXT") == 0 && strcmp(sec.sectname, "__stubs") == 0) {
@@ -220,9 +222,17 @@
 //
 //        _maxlibNameLength =  MAX((int)self.depdencies[i].length, _maxlibNameLength);
 //    }
+    if (!self.symtab) {
+        printf("Warning: no symbol table\n");
+        return nil;
+    }
     
     return self;
 }
+
+/********************************************************************************
+ // Dump symbols
+********************************************************************************/
 
 - (void)dumpSymbols {
     for (int i = 0; i < self.symtab->nsyms; i++) {
@@ -254,32 +264,6 @@
     }
 }
 
-- (void)printSymbol:(struct nlist_64 *)sym {
-    printf("0x%011llx ", sym->n_value);
-    
-    if (xref_options.verbose) {
-        printf("%02x %02x %04x ", sym->n_type, sym->n_sect, sym->n_desc);
-    }
-    
-    char * chr = &self.str_symbols[sym->n_un.n_strx];
-    int libIndex = GET_LIBRARY_ORDINAL(sym->n_desc);
-    
-//    int len = 0;
-    if (sym->n_type & N_SECT && sym->n_sect) {
-        struct section_64 * sec = ( struct section_64 * )self.section_cmds[sym->n_sect].longValue;
-        printf("%s%s.%s%s ", dcolor(DSCOLOR_GRAY), sec->segname, sec->sectname, colorEnd());
-//        len = (int)strlen(sec->segname) + (int)strlen(sec->sectname);
-        
-    }
-    else if (libIndex > 0 && (sym->n_type & N_TYPE) == N_UNDF) {
-        const char *libName = [self.depdencies[libIndex] UTF8String];
-        printf("%s%s%s: ", dcolor(DSCOLOR_YELLOW), libName, colorEnd());
-//        len = (int)strlen(libName);
-        
-    }
-//    printf("%*s%s%s%s: \n", (_maxlibNameLength - len), "", dcolor(DSCOLOR_CYAN), chr, colorEnd());
-        printf("%s%s%s \n", dcolor(DSCOLOR_CYAN), chr, colorEnd());
-}
 
 - (void)dumpExternalSymbols {
     uintptr_t base = self.lazy_ptr_section->addr;
@@ -337,7 +321,7 @@
         return [self.path stringByReplacingOccurrencesOfString:@"@rpath" withString:[mainExecutable.path stringByDeletingLastPathComponent]];
         
         // Still can't find it... try simulator then try dyld shared cache
-    } else if (YES || [self isSimulatorLibrary] || [mainExecutable isSimulatorLibrary]) {
+    } else if (YES ) {//|| [self isSimulatorLibrary] || [mainExecutable isSimulatorLibrary]) {
         _realizedPath = [[self simulatorPath] stringByAppendingPathComponent:self.path];
         return _realizedPath;
     }
@@ -345,14 +329,35 @@
     return self.path;
 }
 
-- (BOOL)isSimulatorLibrary {
-    if (!self.build_cmd) { return NO; }
-    uint32_t platform = self.build_cmd->platform;
-    if (platform == PLATFORM_IOSSIMULATOR || platform == PLATFORM_TVOSSIMULATOR || platform == PLATFORM_WATCHOSSIMULATOR) {
-        return YES;
+- (void)printSymbol:(struct nlist_64 *)sym {
+    printf("0x%011llx ", sym->n_value);
+    
+    if (xref_options.verbose) {
+        printf("%02x %02x %04x ", sym->n_type, sym->n_sect, sym->n_desc);
     }
-    return NO;
+    
+    char * chr = &self.str_symbols[sym->n_un.n_strx];
+    int libIndex = GET_LIBRARY_ORDINAL(sym->n_desc);
+    
+    
+    if (sym->n_type & N_SECT && sym->n_sect) {
+        struct section_64 * sec = ( struct section_64 * )self.section_cmds[sym->n_sect].longValue;
+        printf("%s%s.%s%s ", dcolor(DSCOLOR_GRAY), sec->segname, sec->sectname, colorEnd());
+    } else if (libIndex > 0 && (sym->n_type & N_TYPE) == N_UNDF) {
+        const char *libName = [self.depdencies[libIndex] UTF8String];
+        printf("%s%s%s: ", dcolor(DSCOLOR_YELLOW), libName, colorEnd());
+    }
+    printf("%s%s%s \n", dcolor(DSCOLOR_CYAN), chr, colorEnd());
 }
+
+//- (BOOL)isSimulatorLibrary {
+//    if (!self.build_cmd) { return NO; }
+//    uint32_t platform = self.build_cmd->platform;
+//    if (platform == PLATFORM_IOSSIMULATOR || platform == PLATFORM_TVOSSIMULATOR || platform == PLATFORM_WATCHOSSIMULATOR) {
+//        return YES;
+//    }
+//    return NO;
+//}
 
 - (NSString *)simulatorPath {
     NSString *cachePath;
@@ -406,46 +411,179 @@
     return nil;
 }
 
-- (void)findAddressInCode:(uintptr_t)address {
-    if (self.header.h64.cputype == CPU_TYPE_ARM64) {
-        [self findAddressInCode_ARM64:address];
-    } else if(self.header.h64.cputype == CPU_TYPE_X86_64) {
-        [self findAddressInCode_x86:address];
-    } else {
-        perror("not implemented\n");
+- (NSArray *)searchNonTextAddresses:(uintptr_t)address {
+    NSMutableArray *foundAddresses = [NSMutableArray array];
+    
+    int fd = open(self.realizedPath.UTF8String, O_RDONLY);
+    
+    for (int i = 1; i < self.section_cmds.count; i++) {
+        
+        struct section_64 *section = (struct section_64 *)self.section_cmds[i].longValue;
+        if (!section->offset) { continue; }
+        if (section->flags & S_LITERAL_POINTERS || section->flags == S_REGULAR) {
+            
+            uintptr_t *base = calloc(1, section->size);
+            size_t count = (uintptr_t)section->size / sizeof(uintptr_t);
+            pread(fd, base, section->size, section->offset + self.file_offset);
+            for (int z = 0; z < count; z++) {
+                if (address == base[z]) {
+                    [foundAddresses addObject:@((z * sizeof(uintptr_t)) + section->addr)];
+                }
+            }
+            free(base);
+            
+        }
     }
+    close(fd);
+    return foundAddresses;
+}
+
+- (void)dumpReferencesForAddress:(uintptr_t)address {
+    NSArray <NSNumber *>*foundAddresses = nil;
+    if (self.header.h64.cputype == CPU_TYPE_ARM64) {
+        foundAddresses = [self findAddressInCode_ARM64:address];
+    } else {
+        foundAddresses = [self findAddressInCode_x86:address];
+    }
+    
+    if (xref_options.all_sections) {
+        foundAddresses = [foundAddresses arrayByAddingObjectsFromArray:[self searchNonTextAddresses:address]];
+    }
+    
+    if ([foundAddresses count] == 0) {
+        printf("Couldn't find any references to \"0x%011lx\"\n", address);
+    } else {
+        [self printFunctionsContainingAddresses:foundAddresses];
+    }
+}
+
+
+- (void)dumpReferencesForFileOffset:(uintptr_t)file_offset {
+    uintptr_t resolvedAddress = 0;
+    for (NSNumber *s in self.segment_cmds) {
+        if ([s isEqual:[NSNull null]]) { continue; }
+        struct segment_command_64 *seg = (struct segment_command_64 *)s.longValue;
+        uintptr_t start = seg->fileoff;
+        uintptr_t stop = seg->filesize + start;
+        
+        if (file_offset >= start && file_offset <= stop) {
+            
+            struct section_64 *cur = (struct section_64 *)(s.longValue + sizeof(struct segment_command_64));
+            for (int i = 0; i < seg->nsects; i++) {
+                struct section_64 sec = cur[i];
+                
+                uintptr_t sec_start = sec.offset;
+                uintptr_t sec_stop = sec.size + sec_start;
+                
+                if (file_offset >= sec_start && file_offset < sec_stop) {
+                    resolvedAddress = seg->vmaddr + file_offset;
+                    printf("Found file offset 0x%0lx in %s0x%011lx%s in %s%s,%s%s\n", file_offset,  dcolor(DSCOLOR_CYAN), resolvedAddress, colorEnd(), dcolor(DSCOLOR_YELLOW), sec.segname, sec.sectname, colorEnd());
+                    break;
+                }
+            }
+        }
+    }
+    
+    NSArray <NSNumber*> *foundAddresses = nil;
+    
+    if (!resolvedAddress) {
+        printf("Couldn't find address 0x%lx\n", resolvedAddress);
+    } else if (self.header.h64.cputype == CPU_TYPE_ARM64) {
+        foundAddresses = [self findAddressInCode_ARM64:resolvedAddress];
+    } else if (self.header.h64.cputype == CPU_TYPE_X86_64) {
+        foundAddresses = [self findAddressInCode_x86:resolvedAddress];
+    } else {
+        printf("cputype 0x%x not supported... womp womp\n", self.header.h64.cputype);
+        return;
+    }
+    
+    
+    if (xref_options.all_sections) {
+        foundAddresses = [foundAddresses arrayByAddingObjectsFromArray:[self searchNonTextAddresses:resolvedAddress]];
+    }
+    
+    if ([foundAddresses count] == 0) {
+        printf("Couldn't find any references to \"0x%011lx\"\n", resolvedAddress);
+    } else {
+        [self printFunctionsContainingAddresses:foundAddresses];
+    }
+    //    if (!resolvedAddress) { printf("Couldn't resolve offset %d\n", file_offset); return ;}
+    
     
 }
 
-- (void)findAddressInCode_x86:(uintptr_t)address {
-    if (!self.code_section) { return; }
-    
-    
-    int fd = open([self.realizedPath UTF8String], O_RDONLY);
-    cs_arch arch = CS_ARCH_X86;
-    cs_mode mode = CS_MODE_64;
-    csh handle = 0;
-    int err = cs_open(arch, mode, &handle);
-    if (err != CS_ERR_OK) {
-        assert(NO);
+- (void)dumpReferencesForSymbol:(NSString *)symbol {
+    const char *search_symbol = [symbol UTF8String];
+    struct nlist_64 *foundSymbol = NULL;
+    for (int i = 0; i < self.symtab->nsyms; i++) {
+        char * symbol_name = &self.str_symbols[self.symbols[i].n_un.n_strx];
+        if (strcmp(symbol_name, search_symbol) == 0 || strcmp(&symbol_name[1], search_symbol) == 0) {
+            foundSymbol = &self.symbols[i];
+            break;
+        }
     }
     
-    //    struct platform platforms;
-    cs_option(handle, CS_OPT_DETAIL, CS_OPT_ON);
-    cs_option(handle, CS_OPT_SKIPDATA, CS_OPT_ON);
-    void *buffer = calloc(self.code_section->size, sizeof(char));
-    pread(fd, buffer, self.code_section->size, self.code_section->offset + self.file_offset);
     
+    if (!foundSymbol) {
+        printf("Couldn't find symbol \"%s%s%s\" in symbol table\n", dcolor(DSCOLOR_RED), search_symbol, colorEnd());
+        return;
+    }
+    
+    printf("Searching for: ");
+    [self printSymbol:foundSymbol];
+    
+    // It's in the symbol table, so now see what exactly it is
+    uintptr_t resolvedAddress = 0;
+    if ((foundSymbol->n_type & N_TYPE) == N_SECT) {
+        resolvedAddress = foundSymbol->n_value;
+    } else {
+        resolvedAddress = [self externalSymbolStubAddress:symbol];
+    }
+    
+    if (resolvedAddress == 0) {
+        printf("Couldn't find symbol \"%s%s%s\" in code...\n", dcolor(DSCOLOR_RED), search_symbol, colorEnd());
+        return;
+    }
+    
+    // Is the symbol implemented in this module or elsewhere
+    BOOL isInternal = ((foundSymbol->n_type & N_TYPE) == N_SECT);
+    NSArray *foundAddresses = nil;
+    if (self.header.h64.cputype == CPU_TYPE_ARM64) {
+        uintptr_t resolvedStub = isInternal ? resolvedAddress : [self findStub_ARM64:resolvedAddress];
+        if (!resolvedStub) {
+            printf("Couldn't find symbol \"%s%s%s\" in code...\n", dcolor(DSCOLOR_RED), search_symbol, colorEnd());
+            return;
+        }
+        
+        foundAddresses = [self findAddressInCode_ARM64:resolvedStub];
+    } else if (self.header.h64.cputype == CPU_TYPE_X86_64) {
+        
+        uintptr_t resolvedStub = isInternal ? resolvedAddress : [self findStub_x86_64:resolvedAddress];
+        foundAddresses = [self findAddressInCode_x86:resolvedStub];
+    } else {
+        printf("cputype 0x%x not supported... womp womp\n", self.header.h64.cputype);
+        return;
+    }
+    if ([foundAddresses count] == 0) {
+        printf("Couldn't find any references to \"%s\"\n", search_symbol);
+    } else {
+        [self printFunctionsContainingAddresses:foundAddresses];
+    }
+}
+
+
+/********************************************************************************
+//  Find internal methods
+********************************************************************************/
+
+- (NSArray <NSNumber*> *)findAddressInCode_x86:(uintptr_t)address {
     NSMutableArray <NSNumber*>*foundAddresses = [NSMutableArray array];
-    cs_insn *instructions = NULL;
+    if (!self.instructions) { [mainExecutable parseData]; }
     
-    //    size_t code_size = self.code_section->size;
-    //    uint64_t out_address = self.code_section->addr;
-    
-    size_t count = cs_disasm(handle, buffer, self.                                                                              code_section->size, self.code_section->addr, 0, &instructions);
+    size_t count = self.instructions_count;
     
     for (int i = 0; i < count; i++) {
-        cs_insn insn =  instructions[i];
+        cs_insn insn =  _instructions[i];
         if (!insn.detail) { continue; }
         cs_x86_op *ops = insn.detail->x86.operands;
         
@@ -461,65 +599,29 @@
         }
     }
     
-    
-    
-    if (foundAddresses.count == 0) {
-        printf("Couldn't find any references\n");
-    } else {
-        [self printFunctionsContainingAddresses:foundAddresses];
-    }
-    
-    free(buffer);
-    close(fd);
+    return foundAddresses;
 }
 
-- (void)findAddressInCode_ARM64:(uintptr_t)address {
-    if (!self.code_section) { return; }
-    
-    
-    int fd = open([self.realizedPath UTF8String], O_RDONLY);
-    
-    csh handle = 0;
-    int err = cs_open(CS_ARCH_ARM64, CS_MODE_ARM, &handle);
-    if (err != CS_ERR_OK) {
-        assert(NO);
-    }
-    
-    //    struct platform platforms;
-    cs_option(handle, CS_OPT_DETAIL, CS_OPT_ON);
-    cs_option(handle, CS_OPT_SKIPDATA, CS_OPT_ON);
-    void *buffer = calloc(self.code_section->size, sizeof(char));
-    pread(fd, buffer, self.code_section->size, self.code_section->offset + self.file_offset);
-    
-    NSMutableArray <NSNumber*>*foundAddresses = [NSMutableArray array];
-    cs_insn *instructions = NULL;
-    
-    //    size_t code_size = self.code_section->size;
-    //    uint64_t out_address = self.code_section->addr;
-    
-    size_t count = cs_disasm(handle, buffer, self.code_section->size, self.code_section->addr, 0, &instructions);
-    if (count == 0) {
-        printf("error!! %d\n", cs_errno(handle));
-    }
+- (NSArray <NSNumber *>*)findAddressInCode_ARM64:(uintptr_t)address {
+    if (!self.instructions) { [mainExecutable parseData]; }
+    NSMutableArray <NSNumber*> *foundAddresses = [NSMutableArray array];
+    size_t count = self.instructions_count;
     
     for (int i = 0; i < count; i++) {
-        cs_insn insn =  instructions[i];
+        cs_insn insn =  _instructions[i];
         if (!insn.detail) { continue; }
         cs_insn *insn_next = NULL;
         if (i < count - 1) {
-            insn_next = &instructions[i + 1];
+            insn_next = &_instructions[i + 1];
         }
         cs_arm64_op *ops = insn.detail->arm64.operands;
 
-        
         // Found an ADRP, ADD combo..., let's make sure it's the same affected register
         if (insn.id == ARM64_INS_ADRP && insn_next && insn_next->id == ARM64_INS_ADD) {
             assert(insn.detail->arm64.op_count == 2);
             
-            
             cs_arm64_op first_op = ops[0];
             cs_arm64_op second_op = ops[1];
-            
             
             arm64_reg reg = first_op.reg;
             uint64_t imm = second_op.imm;
@@ -545,117 +647,9 @@
         }
     }
     
-//    for (int i = )
-    
-    
-    if (foundAddresses.count == 0) {
-        printf("Couldn't find any references\n");
-    } else {
-        [self printFunctionsContainingAddresses:foundAddresses];
-    }
-    
-    
-    free(buffer);
-    close(fd);
+    return foundAddresses;
 }
 
-- (void)findOffsetsInCode:(uintptr_t)file_offset {
-    uintptr_t resolvedAddress = 0;
-    for (NSNumber *s in self.segment_cmds) {
-        if ([s isEqual:[NSNull null]]) { continue; }
-        struct segment_command_64 *seg = (struct segment_command_64 *)s.longValue;
-        uintptr_t start = seg->fileoff;
-        uintptr_t stop = seg->filesize + start;
-  
-        if (file_offset >= start && file_offset <= stop) {
-            
-            struct section_64 *cur = (struct section_64 *)(s.longValue + sizeof(struct segment_command_64));
-            for (int i = 0; i < seg->nsects; i++) {
-                struct section_64 sec = cur[i];
-                
-                uintptr_t sec_start = sec.offset;
-                uintptr_t sec_stop = sec.size + sec_start;
-                
-                if (file_offset >= sec_start && file_offset < sec_stop) {
-                    resolvedAddress = seg->vmaddr + file_offset;
-                    printf("Found file offset 0x%0lx in 0x%011lx in %s,%s\n", file_offset, resolvedAddress, sec.segname, sec.sectname);
-                    break;
-                }
-            }
-        }
-    }
-    
-    if (!resolvedAddress) {
-        printf("Couldn't find address 0x%lx\n", resolvedAddress);
-    } else if (self.header.h64.cputype == CPU_TYPE_ARM64) {
-        [self findAddressInCode_ARM64:resolvedAddress];
-    } else if (self.header.h64.cputype == CPU_TYPE_X86_64) {
-        [self findAddressInCode_x86:resolvedAddress];
-    } else {
-        printf("cputype 0x%x not supported... womp womp\n", self.header.h64.cputype);
-        return;
-    }
-    
-//    if (!resolvedAddress) { printf("Couldn't resolve offset %d\n", file_offset); return ;}
-    
-    
-}
-
-- (void)findAddressesForSymbolInCode:(NSString *)symbol {
-    
-    const char *search_symbol = [symbol UTF8String];
-    struct nlist_64 *foundSymbol = NULL;
-    for (int i = 0; i < self.symtab->nsyms; i++) {
-        char * symbol_name = &self.str_symbols[self.symbols[i].n_un.n_strx];
-        if (strcmp(symbol_name, search_symbol) == 0 || strcmp(&symbol_name[1], search_symbol) == 0) {
-            foundSymbol = &self.symbols[i];
-            break;
-        }
-    }
-    
-    
-    if (!foundSymbol) {
-        printf("Couldn't find symbol \"%s%s%s\" in symbol table\n", dcolor(DSCOLOR_RED), search_symbol, colorEnd());
-        return;
-    }
-    
-    printf("Searching for: ");
-    [self printSymbol:foundSymbol];
-    
-    // It's in the symbol table, so now see what exactly it is
-    uintptr_t resolvedAddress = 0;
-    if ((foundSymbol->n_type & N_TYPE) == NO_SECT) {
-        resolvedAddress = [self externalSymbolStubAddress:symbol];
-    } else {
-        resolvedAddress = foundSymbol->n_value;
-    }
-    
-    if (resolvedAddress == 0) {
-        printf("Couldn't find symbol \"%s%s%s\" in code...\n", dcolor(DSCOLOR_RED), search_symbol, colorEnd());
-        return;
-    }
-    
-    
-    
-    BOOL isInternal = !!((foundSymbol->n_type & N_TYPE) & N_SECT);
-    if (self.header.h64.cputype == CPU_TYPE_ARM64) {
-        uintptr_t resolvedStub = isInternal ? resolvedAddress : [self findStub_ARM64:resolvedAddress];
-        if (!resolvedStub) {
-            printf("Couldn't find symbol \"%s%s%s\" in code...\n", dcolor(DSCOLOR_RED), search_symbol, colorEnd());
-            return;
-            
-        }
-        
-        [self findAddressInCode_ARM64:resolvedStub];
-    } else if (self.header.h64.cputype == CPU_TYPE_X86_64) {
-        
-        uintptr_t resolvedStub = isInternal ? resolvedAddress : [self findStub_x86_64:resolvedAddress];
-        [self findAddressInCode_x86:resolvedStub];
-    } else {
-        printf("cputype 0x%x not supported... womp womp\n", self.header.h64.cputype);
-        return;
-    }
-}
 
 - (uintptr_t)findStub_x86_64:(uintptr_t)stubAddress {
     
@@ -675,9 +669,6 @@
     cs_option(handle, CS_OPT_DETAIL, CS_OPT_ON);
     cs_option(handle, CS_OPT_SKIPDATA, CS_OPT_ON);
     
-    //    size_t code_size = self.code_section->size;
-    //    uint64_t out_address = self.code_section->addr;
-    
     size_t count = cs_disasm(handle, buf, self.stubs_section->size, self.stubs_section->addr, 0, &instructions);
     
     if (count == 0) {
@@ -688,25 +679,15 @@
         cs_insn insn =  instructions[i];
         if (!insn.detail || insn.id  != X86_INS_JMP || insn.detail->x86.operands[0].type != X86_OP_MEM) { continue; }
         
-        
-//         insn.detail->x86.operands[0].imm
         if (insn.detail->x86.operands[0].mem.disp + insn.address + insn.size == stubAddress) {
-            //            printf("omg found it\n");
             return insn.address;
         }
         
         
-        //        printf("%d  %p, %s %s\n", insn.size, insn.address, insn.mnemonic, insn.op_str);
         
     }
-    
-    
-    //    size_t code_size = self.code_section->size;
-    //    uint64_t out_address = self.code_section->addr;
-    
-    //    size_t count = cs_disasm(handle, buffer, self.code_section->size, self.code_section->addr, 0, &instructions);
-    
-    
+
+
     close(fd);
     return 0;
     
@@ -780,7 +761,7 @@
             uintptr_t start =  self.function_starts[j].longValue;
             uintptr_t stop =  j >= func_count - 1 ? UINTPTR_MAX :  self.function_starts[j + 1].longValue;
             
-            if (start <= cur && cur <= stop) {
+            if (start <= cur && cur <= stop && stop != -1) {
                 BOOL found_symbol_name = NO;
                 printf(" 0x%011lx + %-5lu (0x%011lx)", start, cur - start, cur);
                 for (int z = self.dysymtab->ilocalsym; z < self.dysymtab->nlocalsym; z++) {
@@ -802,34 +783,30 @@
             
         }
         
+        if (xref_options.all_sections) {
+            
+            
+            for (int i = 1; i < self.section_cmds.count; i++) {
+                struct section_64 *section = (struct section_64 *)self.section_cmds[i].longValue;
+                
+                if (strcmp(section->sectname, "__text") != 0 && section->addr <= cur && cur < (section->addr + section->size)) {
+                    printf("%s%s,%s%s %s%p%s\n", dcolor(DSCOLOR_YELLOW), section->segname, section->sectname, colorEnd(),  dcolor(DSCOLOR_CYAN), (void*)cur, colorEnd());
+                }
+            }
+            
+            
+        }
+        
     }
 }
 
-- (NSString *)parseInfoFromSharedCachee {
-    
-    
-    return @"not implementd";
-}
 
-- (NSString *)description {
-    return [NSString stringWithFormat:@"(%p) %@", self, self.realizedPath];
-}
 
-- (NSUInteger)hash {
-    return [self.path hash];
-}
 
 - (uintptr_t)externalSymbolStubAddress:(NSString *)symbol {
-//    uintptr_t base = self.stubs_section->addr;
-//
-//
-////    size_t size = 1 << self.stubs_section->align;
-//    size_t size = 6; // 1 << (self.stubs_section->align - 1);
-
     
     const char *searched_symbol = [symbol UTF8String];
-    
-//    self.lazy_ptr_section->reserved1;
+
     size_t count  = (self.lazy_ptr_section->size / (1 << self.lazy_ptr_section->align));
     
     int start = self.lazy_ptr_section->reserved1;
@@ -841,19 +818,13 @@
         
         struct nlist_64 sym = self.symbols[offset];
         char * chr = &self.str_symbols[sym.n_un.n_strx];
-        
-        
 
         if (strcmp(chr, searched_symbol) == 0 || strcmp(&chr[1], searched_symbol) == 0 ) {
             uintptr_t buf_stub_helper;
             int fd = open(self.realizedPath.UTF8String, O_RDONLY);
             pread(fd, &buf_stub_helper, sizeof(uintptr_t), self.file_offset + self.lazy_ptr_section->offset + (8 * i));
             
-            
-            // search for references that point to buf_stub_helper in __TEXT.__stubs
-            
-            
-            
+    
             close(fd);
             return self.lazy_ptr_section->addr + (8 * i);
             return buf_stub_helper;
@@ -861,6 +832,19 @@
     }
     
     return 0;
+}
+
+
+/********************************************************************************
+// Helper debugging methods 
+********************************************************************************/
+
+- (NSString *)description {
+    return [NSString stringWithFormat:@"(%p) %@", self, self.realizedPath];
+}
+
+- (NSUInteger)hash {
+    return [self.path hash];
 }
 
 @end

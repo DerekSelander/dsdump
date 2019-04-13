@@ -6,8 +6,14 @@
 //  Copyright © 2019 Selander. All rights reserved.
 //
 
+
+#ifndef MISCELLANEOUS_H
+#define MISCELLANEOUS_H
+
 #import <Foundation/Foundation.h>
-#import "DSXRExecutable.h"
+//#import "DSXRExecutable.h"
+#import "capstone/capstone.h"
+
 
 /// Usage deets
 void print_usage(void);
@@ -15,8 +21,6 @@ void print_usage(void);
 extern NSMutableSet <NSString*> *pathsSet;
 extern NSMutableSet <NSString*> *exploredSet;
 extern NSMutableSet <NSString*> *rpathSet;
-
-extern DSXRExecutable *mainExecutable;
 
 
 
@@ -77,7 +81,7 @@ typedef struct {
     int color;
     int use_regex;
     int external;
-    int save_data;
+    int analyze;
     int all_sections;
     uintptr_t address;
     uintptr_t file_offset;
@@ -90,5 +94,15 @@ typedef struct {
 extern xref_options_t xref_options;
 
 
+typedef struct {
+    cs_insn ins;
+    cs_detail detail;
+} ds_ins;
+
+//#define 
+
 //uint64_t read_uleb128 (const uint8_t ** offset, const uint8_t * end);
 const uint8_t *r_uleb128_decode(uint8_t *data, int *datalen, uint64_t *v);
+
+
+#endif // MISCELLANEOUS_H

@@ -67,8 +67,16 @@
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = "-s _xpc_dictionary_get_bool /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/Library/CoreSimulator/Profiles/Runtimes/iOS.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore"
-            isEnabled = "YES">
+            argument = " /System/Library/Kernels/kernel -s csproc_hardened_runtime"
+            isEnabled = "NO">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "-A -s _fprintf  /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/Library/CoreSimulator/Profiles/Runtimes/iOS.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore"
+            isEnabled = "NO">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "/usr/libexec/sharingd   -s kSecAttrService"
+            isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
             argument = "/bin/ls"
@@ -87,7 +95,11 @@
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = "-s handle_args $(TARGET_BUILD_DIR)/xref"
+            argument = "-a 0x1003d2d60 $(TARGET_BUILD_DIR)/xref  -S"
+            isEnabled = "YES">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "/usr/bin/cd"
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
