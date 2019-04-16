@@ -53,10 +53,10 @@ extern DSXRLibrary *mainExecutable;
         uint32 magic = 0;
         
         if (pread(fd, &magic, 4, 0) != 4) { perror("File too small"); return nil; }
-        
     LOL:
+        
         if (magic == MH_MAGIC || magic == MH_MAGIC) {
-            
+            printf("da fuck %s, %s", [self.realizedPath UTF8String], [path UTF8String]);
             assert(0);
         } else if (magic == MH_MAGIC_64 || magic == MH_CIGAM_64) {
             pread(fd, &_header, sizeof(struct mach_header_64), _file_offset);
