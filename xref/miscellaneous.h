@@ -48,6 +48,7 @@ typedef NS_OPTIONS(NSUInteger, DSCOLOR) {
     DSCOLOR_RED,
     DSCOLOR_BLUE,
     DSCOLOR_GRAY,
+    DSCOLOR_GREEN,
     DSCOLOR_BOLD
 };
 char* dcolor(DSCOLOR c);
@@ -104,7 +105,7 @@ typedef struct {
 
 //uint64_t read_uleb128 (const uint8_t ** offset, const uint8_t * end);
 const uint8_t *r_uleb128_decode(uint8_t *data, int *datalen, uint64_t *v);
-
+const uintptr_t r_sleb128_decode(uint8_t *byte, uintptr_t* shift, uint64_t *v);
 
 //#ifdef DEBUG_VERBOSE
 #define DEBUG_PRINT(fmt, args...)    if (xref_options.debug) printf(fmt, ## args)

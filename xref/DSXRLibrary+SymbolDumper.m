@@ -159,7 +159,7 @@
         
         uintptr_t fileOff = [self loadAddressToFileOffset:sym->n_value + sizeof(void*)];
         uintptr_t buff;
-        pread(self.fd, &buff, 8, fileOff + self.file_offset);
+        pread(self.fd, &buff, sizeof(void*), fileOff + self.file_offset);
         
         // That buff is 0, then the class is defined elsewhere, use the opcode symbol bindings instead
         DSXRObjCClass *objcReference;
@@ -169,7 +169,7 @@
             objcReference = self.addressObjCDictionary[@(buff)];
         }
         
-        printf(": %s%s%s",dcolor(DSCOLOR_MAGENTA), [objcReference.shortName UTF8String], colorEnd());
+        printf(": %s%s%s",dcolor(DSCOLOR_GREEN), [objcReference.shortName UTF8String], colorEnd());
     }
     putchar('\n');
 }

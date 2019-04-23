@@ -25,7 +25,8 @@
     char *symbol = NULL;
     char type = 0;
     BOOL finished = NO;
-
+    
+    uint64_t addend = 0;
     uint8_t dylib_ord = 0;
     
     while (!finished && i < self.dyldInfo->bind_size) {
@@ -33,6 +34,7 @@
         uint8_t imm = BIND_IMMEDIATE_MASK & bind_buffer[i];
         
         DEBUG_PRINT("0x%04X ", i);
+        
         switch (opcode) {
             case BIND_OPCODE_SET_DYLIB_ORDINAL_IMM: { // If less than 4 bytes
                 dylib_ord = imm;
@@ -43,10 +45,11 @@
                 uint64_t v = 0;
                 r_uleb128_decode(&bind_buffer[++i], &datalen, &v);
                 i += datalen - 1;
-                DEBUG_PRINT("BIND_OPCODE_SET_DYLIB_ORDINAL_ULEB (%d)\n", imm);
+                DEBUG_PRINT("BIND_OPCODE_SET_DYLIB_ORDINAL_ULEB (0x%llx)\n", v);
                 break;
             } case BIND_OPCODE_SET_DYLIB_SPECIAL_IMM: {
                 DEBUG_PRINT("BIND_OPCODE_SET_DYLIB_SPECIAL_IMM (%d)\n", imm);
+                
                 assert(0);
                 break;
             } case BIND_OPCODE_SET_SYMBOL_TRAILING_FLAGS_IMM: {
@@ -61,14 +64,12 @@
                 DEBUG_PRINT("BIND_OPCODE_SET_TYPE_IMM (%d)\n", type);
                 break;
             } case BIND_OPCODE_SET_ADDEND_SLEB: {
-                int datalen = 0;
+                uintptr_t datalen = 0;
                 uint64_t v = 0;
-//                r_sleb128_decode(&bind_buffer[++i], &datalen, &v);
+                r_sleb128_decode(&bind_buffer[++i], &datalen, &v);
                 i += datalen - 1; // -1, cuz i++ later
-                
-                
-                DEBUG_PRINT("BIND_OPCODE_SET_ADDEND_SLEB\n");
-                assert(0);
+                addend = v;
+                DEBUG_PRINT("BIND_OPCODE_SET_ADDEND_SLEB (0x%llx)\n", v);
                 break;
             } case BIND_OPCODE_SET_SEGMENT_AND_OFFSET_ULEB: {
                 int datalen = 0;
@@ -94,7 +95,6 @@
                 pointer += sizeof(void *);
                 break;
             } case BIND_OPCODE_DO_BIND_ADD_ADDR_ULEB: {
-                
                 int datalen = 0;
                 uint64_t v = 0;
                 r_uleb128_decode(&bind_buffer[++i], &datalen, &v);
@@ -107,6 +107,7 @@
             } case BIND_OPCODE_DO_BIND_ADD_ADDR_IMM_SCALED: {
                 pointer += imm * sizeof(void *) + sizeof(void*);
                 DEBUG_PRINT("BIND_OPCODE_DO_BIND_ADD_ADDR_IMM_SCALED (0x%lx) (%p)\n", imm * sizeof(void*) + sizeof(void*), (void*)pointer);
+                [self addToDictionaries:pointer symbol:symbol];
                 break;
             } case BIND_OPCODE_DO_BIND_ULEB_TIMES_SKIPPING_ULEB: {
                 int datalen = 0;
@@ -120,16 +121,19 @@
                 DEBUG_PRINT("BIND_OPCODE_DO_BIND_ULEB_TIMES_SKIPPING_ULEB (%llu, 0x%08llx)\n", count, v);
                 for (int j = 0; j < count; j++) {
                     DEBUG_PRINT("\t(%p)\n", (void*)pointer);
+                    [self addToDictionaries:pointer symbol:symbol];
                     pointer += (skip + sizeof(void *)); // do bind, so sizeof(void*)
                 }
                 i += datalen - 1; // -1, cuz i++ later
                 
                 break;
             } case BIND_OPCODE_THREADED:
+                printf("BIND_OPCODE_THREADED Not implemented!\n");
                 assert(0);
                 break;
                 
             case BIND_SUBOPCODE_THREADED_APPLY:
+                printf("BIND_SUBOPCODE_THREADED_APPLY Not implemented!");
                 assert(0);
                 break;
             case BIND_OPCODE_DONE:
@@ -142,6 +146,7 @@
         }
 
         i++;
+        pointer += addend;
 
     }
 }
@@ -150,6 +155,11 @@
     
     NSString *s = [NSString stringWithUTF8String:symbol];
     NSNumber *a = @(address);
+    
+    if (self.addressObjCDictionary[a]) {
+        
+        dprintf(STDERR_FILENO, "overriding dict: old %s, %p, new; %s, %p\n", self.addressObjCDictionary[a].name.UTF8String, self.addressObjCDictionary[a].address.pointerValue, symbol, (void*)address);
+    }
     DSXRObjCClass * obj = [[DSXRObjCClass alloc] initWithAddress:a symbol:s];
     
     self.stringObjCDictionary[s] = obj;

@@ -52,6 +52,8 @@ char* dcolor(DSCOLOR c) {
     switch (c) {
         case DSCOLOR_CYAN:
             return "\e[36m";
+        case DSCOLOR_GREEN:
+            return "\e[92m";
         case DSCOLOR_YELLOW:
              return "\e[33m";
         case DSCOLOR_MAGENTA:
@@ -182,24 +184,27 @@ const uint8_t *r_uleb128_decode(uint8_t *data, int *datalen, uint64_t *v) {
 }
 
 
-static uintptr_t r_sleb128_decode(char *byte, uintptr_t* shift) {
+const uintptr_t r_sleb128_decode(uint8_t *byte, uintptr_t* datalen, uint64_t *v) {
     uintptr_t result = 0;
-    *shift = 0;
+    uintptr_t shift = 0;
+    
     size_t size = sizeof(signed int);
-    char *cur = byte;
+    uint8_t *cur = byte;
+    int l;
     do{
         
-        
-        result |= ((0x7f & *cur) << *shift);
-        *shift += 7;
+        l++;
+        result |= ((0x7f & *cur) << shift);
+        shift += 7;
     }while((*cur & 0x80) != 0);
     
     /* sign bit of byte is second high order bit (0x40) */
-    if ((*shift < size) && (*cur & 0x80)) {
+    if ((shift < size) && (*cur & 0x80)) {
         /* sign extend */
-        result |= (~0 << *shift);
+        result |= (~0 << shift);
     }
     
-    
+    if (v) {*v = result;}
+    if (datalen) {*datalen = l;}
     return result;
 }
