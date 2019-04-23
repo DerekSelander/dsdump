@@ -12,27 +12,7 @@
 @import MachO;
 @implementation DSXRLibrary (Opcode)
 
-//static uintptr_t get_sleb128(char *byte, uintptr_t* shift) {
-//    uintptr_t result = 0;
-//    *shift = 0;
-//    size_t size = sizeof(signed int);
-//    char *cur = byte;
-//    do{
-//  
-//        
-//        result |= ((0x7f & *cur) << *shift);
-//        *shift += 7;
-//    }while((*cur & 0x80) != 0);
-//    
-//    /* sign bit of byte is second high order bit (0x40) */
-//    if ((*shift < size) && (*cur & 0x80)) {
-//        /* sign extend */
-//        result |= (~0 << *shift);
-//    }
-//    
-//    
-//    return result;
-//}
+
 
 - (void)parseOpcodes:(int)fd {
     assert(self.dyldInfo);
@@ -51,18 +31,19 @@
     while (!finished && i < self.dyldInfo->bind_size) {
         uint8_t opcode = BIND_OPCODE_MASK & bind_buffer[i];
         uint8_t imm = BIND_IMMEDIATE_MASK & bind_buffer[i];
-        int initial = i;
+        
+        DEBUG_PRINT("0x%04X ", i);
         switch (opcode) {
             case BIND_OPCODE_SET_DYLIB_ORDINAL_IMM: { // If less than 4 bytes
                 dylib_ord = imm;
-                DEBUG_PRINT("0x%04x BIND_OPCODE_SET_DYLIB_ORDINAL_IMM (%d)\n", initial, imm);
+                DEBUG_PRINT("BIND_OPCODE_SET_DYLIB_ORDINAL_IMM (%d)\n", imm);
                 break;
             } case BIND_OPCODE_SET_DYLIB_ORDINAL_ULEB: { // If greater than 4 bytes
                 int datalen = 0;
                 uint64_t v = 0;
                 r_uleb128_decode(&bind_buffer[++i], &datalen, &v);
-                i += datalen;
-                DEBUG_PRINT("0x%04x BIND_OPCODE_SET_DYLIB_ORDINAL_ULEB (%d)\n", initial, imm);
+                i += datalen - 1;
+                DEBUG_PRINT("BIND_OPCODE_SET_DYLIB_ORDINAL_ULEB (%d)\n", imm);
                 break;
             } case BIND_OPCODE_SET_DYLIB_SPECIAL_IMM: {
                 DEBUG_PRINT("BIND_OPCODE_SET_DYLIB_SPECIAL_IMM (%d)\n", imm);
@@ -73,13 +54,20 @@
                 while(bind_buffer[i] != BIND_OPCODE_DONE) {
                     i++;
                 }
-                DEBUG_PRINT("0x%04x BIND_OPCODE_SET_DYLIB_ORDINAL_IMM (0x%02x, %s)\n", initial, imm, symbol);
+                DEBUG_PRINT("BIND_OPCODE_SET_SYMBOL_TRAILING_FLAGS_IMM (0x%02x, %s)\n", imm, symbol);
                 break;
             } case BIND_OPCODE_SET_TYPE_IMM: {
                 type = BIND_IMMEDIATE_MASK & bind_buffer[i];
-                DEBUG_PRINT("0x%04x BIND_OPCODE_SET_TYPE_IMM (%d)\n", initial, type);
+                DEBUG_PRINT("BIND_OPCODE_SET_TYPE_IMM (%d)\n", type);
                 break;
             } case BIND_OPCODE_SET_ADDEND_SLEB: {
+                int datalen = 0;
+                uint64_t v = 0;
+//                r_sleb128_decode(&bind_buffer[++i], &datalen, &v);
+                i += datalen - 1; // -1, cuz i++ later
+                
+                
+                DEBUG_PRINT("BIND_OPCODE_SET_ADDEND_SLEB\n");
                 assert(0);
                 break;
             } case BIND_OPCODE_SET_SEGMENT_AND_OFFSET_ULEB: {
@@ -90,7 +78,7 @@
 
                 struct segment_command_64 *seg = (struct segment_command_64 *)self.segmentCommandsArray[imm].longValue;
                 pointer = seg->vmaddr + v;
-                DEBUG_PRINT("0x%04x BIND_OPCODE_SET_SEGMENT_AND_OFFSET_ULEB (%d, 0x%08llx) (%p)\n", initial, imm, v, (void*)pointer);
+                DEBUG_PRINT("BIND_OPCODE_SET_SEGMENT_AND_OFFSET_ULEB (%d, 0x%08llx) (%p)\n", imm, v, (void*)pointer);
                 break;
             } case BIND_OPCODE_ADD_ADDR_ULEB: {
                 int datalen = 0;
@@ -98,12 +86,11 @@
                 r_uleb128_decode(&bind_buffer[++i], &datalen, &v);
                 i += datalen - 1; // -1, cuz i++ later
                 pointer += v;
-                DEBUG_PRINT("0x%04x BIND_OPCODE_ADD_ADDR_ULEB (0x%llx) (%p)\n", initial, v, (void*)(pointer));
+                DEBUG_PRINT("BIND_OPCODE_ADD_ADDR_ULEB (0x%llx) (%p)\n", v, (void*)(pointer));
                 break;
             } case BIND_OPCODE_DO_BIND: {
-                DEBUG_PRINT("0x%04x BIND_OPCODE_DO_BIND (%p)\n", initial, (void*)pointer);
+                DEBUG_PRINT("BIND_OPCODE_DO_BIND (%p)\n", (void*)pointer);
                 [self addToDictionaries:pointer symbol:symbol];
-                
                 pointer += sizeof(void *);
                 break;
             } case BIND_OPCODE_DO_BIND_ADD_ADDR_ULEB: {
@@ -111,14 +98,15 @@
                 int datalen = 0;
                 uint64_t v = 0;
                 r_uleb128_decode(&bind_buffer[++i], &datalen, &v);
-                DEBUG_PRINT("0x%04x BIND_OPCODE_DO_BIND_ADD_ADDR_ULEB (%08x) (%p)\n", initial, v, (void*)pointer);
+                DEBUG_PRINT("BIND_OPCODE_DO_BIND_ADD_ADDR_ULEB (%08llx) (%p)\n", v, (void*)pointer);
                 [self addToDictionaries:pointer symbol:symbol];
                 pointer += (v + sizeof(void *));
+                i += datalen - 1;
 
                 break;
             } case BIND_OPCODE_DO_BIND_ADD_ADDR_IMM_SCALED: {
                 pointer += imm * sizeof(void *) + sizeof(void*);
-                DEBUG_PRINT("0x%04x BIND_OPCODE_DO_BIND_ADD_ADDR_IMM_SCALED (0x%lx) (%p)\n", initial, imm * sizeof(void*) + sizeof(void*), (void*)pointer);
+                DEBUG_PRINT("BIND_OPCODE_DO_BIND_ADD_ADDR_IMM_SCALED (0x%lx) (%p)\n", imm * sizeof(void*) + sizeof(void*), (void*)pointer);
                 break;
             } case BIND_OPCODE_DO_BIND_ULEB_TIMES_SKIPPING_ULEB: {
                 int datalen = 0;
@@ -129,7 +117,7 @@
                 r_uleb128_decode(&bind_buffer[++i], &datalen, &v);
                 uint64_t skip = v;
                 
-                DEBUG_PRINT("0x%04x BIND_OPCODE_DO_BIND_ULEB_TIMES_SKIPPING_ULEB (%llu, 0x%08llx)\n", initial, count, v);
+                DEBUG_PRINT("BIND_OPCODE_DO_BIND_ULEB_TIMES_SKIPPING_ULEB (%llu, 0x%08llx)\n", count, v);
                 for (int j = 0; j < count; j++) {
                     DEBUG_PRINT("\t(%p)\n", (void*)pointer);
                     pointer += (skip + sizeof(void *)); // do bind, so sizeof(void*)
@@ -145,7 +133,7 @@
                 assert(0);
                 break;
             case BIND_OPCODE_DONE:
-                DEBUG_PRINT("0x%04x BIND_OPCODE_DONE\n", initial);
+                DEBUG_PRINT("BIND_OPCODE_DONE\n");
                 break;
            
             default:

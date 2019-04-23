@@ -180,3 +180,26 @@ const uint8_t *r_uleb128_decode(uint8_t *data, int *datalen, uint64_t *v) {
     if (datalen) { *datalen = (int)l; }
     return data;
 }
+
+
+static uintptr_t r_sleb128_decode(char *byte, uintptr_t* shift) {
+    uintptr_t result = 0;
+    *shift = 0;
+    size_t size = sizeof(signed int);
+    char *cur = byte;
+    do{
+        
+        
+        result |= ((0x7f & *cur) << *shift);
+        *shift += 7;
+    }while((*cur & 0x80) != 0);
+    
+    /* sign bit of byte is second high order bit (0x40) */
+    if ((*shift < size) && (*cur & 0x80)) {
+        /* sign extend */
+        result |= (~0 << *shift);
+    }
+    
+    
+    return result;
+}
