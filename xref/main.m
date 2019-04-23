@@ -75,7 +75,7 @@ static void handle_args(int argc, const char * argv[]) {
             {"symbol",  required_argument, 0,  0 },
             {"file_offset",  required_argument, 0,  0 },
             {"regex",   no_argument,       &xref_options.use_regex,  1},
-            {"verbose", no_argument,       &xref_options.verbose,  1 },
+            {"verbose", optional_argument,     &xref_options.verbose,  1 },
             {"analyze", no_argument,       &xref_options.analyze,  1 },
             {"address",  required_argument, 0, 'c'},
             {"color",    no_argument, &xref_options.color,  1 },
@@ -100,6 +100,8 @@ static void handle_args(int argc, const char * argv[]) {
                     xref_options.address = strtol(optarg, 0, 0);
                 } else if (strcmp(long_options[option_index].name, "file_offset") == 0) {
                     xref_options.file_offset = strtol(optarg, 0, 0);
+                } else if (strcmp(long_options[option_index].name, "verbose") == 0) {
+                    xref_options.verbose = (int)strtol(optarg, 0, 0);
                 }
 //                if (optarg)
 //                    printf(" with arg %s", optarg);

@@ -25,4 +25,8 @@
     return self.name.length > 14 ? [self.name substringFromIndex:14] : nil;
 }
 
+- (NSString *)description {
+    return [NSString stringWithFormat:@"%p %@: <%p>", self.address.pointerValue, self.shortName, self];
+}
+
 @end

@@ -35,10 +35,10 @@
 //}
 
 - (void)parseOpcodes:(int)fd {
-    assert(self.dyldinfo);
+    assert(self.dyldInfo);
     
-    uint8_t *bind_buffer = calloc(self.dyldinfo->bind_size, 1);
-    pread(fd, bind_buffer, self.dyldinfo->bind_size, self.dyldinfo->bind_off + self.file_offset);
+    uint8_t *bind_buffer = calloc(self.dyldInfo->bind_size, 1);
+    pread(fd, bind_buffer, self.dyldInfo->bind_size, self.dyldInfo->bind_off + self.file_offset);
     
     int i = 0;
     uint64_t pointer = 0;
@@ -48,7 +48,7 @@
 
     uint8_t dylib_ord = 0;
     
-    while (!finished && i < self.dyldinfo->bind_size) {
+    while (!finished && i < self.dyldInfo->bind_size) {
         uint8_t opcode = BIND_OPCODE_MASK & bind_buffer[i];
         uint8_t imm = BIND_IMMEDIATE_MASK & bind_buffer[i];
         int initial = i;
@@ -164,8 +164,8 @@
     NSNumber *a = @(address);
     DSXRObjCClass * obj = [[DSXRObjCClass alloc] initWithAddress:a symbol:s];
     
-    self.stringDictionary[s] = obj;
-    self.addressDictionary[a] = obj;
+    self.stringObjCDictionary[s] = obj;
+    self.addressObjCDictionary[a] = obj;
     
 }
 

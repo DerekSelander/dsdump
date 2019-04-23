@@ -28,23 +28,26 @@ typedef struct {
 } indirect_symbols_t;
 
 @interface DSXRLibrary : NSObject {
-//    ds_ins * _ins;
-//    size_t _ins_count;
     size_t _instructions_count;
-//    
+
 }
 
 /// Library dependencies
 @property (nonatomic, strong) NSMutableArray <NSString *>*depdencies;
 @property (nonatomic, copy) NSString *path;
 
+
+/// File descriptor
+@property (nonatomic, assign) int fd;
+
 @property (nonatomic, assign) cs_insn *instructions;
 @property (nonatomic, assign) size_t instructions_count;
 
 @property (nonatomic, assign) macho_generic_header header;
 
-@property (nonatomic, strong) NSMutableDictionary <NSString *, DSXRObjCClass *>*stringDictionary;
-@property (nonatomic, strong) NSMutableDictionary <NSNumber *, DSXRObjCClass *>*addressDictionary;
+@property (nonatomic, strong) NSMutableDictionary <NSString *, DSXRObjCClass *>*stringObjCDictionary;
+@property (nonatomic, strong) NSMutableDictionary <NSNumber *, DSXRObjCClass *>*addressObjCDictionary;
+@property (nonatomic, strong) NSMutableDictionary <NSNumber *, NSNumber *>*addressSymbolDictionary;
 
 /// The initial MachO command to dictate the file, other ivars will reference offsets of this
 @property (nonatomic, assign) void *load_cmd_buffer;
@@ -54,6 +57,7 @@ typedef struct {
 @property (nonatomic, strong) NSMutableArray <NSNumber *>* sectionCommandsArray;
 @property (nonatomic, strong) NSMutableArray <NSNumber *>* segmentCommandsArray;
 @property (nonatomic, strong) NSMutableDictionary <NSString *, NSNumber *>* sectionCommandsDictionary;
+@property (nonatomic, strong) NSMutableDictionary <NSString *, NSNumber *>* segmentCommandsDictionary;
 
 @property (nonatomic, strong) NSMutableArray <NSNumber *>* function_starts;
 @property (nonatomic, assign) struct build_version_command *build_cmd;
@@ -75,18 +79,11 @@ typedef struct {
 /// __DATA.__la_symbol_ptr
 @property (nonatomic, assign) struct section_64 *lazy_ptr_section;
 
-@property (nonatomic, assign) struct dyld_info_command *dyldinfo;
+@property (nonatomic, assign) struct dyld_info_command *dyldInfo;
 
-/// __TEXT.__stubs
-@property (nonatomic, assign) struct section_64 *stubs_section;
 
-/// __TEXT.__stub_helper
-@property (nonatomic, assign) struct section_64 *stub_helper_section;
 
-/// __TEXT.__text
-//@property (nonatomic, assign) struct section_64 *__text_section;
-@property (nonatomic, assign) struct segment_command_64 *code_segment;
-//@property (nonatomic, assign) struct section_64 *sections;
+
 
 /// The indirect symbol table *int that points to actual symbols
 @property (nonatomic, assign) indirect_symbols_t indirect_symbols;
@@ -98,6 +95,8 @@ typedef struct {
 - (void)dumpReferencesForAddress:(uintptr_t)address;
 - (void)dumpReferencesForSymbol:(NSString *)symbol;
 - (void)dumpReferencesForFileOffset:(uintptr_t)file_offset;
+
+- (uintptr_t)loadAddressToFileOffset:(uintptr_t)loadAddress;
 @end
 
 

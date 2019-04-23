@@ -67,6 +67,10 @@
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
+            argument = "/tmp/a.out -vvvv"
+            isEnabled = "NO">
+         </CommandLineArgument>
+         <CommandLineArgument
             argument = " /System/Library/Kernels/kernel -s csproc_hardened_runtime"
             isEnabled = "NO">
          </CommandLineArgument>

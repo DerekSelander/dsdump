@@ -40,35 +40,36 @@ extern DSXRLibrary *mainExecutable;
         
         self.segmentCommandsArray = [NSMutableArray array];
         self.sectionCommandsDictionary = [NSMutableDictionary dictionary];
+        self.segmentCommandsDictionary = [NSMutableDictionary dictionary];
         
         self.function_starts = [NSMutableArray array];
         self.file_offset = 0;
         
-        self.stringDictionary = [NSMutableDictionary dictionaryWithCapacity:200];
-        self.addressDictionary = [NSMutableDictionary dictionaryWithCapacity:200];
-        
+        self.stringObjCDictionary = [NSMutableDictionary dictionaryWithCapacity:200];
+        self.addressObjCDictionary = [NSMutableDictionary dictionaryWithCapacity:200];
+        self.addressSymbolDictionary = [NSMutableDictionary dictionaryWithCapacity:800];
         
         if (![[NSFileManager defaultManager] fileExistsAtPath:self.resolvedPath]) {
             printf("No file at \"%s\"\n", [self.resolvedPath UTF8String]);
             return nil;
         }
         
-        int fd = open([self.resolvedPath UTF8String], O_RDONLY);
-        if (fd == -1) { perror("Couldn't open file"); return nil; }
+        self.fd = open([self.resolvedPath UTF8String], O_RDONLY);
+        if (_fd == -1) { perror("Couldn't open file"); return nil; }
         
         uint32 magic = 0;
         
-        if (pread(fd, &magic, 4, 0) != 4) { perror("File too small"); return nil; }
+        if (pread(_fd, &magic, 4, 0) != 4) { perror("File too small"); return nil; }
     LOL:
         
         if (magic == MH_MAGIC || magic == MH_MAGIC) {
             printf("da fuck %s, %s", [self.realizedPath UTF8String], [path UTF8String]);
             assert(0);
         } else if (magic == MH_MAGIC_64 || magic == MH_CIGAM_64) {
-            pread(fd, &_header, sizeof(struct mach_header_64), _file_offset);
+            pread(_fd, &_header, sizeof(struct mach_header_64), _file_offset);
             
             self.load_cmd_buffer = calloc(1, _header.h64.sizeofcmds);
-            pread(fd, _load_cmd_buffer, _header.h64.sizeofcmds, sizeof(struct mach_header_64) + _file_offset);
+            pread(_fd, _load_cmd_buffer, _header.h64.sizeofcmds, sizeof(struct mach_header_64) + _file_offset);
             
             uintptr_t cur = (uintptr_t)_load_cmd_buffer;
             
@@ -96,10 +97,13 @@ extern DSXRLibrary *mainExecutable;
                     
                     self.function_starts_cmd = (struct linkedit_data_command *)cur;
                     void * functions = calloc(self.function_starts_cmd->datasize, 1);
-                    pread(fd, functions, self.function_starts_cmd->datasize, _file_offset + self.function_starts_cmd->dataoff);
+                    pread(_fd, functions, self.function_starts_cmd->datasize, _file_offset + self.function_starts_cmd->dataoff);
                     const uint8_t* infoStart = (uint8_t*)functions;
                     const uint8_t* infoEnd = functions + self.function_starts_cmd->dataoff;
-                    uint64_t address = self.code_segment->vmaddr;
+                    struct segment_command_64* code_segment = [self.segmentCommandsDictionary[@"__TEXT"] pointerValue];
+                    assert(code_segment);
+                    
+                    uint64_t address = code_segment->vmaddr;
                     for(const uint8_t* p = infoStart; (*p != 0) && (p < infoEnd); ) {
                         uint64_t delta = 0;
                         uint32_t shift = 0;
@@ -124,15 +128,15 @@ extern DSXRLibrary *mainExecutable;
                     memcpy(self->_symtab, ld_cmd, sizeof(struct symtab_command));
                     
                     self.symbols = calloc(self.symtab->nsyms, sizeof(struct nlist_64));
-                    pread(fd, self.symbols, self.symtab->nsyms * sizeof(struct nlist_64), self.symtab->symoff + _file_offset);
+                    pread(_fd, self.symbols, self.symtab->nsyms * sizeof(struct nlist_64), self.symtab->symoff + _file_offset);
                     
                     self.str_symbols = calloc(self.symtab->strsize, sizeof(char));
-                    pread(fd, self.str_symbols, self.symtab->strsize, self.symtab->stroff + _file_offset);
+                    pread(_fd, self.str_symbols, self.symtab->strsize, self.symtab->stroff + _file_offset);
                     
                 } else if (ld_cmd->cmd == LC_DYLD_INFO || ld_cmd->cmd == LC_DYLD_INFO_ONLY) {
-                    self.dyldinfo = (struct dyld_info_command *)ld_cmd;
+                    self.dyldInfo = (struct dyld_info_command *)ld_cmd;
                     if (xref_options.objc_only) {
-                        [self parseOpcodes:fd];
+                        [self parseOpcodes:_fd];
                     }
 
                     
@@ -145,9 +149,12 @@ extern DSXRLibrary *mainExecutable;
                     struct segment_command_64 * cmd = (struct segment_command_64 *)ld_cmd;
                     struct section_64 *sections = (struct section_64 *)(cur + sizeof(struct segment_command_64));
                     
-                    if (strcmp(cmd->segname, "__TEXT") == 0) {
-                        self.code_segment = cmd;
-                    }
+                    
+                    char seg_buf[17] = {};
+                    memcpy(seg_buf, cmd->segname, 16);
+                    NSString *segmentKey = [NSString stringWithUTF8String:seg_buf];
+                    self.segmentCommandsDictionary[segmentKey] = @((uintptr_t)cmd);
+                    
                     
                     for (int j = 0; j < cmd->nsects; j++) {
                         struct section_64 sec = sections[j];
@@ -163,14 +170,7 @@ extern DSXRLibrary *mainExecutable;
                         self.sectionCommandsDictionary[sectionKey] = @(sec_ptr);
                         [self.sectionCommandsArray addObject:@(sec_ptr)];
                         
-                         if ( strcmp(sec.segname, "__TEXT") == 0 && strcmp(sec.sectname, "__stubs") == 0) {
-                            
-                            self.stubs_section = &sections[j];
-                            
-                        }  else if ( strcmp(sec.segname, "__TEXT") == 0 && strcmp(sec.sectname, "__stub_helper") == 0) {
-                            self.stub_helper_section = &sections[j];
-                            
-                        } else if ( strcmp(sec.segname, "__DATA") == 0 && strcmp(sec.sectname, "__la_symbol_ptr") == 0) {
+                      if ( strcmp(sec.segname, "__DATA") == 0 && strcmp(sec.sectname, "__la_symbol_ptr") == 0) {
                             self.lazy_ptr_section = &sections[j]; //calloc(1, sizeof(struct section_64));
 
                         } else if ( strcmp(sec.segname, "__DATA") == 0 && strcmp(sec.sectname, "__cfstring") == 0) {
@@ -205,17 +205,17 @@ extern DSXRLibrary *mainExecutable;
         } else if (magic == FAT_MAGIC || magic == FAT_CIGAM) {
             
             struct fat_header fatHeader ;
-            pread(fd, &fatHeader, sizeof(struct fat_header), 0);
+            pread(_fd, &fatHeader, sizeof(struct fat_header), 0);
             uint32_t numArchs = htonl(fatHeader.nfat_arch);
             
             
             struct fat_arch *arches = calloc(numArchs, sizeof(struct fat_arch));
-            pread(fd, arches, sizeof(struct fat_arch) * numArchs, sizeof(struct fat_header));
+            pread(_fd, arches, sizeof(struct fat_arch) * numArchs, sizeof(struct fat_header));
             
             for (int j = 0; j < numArchs; j++) {
                 if (arches[j].cputype == 0x07000001) {
                     _file_offset = htonl(arches[j].offset);
-                    pread(fd, &magic, 4, _file_offset);
+                    pread(_fd, &magic, 4, _file_offset);
                     free(arches);
                     goto LOL;
                 }
@@ -227,7 +227,7 @@ extern DSXRLibrary *mainExecutable;
             
         } else if (magic == FAT_MAGIC_64 || magic == FAT_CIGAM_64) {
             struct fat_arch_64 fatHeader;
-            pread(fd, &fatHeader, sizeof(struct fat_header), 0);
+            pread(_fd, &fatHeader, sizeof(struct fat_header), 0);
             assert(0);
         }
         
@@ -235,9 +235,9 @@ extern DSXRLibrary *mainExecutable;
             uintptr_t syms = (_file_offset + self.dysymtab->indirectsymoff);
             _indirect_symbols.count = self.dysymtab->nindirectsyms;
             _indirect_symbols.indirect_sym = calloc(self.indirect_symbols.count, sizeof(uint32_t));
-             pread(fd, _indirect_symbols.indirect_sym, _indirect_symbols.count * sizeof(uint32_t), syms);
+             pread(_fd, _indirect_symbols.indirect_sym, _indirect_symbols.count * sizeof(uint32_t), syms);
         }
-        close(fd);
+//        close(fd);
     }
     
     [exploredSet addObject:path];
@@ -253,7 +253,37 @@ extern DSXRLibrary *mainExecutable;
         return nil;
     }
     
+    if (xref_options.objc_only) {
+        [self preparseObjectiveCSymbols];
+    }
+    
     return self;
+}
+
+- (void)preparseObjectiveCSymbols {
+    
+//    self.dysymtab-> 
+    for (int i = 0; i < self.symtab->nsyms; i++) {
+        
+        struct nlist_64 symbol = self.symbols[i];
+        
+        // if stripped
+        if (!symbol.n_un.n_strx)  { continue; }
+        
+        
+        char * chr = &self.str_symbols[symbol.n_un.n_strx];
+        // If not a valid symbol
+        if (strlen(chr) < 2) { continue; }
+        
+        
+//        printf("%i %s\n", i, chr);
+        
+        if (!strnstr(chr, "_OBJC_CLASS_$_", 14) || !symbol.n_value) {
+            continue;
+        }
+        [self addToDictionaries:symbol.n_value symbol:chr];
+    }
+    
 }
 
 
@@ -302,16 +332,6 @@ extern DSXRLibrary *mainExecutable;
     
     return self.path;
 }
-
-
-//- (BOOL)isSimulatorLibrary {
-//    if (!self.build_cmd) { return NO; }
-//    uint32_t platform = self.build_cmd->platform;
-//    if (platform == PLATFORM_IOSSIMULATOR || platform == PLATFORM_TVOSSIMULATOR || platform == PLATFORM_WATCHOSSIMULATOR) {
-//        return YES;
-//    }
-//    return NO;
-//}
 
 - (NSString *)simulatorPath {
     NSString *cachePath;
@@ -607,10 +627,12 @@ extern DSXRLibrary *mainExecutable;
 
 
 - (uintptr_t)findStub_x86_64:(uintptr_t)stubAddress {
+    struct section_64* stubs_section = [self.sectionCommandsDictionary[@"__TEXT.__stubs"] pointerValue];
+    if (!stubs_section) { return 0; }
     
-    void* buf = calloc(sizeof(char), self.stubs_section->size);
+    void* buf = calloc(sizeof(char), stubs_section->size);
     int fd = open(self.realizedPath.UTF8String, O_RDONLY);
-    pread(fd, buf, self.stubs_section->size, self.stubs_section->offset + self.file_offset);
+    pread(fd, buf, stubs_section->size, stubs_section->offset + self.file_offset);
     
     
     cs_insn *instructions = NULL;
@@ -624,7 +646,7 @@ extern DSXRLibrary *mainExecutable;
     cs_option(handle, CS_OPT_DETAIL, CS_OPT_ON);
     cs_option(handle, CS_OPT_SKIPDATA, CS_OPT_ON);
     
-    size_t count = cs_disasm(handle, buf, self.stubs_section->size, self.stubs_section->addr, 0, &instructions);
+    size_t count = cs_disasm(handle, buf, stubs_section->size, stubs_section->addr, 0, &instructions);
     
     if (count == 0) {
         printf("error!! %d\n", cs_errno(handle));
@@ -650,9 +672,12 @@ extern DSXRLibrary *mainExecutable;
 
 - (uintptr_t)findStub_ARM64:(uintptr_t)stubAddress {
     
-    void* buf = calloc(sizeof(char), self.stubs_section->size);
+    struct section_64* stubs_section = [self.sectionCommandsDictionary[@"__TEXT.__stubs"] pointerValue];
+    if (!stubs_section) { return 0; }
+    
+    void* buf = calloc(sizeof(char), stubs_section->size);
     int fd = open(self.realizedPath.UTF8String, O_RDONLY);
-    pread(fd, buf, self.stubs_section->size, self.stubs_section->offset + self.file_offset);
+    pread(fd, buf, stubs_section->size, stubs_section->offset + self.file_offset);
     
     
     cs_insn *instructions = NULL;
@@ -669,7 +694,8 @@ extern DSXRLibrary *mainExecutable;
     //    size_t code_size = self.code_section->size;
     //    uint64_t out_address = self.code_section->addr;
     
-    size_t count = cs_disasm(handle, buf, self.stubs_section->size, self.stubs_section->addr, 0, &instructions);
+
+    size_t count = cs_disasm(handle, buf, stubs_section->size, stubs_section->addr, 0, &instructions);
     
     if (count == 0) {
         printf("error!! %d\n", cs_errno(handle));
@@ -792,4 +818,18 @@ extern DSXRLibrary *mainExecutable;
     return [self.path hash];
 }
 
+
+
+- (uintptr_t)loadAddressToFileOffset:(uintptr_t)loadAddress {
+    for (int i = 1; i < self.sectionCommandsArray.count; i++) {
+        NSNumber *sectionNumber = self.sectionCommandsArray[i];
+        struct section_64 *sec = sectionNumber.pointerValue;
+        if (sec->addr <= loadAddress && loadAddress < sec->addr + sec->size) {
+            return loadAddress - sec->addr  + sec->offset;
+        }
+        
+    }
+    printf("WARNING: couldn't find address 0x%lx in binary!\n", loadAddress);
+    return 0;
+}
 @end
