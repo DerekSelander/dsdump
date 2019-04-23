@@ -25,7 +25,9 @@
     // Already parsed it, don't need to do it again
     if (self.instructions) { return YES; }
     
-    if (!self.__text_section) { return NO; }
+    
+    struct section_64* text_section = [self.sectionCommandsDictionary[@"__TEXT.__text"] pointerValue];
+    if (!text_section) { return NO; }
     
     size_t count = 0;
 //    printf("starting...\n");
@@ -53,7 +55,7 @@
     cs_detail *buffer = calloc(count, sizeof(*buffer));
     printf("memcpy...\n");
     BOOL isATerminal = isatty(STDERR_FILENO);
-    progressbar *progress = NULL;
+//    progressbar *progress = NULL;
     if (isATerminal) {
 //        progress = progressbar_new("Processing... ", 100);
     }
@@ -63,7 +65,7 @@
         if (instructions[i].detail) {
             memcpy(&buffer[i], instructions[i].detail, sizeof(cs_detail));
         } else {
-            printf("no detail: %p\n", instructions[i].address);
+            printf("no detail: %p\n", (void*)instructions[i].address);
         }
         
         if (isATerminal && i >= prog) {
@@ -111,13 +113,16 @@
     //    struct platform platforms;
     cs_option(handle, CS_OPT_DETAIL, CS_OPT_ON);
     cs_option(handle, CS_OPT_SKIPDATA, CS_OPT_ON);
-    void *buffer = calloc(self.__text_section->size, sizeof(char));
-    pread(fd, buffer, self.__text_section->size, self.__text_section->offset + self.file_offset);
+    struct section_64* text_section = [self.sectionCommandsDictionary[@"__TEXT.__text"] pointerValue];
+    if (!text_section) { return NO; }
+    
+    void *buffer = calloc(text_section->size, sizeof(char));
+    pread(fd, buffer, text_section->size, text_section->offset + self.file_offset);
     
     
     cs_insn *instructions = NULL;
 //    printf("parsing instructions on disk...\n");
-    size_t count = cs_disasm(handle, buffer, self.                                                                              __text_section->size, self.__text_section->addr, 0, &instructions);
+    size_t count = cs_disasm(handle, buffer,                                                                               text_section->size, text_section->addr, 0, &instructions);
     
     
     if (xref_options.analyze) {
@@ -158,8 +163,8 @@
     pread(fd, deets, sizeof(cs_detail) * count, sizeof(long) + sizeof(cs_insn) * count);
     for (int i = 0; i < count; i++) {
         cs_insn insn = instructions[i];
-        if (instructions[i].detail) {
-            instructions[i].detail = &deets[i];
+        if (insn.detail) {
+            insn.detail = &deets[i];
         }
         else {
             printf("da fuck\n");

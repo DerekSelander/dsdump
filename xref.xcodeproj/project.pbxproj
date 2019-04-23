@@ -9,7 +9,10 @@
 /* Begin PBXBuildFile section */
 		3F334FB82260C8C500129638 /* progressbar.c in Sources */ = {isa = PBXBuildFile; fileRef = 3F334FB42260C8C400129638 /* progressbar.c */; };
 		3F334FB92260C8C500129638 /* statusbar.c in Sources */ = {isa = PBXBuildFile; fileRef = 3F334FB52260C8C500129638 /* statusbar.c */; };
+		3F5F41AB226EA3A800D3DCB1 /* DSXRLibrary+SymbolDumper.m in Sources */ = {isa = PBXBuildFile; fileRef = 3F5F41AA226EA3A800D3DCB1 /* DSXRLibrary+SymbolDumper.m */; };
+		3F5F41B1226EC1FC00D3DCB1 /* DSXRObjCClass.m in Sources */ = {isa = PBXBuildFile; fileRef = 3F5F41B0226EC1FC00D3DCB1 /* DSXRObjCClass.m */; };
 		3F98C3B3225F06E900606F97 /* DSXRLibrary+FileManagement.m in Sources */ = {isa = PBXBuildFile; fileRef = 3F98C3B2225F06E900606F97 /* DSXRLibrary+FileManagement.m */; };
+		3FEAB9D8226D0C0E00ED706A /* DSXRLibrary+Opcode.m in Sources */ = {isa = PBXBuildFile; fileRef = 3FEAB9D7226D0C0E00ED706A /* DSXRLibrary+Opcode.m */; };
 		A66A9CBF22316CF3006602AB /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = A66A9CBE22316CF3006602AB /* main.m */; };
 		A66A9CC922316D7F006602AB /* miscellaneous.m in Sources */ = {isa = PBXBuildFile; fileRef = A66A9CC822316D7F006602AB /* miscellaneous.m */; };
 		A66A9CCC22316EA5006602AB /* DSXRLibrary.m in Sources */ = {isa = PBXBuildFile; fileRef = A66A9CCB22316EA5006602AB /* DSXRLibrary.m */; };
@@ -47,7 +50,14 @@
 		3F334FB52260C8C500129638 /* statusbar.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = statusbar.c; path = "Progress Bar/statusbar.c"; sourceTree = "<group>"; };
 		3F334FB62260C8C500129638 /* statusbar.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = statusbar.h; path = "Progress Bar/statusbar.h"; sourceTree = "<group>"; };
 		3F334FB72260C8C500129638 /* progressbar.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = progressbar.h; path = "Progress Bar/progressbar.h"; sourceTree = "<group>"; };
+		3F5F41A9226EA3A800D3DCB1 /* DSXRLibrary+SymbolDumper.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "DSXRLibrary+SymbolDumper.h"; sourceTree = "<group>"; };
+		3F5F41AA226EA3A800D3DCB1 /* DSXRLibrary+SymbolDumper.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = "DSXRLibrary+SymbolDumper.m"; sourceTree = "<group>"; };
+		3F5F41AF226EC1FC00D3DCB1 /* DSXRObjCClass.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = DSXRObjCClass.h; sourceTree = "<group>"; };
+		3F5F41B0226EC1FC00D3DCB1 /* DSXRObjCClass.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = DSXRObjCClass.m; sourceTree = "<group>"; };
 		3F98C3B2225F06E900606F97 /* DSXRLibrary+FileManagement.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = "DSXRLibrary+FileManagement.m"; sourceTree = "<group>"; };
+		3FEAB9D6226D0C0E00ED706A /* DSXRLibrary+Opcode.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "DSXRLibrary+Opcode.h"; sourceTree = "<group>"; };
+		3FEAB9D7226D0C0E00ED706A /* DSXRLibrary+Opcode.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = "DSXRLibrary+Opcode.m"; sourceTree = "<group>"; };
+		3FEAB9D9226DA7A900ED706A /* uthash.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = uthash.h; sourceTree = "<group>"; };
 		A66A9CBB22316CF3006602AB /* xref */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = xref; sourceTree = BUILT_PRODUCTS_DIR; };
 		A66A9CBE22316CF3006602AB /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		A66A9CC722316D7F006602AB /* miscellaneous.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = miscellaneous.h; sourceTree = "<group>"; };
@@ -109,10 +119,17 @@
 				A6F6CDF7223712EC00913E35 /* capstone */,
 				A6F6CDF522370F0A00913E35 /* libcapstone.a */,
 				A674F3EB2233449F0005BD40 /* dyld_cache_format.h */,
+				3F5F41AF226EC1FC00D3DCB1 /* DSXRObjCClass.h */,
+				3F5F41B0226EC1FC00D3DCB1 /* DSXRObjCClass.m */,
+				3FEAB9D9226DA7A900ED706A /* uthash.h */,
 				A66A9CBE22316CF3006602AB /* main.m */,
 				A66A9CCA22316EA5006602AB /* DSXRLibrary.h */,
 				A66A9CCB22316EA5006602AB /* DSXRLibrary.m */,
 				3F98C3B2225F06E900606F97 /* DSXRLibrary+FileManagement.m */,
+				3F5F41A9226EA3A800D3DCB1 /* DSXRLibrary+SymbolDumper.h */,
+				3F5F41AA226EA3A800D3DCB1 /* DSXRLibrary+SymbolDumper.m */,
+				3FEAB9D6226D0C0E00ED706A /* DSXRLibrary+Opcode.h */,
+				3FEAB9D7226D0C0E00ED706A /* DSXRLibrary+Opcode.m */,
 				A674F3E62231C26B0005BD40 /* DSXRExecutable.h */,
 				A674F3E72231C26B0005BD40 /* DSXRExecutable.m */,
 				A66A9CC722316D7F006602AB /* miscellaneous.h */,
@@ -158,7 +175,6 @@
 				A66A9CB822316CF3006602AB /* Frameworks */,
 				A66A9CB922316CF3006602AB /* Copy Man Page */,
 				A674F3E92231DC9D0005BD40 /* Copy File */,
-				A6F6CDE122358C4200913E35 /* ShellScript */,
 			);
 			buildRules = (
 			);
@@ -189,6 +205,7 @@
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				en,
+				Base,
 			);
 			mainGroup = A66A9CB222316CF3006602AB;
 			productRefGroup = A66A9CBC22316CF3006602AB /* Products */;
@@ -200,26 +217,6 @@
 		};
 /* End PBXProject section */
 
-/* Begin PBXShellScriptBuildPhase section */
-		A6F6CDE122358C4200913E35 /* ShellScript */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-			);
-			outputFileListPaths = (
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "printenv\n";
-		};
-/* End PBXShellScriptBuildPhase section */
-
 /* Begin PBXSourcesBuildPhase section */
 		A66A9CB722316CF3006602AB /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
@@ -227,9 +224,12 @@
 			files = (
 				A66A9CCC22316EA5006602AB /* DSXRLibrary.m in Sources */,
 				A66A9CC922316D7F006602AB /* miscellaneous.m in Sources */,
+				3F5F41AB226EA3A800D3DCB1 /* DSXRLibrary+SymbolDumper.m in Sources */,
+				3FEAB9D8226D0C0E00ED706A /* DSXRLibrary+Opcode.m in Sources */,
 				A674F3E82231C26B0005BD40 /* DSXRExecutable.m in Sources */,
 				3F334FB92260C8C500129638 /* statusbar.c in Sources */,
 				A66A9CBF22316CF3006602AB /* main.m in Sources */,
+				3F5F41B1226EC1FC00D3DCB1 /* DSXRObjCClass.m in Sources */,
 				3F334FB82260C8C500129638 /* progressbar.c in Sources */,
 				3F98C3B3225F06E900606F97 /* DSXRLibrary+FileManagement.m in Sources */,
 			);
@@ -354,6 +354,11 @@
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = H4U46V6494;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+					"DEBUG_VERBOSE=1",
+				);
 				LD_NO_PIE = YES;
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",

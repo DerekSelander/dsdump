@@ -95,8 +95,16 @@
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = "-a 0x1003d2d60 $(TARGET_BUILD_DIR)/xref  -S"
+            argument = " --objc  $(TARGET_BUILD_DIR)/xref "
             isEnabled = "YES">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "/usr/local/bin/procexp"
+            isEnabled = "NO">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "-s dlopen /Users/lolgrep/Desktop/Payload/Twitter.app/Frameworks/TFSUtilities.framework/TFSUtilities"
+            isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
             argument = "/usr/bin/cd"
@@ -115,7 +123,7 @@
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = "-x ${SRCROOT}/xref/binaries/some_app"
+            argument = "${SRCROOT}/xref/binaries/some_app"
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
@@ -129,9 +137,9 @@
       </CommandLineArguments>
       <EnvironmentVariables>
          <EnvironmentVariable
-            key = "fuck"
-            value = "yeah"
-            isEnabled = "YES">
+            key = "DSDEBUG"
+            value = ""
+            isEnabled = "NO">
          </EnvironmentVariable>
       </EnvironmentVariables>
       <AdditionalOptions>

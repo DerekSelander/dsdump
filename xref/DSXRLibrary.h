@@ -9,6 +9,7 @@
 #import <Foundation/Foundation.h>
 #import "miscellaneous.h"
 #import "DSXRLibrary.h"
+#import "DSXRObjCClass.h"
 
 @import MachO;
 
@@ -42,13 +43,17 @@ typedef struct {
 
 @property (nonatomic, assign) macho_generic_header header;
 
+@property (nonatomic, strong) NSMutableDictionary <NSString *, DSXRObjCClass *>*stringDictionary;
+@property (nonatomic, strong) NSMutableDictionary <NSNumber *, DSXRObjCClass *>*addressDictionary;
+
 /// The initial MachO command to dictate the file, other ivars will reference offsets of this
 @property (nonatomic, assign) void *load_cmd_buffer;
 
 
 /// Offsets into each load command struct section
-@property (nonatomic, strong) NSMutableArray <NSNumber *>* section_cmds;
-@property (nonatomic, strong) NSMutableArray <NSNumber *>* segment_cmds;
+@property (nonatomic, strong) NSMutableArray <NSNumber *>* sectionCommandsArray;
+@property (nonatomic, strong) NSMutableArray <NSNumber *>* segmentCommandsArray;
+@property (nonatomic, strong) NSMutableDictionary <NSString *, NSNumber *>* sectionCommandsDictionary;
 
 @property (nonatomic, strong) NSMutableArray <NSNumber *>* function_starts;
 @property (nonatomic, assign) struct build_version_command *build_cmd;
@@ -79,7 +84,7 @@ typedef struct {
 @property (nonatomic, assign) struct section_64 *stub_helper_section;
 
 /// __TEXT.__text
-@property (nonatomic, assign) struct section_64 *__text_section;
+//@property (nonatomic, assign) struct section_64 *__text_section;
 @property (nonatomic, assign) struct segment_command_64 *code_segment;
 //@property (nonatomic, assign) struct section_64 *sections;
 
@@ -88,8 +93,7 @@ typedef struct {
 @property (nonatomic, assign) uintptr_t file_offset;
 
 - (instancetype)initWithPath:(NSString*)path;
-- (void)dumpSymbols;
-- (void)dumpExternalSymbols;
+//- (void)dumpSymbols;
 - (NSString *)realizedPath;
 - (void)dumpReferencesForAddress:(uintptr_t)address;
 - (void)dumpReferencesForSymbol:(NSString *)symbol;

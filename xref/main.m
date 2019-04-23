@@ -15,6 +15,7 @@
 #import "capstone/capstone.h"
 #import "capstone/platform.h"
 #import "DSXRExecutable.h"
+#import "DSXRLibrary+SymbolDumper.h"
 
 @import MachO;
 static NSArray <NSString *>* exc_rpaths = nil;
@@ -31,11 +32,11 @@ int main(int argc, const char * argv[], const char*envp[]) {
         exit(1);
     }
     
-    const char * p = argv[optind++];
-    NSString *path = [NSString stringWithUTF8String:p];
+    const char *_path = argv[optind++];
+    NSString *path = [NSString stringWithUTF8String:_path];
     [pathsSet addObject:path];
     if (![[NSFileManager defaultManager] fileExistsAtPath:path]) {
-        printf("File doesn't exist at \"%s\"\n", argv[1]);
+        printf("File doesn't exist at \"%s\"\n", _path);
         exit(1);
     }
     
@@ -80,14 +81,14 @@ static void handle_args(int argc, const char * argv[]) {
             {"color",    no_argument, &xref_options.color,  1 },
             {"defined",    no_argument, &xref_options.defined,  1 },
             {"undefined",    no_argument, &xref_options.undefined,  1 },
+            {"objc",    no_argument, &xref_options.objc_only,  1 },
             {0,         0,                 0,  0 }
         };
         
+        xref_options.debug = getenv("DSDEBUG") ? 1 : 0;
         c = getopt_long(argc, (char * const *)argv, "AuUxcvSs:o:l:a:bd:012",
                         long_options, &option_index);
-        if (c == -1)
-            break;
-        
+        if (c == -1) { break; }
         switch (c) {
             case 0:
 //                const char * opt_name = long_options[option_index].name;

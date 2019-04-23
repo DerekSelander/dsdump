@@ -171,7 +171,7 @@ const uint8_t *r_uleb128_decode(uint8_t *data, int *datalen, uint64_t *v) {
     if (data && *data) {
         do {
             c = *(data++) & 0xff;
-            sum |= ((uint32_t) (c&0x7f) << s);
+            sum |= ((uint64_t) (c & 0x7f) << s);
             s += 7;
             l++;
         } while (c & 0x80);

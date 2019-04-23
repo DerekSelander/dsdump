@@ -77,6 +77,7 @@ typedef struct {
     int showLibReferences;
     int verbose;
     int undefined;
+    int objc_only;
     int defined;
     int color;
     int use_regex;
@@ -88,7 +89,7 @@ typedef struct {
     char * symbol;
     char * library;
     char * showSymbolReferences;
-    
+    int debug;
 } xref_options_t;
 
 extern xref_options_t xref_options;
@@ -104,5 +105,11 @@ typedef struct {
 //uint64_t read_uleb128 (const uint8_t ** offset, const uint8_t * end);
 const uint8_t *r_uleb128_decode(uint8_t *data, int *datalen, uint64_t *v);
 
+
+//#ifdef DEBUG_VERBOSE
+#define DEBUG_PRINT(fmt, args...)    if (xref_options.debug) printf(fmt, ## args)
+//#else
+//#define DEBUG_PRINT(fmt, args...)    /* Don't do anything in release builds */
+//#endif
 
 #endif // MISCELLANEOUS_H

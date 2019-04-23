@@ -49,13 +49,13 @@ typedef enum xcore_reg {
 	// internal thread registers
 	// see The-XMOS-XS1-Architecture(X7879A).pdf
 	XCORE_REG_SCP,	///< save pc
-	XCORE_REG_SSR,	//< save status
-	XCORE_REG_ET,	//< exception type
-	XCORE_REG_ED,	//< exception data
-	XCORE_REG_SED,	//< save exception data
-	XCORE_REG_KEP,	//< kernel entry pointer
-	XCORE_REG_KSP,	//< kernel stack pointer
-	XCORE_REG_ID,	//< thread ID
+    XCORE_REG_SSR,	///< save status
+	XCORE_REG_ET,	///< exception type
+	XCORE_REG_ED,	///< exception data
+	XCORE_REG_SED,	///< save exception data
+	XCORE_REG_KEP,	///< kernel entry pointer
+	XCORE_REG_KSP,	///< kernel stack pointer
+	XCORE_REG_ID,	///< thread ID
 
 	XCORE_REG_ENDING,	// <-- mark the end of the list of registers
 } xcore_reg;

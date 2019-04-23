@@ -56,8 +56,8 @@ typedef enum arm64_cc {
 	ARM64_CC_LE = 14,     ///< Signed less than or equal: <, ==, or unordered
 	ARM64_CC_AL = 15,     ///< Always (unconditional):    Always (unconditional)
 	ARM64_CC_NV = 16,     ///< Always (unconditional):   Always (unconditional)
-	//< Note the NV exists purely to disassemble 0b1111. Execution
-	//< is "always".
+	///< Note the NV exists purely to disassemble 0b1111. Execution
+	///< is "always".
 } arm64_cc;
 
 /// System registers

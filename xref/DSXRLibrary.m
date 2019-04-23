@@ -10,7 +10,9 @@
 #import "miscellaneous.h"
 #import "DSXRLibrary.h"
 #import "dyld_cache_format.h"
+#import "DSXRLibrary+SymbolDumper.h"
 #import "capstone/capstone.h"
+#import "DSXRLibrary+Opcode.h"
 
 
 
@@ -33,13 +35,17 @@ extern DSXRLibrary *mainExecutable;
         self.depdencies = [NSMutableArray array];
         [self.depdencies addObject:(NSString *)[NSNull null]];
         
-        self.section_cmds = [NSMutableArray array];
-        [self.section_cmds addObject:(NSNumber*)[NSNull null]];
+        self.sectionCommandsArray = [NSMutableArray array];
+        [self.sectionCommandsArray addObject:(NSNumber*)[NSNull null]];
         
-        self.segment_cmds = [NSMutableArray array];
+        self.segmentCommandsArray = [NSMutableArray array];
+        self.sectionCommandsDictionary = [NSMutableDictionary dictionary];
         
         self.function_starts = [NSMutableArray array];
         self.file_offset = 0;
+        
+        self.stringDictionary = [NSMutableDictionary dictionaryWithCapacity:200];
+        self.addressDictionary = [NSMutableDictionary dictionaryWithCapacity:200];
         
         
         if (![[NSFileManager defaultManager] fileExistsAtPath:self.resolvedPath]) {
@@ -125,13 +131,17 @@ extern DSXRLibrary *mainExecutable;
                     
                 } else if (ld_cmd->cmd == LC_DYLD_INFO || ld_cmd->cmd == LC_DYLD_INFO_ONLY) {
                     self.dyldinfo = (struct dyld_info_command *)ld_cmd;
+                    if (xref_options.objc_only) {
+                        [self parseOpcodes:fd];
+                    }
+
                     
                 } else if (ld_cmd->cmd == LC_DYSYMTAB) {
                     self.dysymtab = (struct dysymtab_command *)ld_cmd;
                     
-                }  else if (ld_cmd->cmd == LC_SEGMENT_64) {
-                    
-                    [self.segment_cmds addObject:@(cur)];
+                } else if (ld_cmd->cmd == LC_SEGMENT_64) {
+             
+                    [self.segmentCommandsArray addObject:@(cur)];
                     struct segment_command_64 * cmd = (struct segment_command_64 *)ld_cmd;
                     struct section_64 *sections = (struct section_64 *)(cur + sizeof(struct segment_command_64));
                     
@@ -139,17 +149,21 @@ extern DSXRLibrary *mainExecutable;
                         self.code_segment = cmd;
                     }
                     
-                    //                    if (strcmp(cmd->segname, SEG_DATA) == 0) {
                     for (int j = 0; j < cmd->nsects; j++) {
-                        uintptr_t sec_ptr = (uintptr_t)&sections[j];
-                        [self.section_cmds addObject:@(sec_ptr)];
                         struct section_64 sec = sections[j];
+                        char seg_buff[17] = {}; // add one more than MachO to for null terminator
                         
-                        if ( strcmp(sec.segname, "__TEXT") == 0 && strcmp(sec.sectname, "__text") == 0) {
-                            self.__text_section = &sections[j]; //calloc(1, sizeof(struct section_64));
-                            
-                            
-                        }  else if ( strcmp(sec.segname, "__TEXT") == 0 && strcmp(sec.sectname, "__stubs") == 0) {
+                        char sect_buff[17] = {};
+                        memcpy(seg_buff, &sec.segname, 16);
+                        memcpy(sect_buff, &sec.sectname, 16);
+        
+                        NSString *sectionKey = [NSString stringWithFormat:@"%s.%s", seg_buff, sect_buff];
+                        
+                        uintptr_t sec_ptr = (uintptr_t)&sections[j];
+                        self.sectionCommandsDictionary[sectionKey] = @(sec_ptr);
+                        [self.sectionCommandsArray addObject:@(sec_ptr)];
+                        
+                         if ( strcmp(sec.segname, "__TEXT") == 0 && strcmp(sec.sectname, "__stubs") == 0) {
                             
                             self.stubs_section = &sections[j];
                             
@@ -162,6 +176,18 @@ extern DSXRLibrary *mainExecutable;
                         } else if ( strcmp(sec.segname, "__DATA") == 0 && strcmp(sec.sectname, "__cfstring") == 0) {
 //                            self.lazy_ptr_section = &sections[j];
                             self.cfstring_buffer = calloc(1, (long)&sections[j].size);
+                        } else if ( strcmp(sec.sectname, "__objc_classrefs__DATA") == 0) {
+                            // sectname uses the full 16 bytes, so include segment (no null terminator)
+                            
+                            sec.size / sizeof(void*);
+
+                            
+                        } else if ( strcmp(sec.sectname, "__objc_classlist__DATA") == 0) {
+                            // sectname uses the full 16 bytes, so include segment (no null terminator)
+                            
+                            sec.size / sizeof(void*);
+                            
+                            
                         }
                         
                     }
@@ -230,58 +256,6 @@ extern DSXRLibrary *mainExecutable;
     return self;
 }
 
-/********************************************************************************
- // Dump symbols
-********************************************************************************/
-
-- (void)dumpSymbols {
-    for (int i = 0; i < self.symtab->nsyms; i++) {
-        
-        struct nlist_64 symbol = self.symbols[i];
-        
-        // if stripped
-        if (!symbol.n_un.n_strx)  { continue; }
-        
-        
-        char * chr = &self.str_symbols[symbol.n_un.n_strx];
-        // If not a valid symbol
-        if (strlen(chr) < 2) { continue; }
-        
-        // If a debugging symbol only print if really verbose
-        if ((symbol.n_type & N_TYPE & N_STAB) && xref_options.verbose < 2) { continue; }
-        
-        if (xref_options.defined || xref_options.undefined) {
-            
-            if ((xref_options.defined && symbol.n_type & N_TYPE & N_SECT) || (xref_options.undefined && (symbol.n_type & N_TYPE) == N_UNDF)) {
-                [self printSymbol:&self.symbols[i]];
-            }
-            
-            
-        } else {
-            [self printSymbol:&self.symbols[i]];
-        }
-        
-    }
-}
-
-
-- (void)dumpExternalSymbols {
-    uintptr_t base = self.lazy_ptr_section->addr;
-    size_t align_size = 1 << (self.lazy_ptr_section->align);
-    for (int i = 0; i < self.indirect_symbols.count; i++) {
-        int offset = self.indirect_symbols.indirect_sym[i];
-        struct nlist_64 symbol = self.symbols[offset];
-        int libIndex = GET_LIBRARY_ORDINAL(symbol.n_desc);
-        char * chr = &self.str_symbols[symbol.n_un.n_strx];
-        
-        if (xref_options.verbose) {
-            printf(" 0x%-8lx  %s%s%s: %s%-40s%s\n", base + (align_size * i), dcolor(DSCOLOR_YELLOW), [self.depdencies[libIndex] UTF8String], colorEnd(), dcolor(DSCOLOR_CYAN), chr, colorEnd() );
-        } else {
-            printf(" 0x%-8lx  %s%-40s%s\n", base + (align_size * i), dcolor(DSCOLOR_CYAN), chr, colorEnd() );
-        }
-    }
-}
-
 
 - (NSString *)resolvedPath {
     if (_realizedPath) {
@@ -329,26 +303,6 @@ extern DSXRLibrary *mainExecutable;
     return self.path;
 }
 
-- (void)printSymbol:(struct nlist_64 *)sym {
-    printf("0x%011llx ", sym->n_value);
-    
-    if (xref_options.verbose) {
-        printf("%02x %02x %04x ", sym->n_type, sym->n_sect, sym->n_desc);
-    }
-    
-    char * chr = &self.str_symbols[sym->n_un.n_strx];
-    int libIndex = GET_LIBRARY_ORDINAL(sym->n_desc);
-    
-    
-    if (sym->n_type & N_SECT && sym->n_sect) {
-        struct section_64 * sec = ( struct section_64 * )self.section_cmds[sym->n_sect].longValue;
-        printf("%s%s.%s%s ", dcolor(DSCOLOR_GRAY), sec->segname, sec->sectname, colorEnd());
-    } else if (libIndex > 0 && (sym->n_type & N_TYPE) == N_UNDF) {
-        const char *libName = [self.depdencies[libIndex] UTF8String];
-        printf("%s%s%s: ", dcolor(DSCOLOR_YELLOW), libName, colorEnd());
-    }
-    printf("%s%s%s \n", dcolor(DSCOLOR_CYAN), chr, colorEnd());
-}
 
 //- (BOOL)isSimulatorLibrary {
 //    if (!self.build_cmd) { return NO; }
@@ -416,9 +370,9 @@ extern DSXRLibrary *mainExecutable;
     
     int fd = open(self.realizedPath.UTF8String, O_RDONLY);
     
-    for (int i = 1; i < self.section_cmds.count; i++) {
+    for (int i = 1; i < self.sectionCommandsArray.count; i++) {
         
-        struct section_64 *section = (struct section_64 *)self.section_cmds[i].longValue;
+        struct section_64 *section = (struct section_64 *)self.sectionCommandsArray[i].longValue;
         if (!section->offset) { continue; }
         if (section->flags & S_LITERAL_POINTERS || section->flags == S_REGULAR) {
             
@@ -431,7 +385,6 @@ extern DSXRLibrary *mainExecutable;
                 }
             }
             free(base);
-            
         }
     }
     close(fd);
@@ -462,7 +415,7 @@ extern DSXRLibrary *mainExecutable;
 
 - (void)dumpReferencesForFileOffset:(uintptr_t)file_offset {
     uintptr_t resolvedAddress = 0;
-    for (NSNumber *s in self.segment_cmds) {
+    for (NSNumber *s in self.segmentCommandsArray) {
         if ([s isEqual:[NSNull null]]) { continue; }
         struct segment_command_64 *seg = (struct segment_command_64 *)s.longValue;
         uintptr_t start = seg->fileoff;
@@ -527,7 +480,7 @@ extern DSXRLibrary *mainExecutable;
     
     
     if (!foundSymbol) {
-        printf("Couldn't find symbol \"%s%s%s\" in symbol table\n", dcolor(DSCOLOR_RED), search_symbol, colorEnd());
+        printf("Couldn't find symbol %s\"%s\"%s in symbol table\n", dcolor(DSCOLOR_RED), search_symbol, colorEnd());
         return;
     }
     
@@ -543,7 +496,7 @@ extern DSXRLibrary *mainExecutable;
     }
     
     if (resolvedAddress == 0) {
-        printf("Couldn't find symbol \"%s%s%s\" in code...\n", dcolor(DSCOLOR_RED), search_symbol, colorEnd());
+        printf("Couldn't find symbol %s\"%s\"%s in code...\n", dcolor(DSCOLOR_RED), search_symbol, colorEnd());
         return;
     }
     
@@ -553,7 +506,7 @@ extern DSXRLibrary *mainExecutable;
     if (self.header.h64.cputype == CPU_TYPE_ARM64) {
         uintptr_t resolvedStub = isInternal ? resolvedAddress : [self findStub_ARM64:resolvedAddress];
         if (!resolvedStub) {
-            printf("Couldn't find symbol \"%s%s%s\" in code...\n", dcolor(DSCOLOR_RED), search_symbol, colorEnd());
+            printf("Couldn't find symbol %s\"%s\"%s in code...\n", dcolor(DSCOLOR_RED), search_symbol, colorEnd());
             return;
         }
         
@@ -729,22 +682,12 @@ extern DSXRLibrary *mainExecutable;
         
         
         if (insn.detail->arm64.operands[1].imm == stubAddress) {
-//            printf("omg found it\n");
             return insn.address - insn.size;
         }
-        
-        
-//        printf("%d  %p, %s %s\n", insn.size, insn.address, insn.mnemonic, insn.op_str);
-
     }
 
     
-    //    size_t code_size = self.code_section->size;
-    //    uint64_t out_address = self.code_section->addr;
-    
-//    size_t count = cs_disasm(handle, buffer, self.code_section->size, self.code_section->addr, 0, &instructions);
-    
-    
+
     close(fd);
     return 0;
 }
@@ -766,7 +709,7 @@ extern DSXRLibrary *mainExecutable;
             if (start <= cur && cur <= stop && stop != -1) {
                 BOOL found_symbol_name = NO;
                 printf(" 0x%011lx + %-5lu (0x%011lx)", start, cur - start, cur);
-                for (int z = self.dysymtab->ilocalsym; z < self.dysymtab->nlocalsym; z++) {
+                for (int z = 0; z < self.symtab->nsyms; z++) {
                     char * chr = &self.str_symbols[self.symbols[z].n_un.n_strx];
                     if (self.symbols[z].n_value == start  && strlen(chr) > 1) {
                         
@@ -788,8 +731,8 @@ extern DSXRLibrary *mainExecutable;
         if (xref_options.all_sections) {
             
             
-            for (int i = 1; i < self.section_cmds.count; i++) {
-                struct section_64 *section = (struct section_64 *)self.section_cmds[i].longValue;
+            for (int i = 1; i < self.sectionCommandsArray.count; i++) {
+                struct section_64 *section = (struct section_64 *)self.sectionCommandsArray[i].longValue;
                 
                 if (strcmp(section->sectname, "__text") != 0 && section->addr <= cur && cur < (section->addr + section->size)) {
                     printf("%s%s,%s%s %s%p%s\n", dcolor(DSCOLOR_YELLOW), section->segname, section->sectname, colorEnd(),  dcolor(DSCOLOR_CYAN), (void*)cur, colorEnd());
