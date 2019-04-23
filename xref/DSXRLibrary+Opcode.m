@@ -105,9 +105,9 @@
 
                 break;
             } case BIND_OPCODE_DO_BIND_ADD_ADDR_IMM_SCALED: {
-                pointer += imm * sizeof(void *) + sizeof(void*);
                 DEBUG_PRINT("BIND_OPCODE_DO_BIND_ADD_ADDR_IMM_SCALED (0x%lx) (%p)\n", imm * sizeof(void*) + sizeof(void*), (void*)pointer);
                 [self addToDictionaries:pointer symbol:symbol];
+                pointer += imm * sizeof(void *) + sizeof(void*);
                 break;
             } case BIND_OPCODE_DO_BIND_ULEB_TIMES_SKIPPING_ULEB: {
                 int datalen = 0;
