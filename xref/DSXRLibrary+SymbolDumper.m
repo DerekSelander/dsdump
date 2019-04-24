@@ -169,7 +169,7 @@
             objcReference = self.addressObjCDictionary[@(buff)];
         }
         
-        printf(": %s%s%s",dcolor(DSCOLOR_GREEN), [objcReference.shortName UTF8String], colorEnd());
+        printf(": %s%s%s",dcolor(DSCOLOR_GREEN), objcReference.shortName?  [objcReference.shortName UTF8String] : "<ROOT>", colorEnd());
     }
     putchar('\n');
 }

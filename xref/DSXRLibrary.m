@@ -261,22 +261,11 @@ extern DSXRLibrary *mainExecutable;
 }
 
 - (void)preparseObjectiveCSymbols {
-    
-//    self.dysymtab-> 
+
     for (int i = 0; i < self.symtab->nsyms; i++) {
         
         struct nlist_64 symbol = self.symbols[i];
-        
-        // if stripped
-        if (!symbol.n_un.n_strx)  { continue; }
-        
-        
         char * chr = &self.str_symbols[symbol.n_un.n_strx];
-        // If not a valid symbol
-        if (strlen(chr) < 2) { continue; }
-        
-        
-//        printf("%i %s\n", i, chr);
         
         if (!strnstr(chr, "_OBJC_CLASS_$_", 14) || !symbol.n_value) {
             continue;

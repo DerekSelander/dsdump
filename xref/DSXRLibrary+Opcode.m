@@ -49,8 +49,6 @@
                 break;
             } case BIND_OPCODE_SET_DYLIB_SPECIAL_IMM: {
                 DEBUG_PRINT("BIND_OPCODE_SET_DYLIB_SPECIAL_IMM (%d)\n", imm);
-                
-                assert(0);
                 break;
             } case BIND_OPCODE_SET_SYMBOL_TRAILING_FLAGS_IMM: {
                 symbol = (char *)&bind_buffer[++i];
@@ -102,7 +100,6 @@
                 [self addToDictionaries:pointer symbol:symbol];
                 pointer += (v + sizeof(void *));
                 i += datalen - 1;
-
                 break;
             } case BIND_OPCODE_DO_BIND_ADD_ADDR_IMM_SCALED: {
                 DEBUG_PRINT("BIND_OPCODE_DO_BIND_ADD_ADDR_IMM_SCALED (0x%lx) (%p)\n", imm * sizeof(void*) + sizeof(void*), (void*)pointer);
@@ -120,7 +117,7 @@
                 
                 DEBUG_PRINT("BIND_OPCODE_DO_BIND_ULEB_TIMES_SKIPPING_ULEB (%llu, 0x%08llx)\n", count, v);
                 for (int j = 0; j < count; j++) {
-                    DEBUG_PRINT("\t(%p)\n", (void*)pointer);
+                    DEBUG_PRINT("\tDO_BIND (%p)\n", (void*)pointer);
                     [self addToDictionaries:pointer symbol:symbol];
                     pointer += (skip + sizeof(void *)); // do bind, so sizeof(void*)
                 }
@@ -158,7 +155,7 @@
     
     if (self.addressObjCDictionary[a]) {
         
-        dprintf(STDERR_FILENO, "overriding dict: old %s, %p, new; %s, %p\n", self.addressObjCDictionary[a].name.UTF8String, self.addressObjCDictionary[a].address.pointerValue, symbol, (void*)address);
+//        dprintf(STDERR_FILENO, "overriding dict: old %s, %p, new; %s, %p\n", self.addressObjCDictionary[a].name.UTF8String, self.addressObjCDictionary[a].address.pointerValue, symbol, (void*)address);
     }
     DSXRObjCClass * obj = [[DSXRObjCClass alloc] initWithAddress:a symbol:s];
     
