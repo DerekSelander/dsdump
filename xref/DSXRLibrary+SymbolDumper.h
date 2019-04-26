@@ -14,6 +14,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)dumpSymbols;
 - (void)dumpObjectiveCSymbols;
 - (void)dumpExternalSymbols;
+- (DSXRObjCClass *)objCClassFromSymbol:(struct nlist_64 * _Nonnull)sym;
 
 - (void)printSymbol:(struct nlist_64 *)sym;
 @end

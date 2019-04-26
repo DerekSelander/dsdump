@@ -120,6 +120,21 @@
 }
 
 
+- (DSXRObjCClass *)objCClassFromSymbol:(struct nlist_64 * _Nonnull)sym {
+    uintptr_t fileOff = [self loadAddressToFileOffset:sym->n_value + sizeof(void*)];
+    uintptr_t buff;
+    pread(self.fd, &buff, sizeof(void*), fileOff + self.file_offset);
+    
+    // That buff is 0, then the class is defined elsewhere, use the opcode symbol bindings instead
+    DSXRObjCClass *objcReference;
+    if (buff == 0) {
+        objcReference = self.addressObjCDictionary[@(sym->n_value + sizeof(void*))];
+    } else {
+        objcReference = self.addressObjCDictionary[@(buff)];
+    }
+    return objcReference;
+}
+
 - (void)printSymbol:(struct nlist_64 *)sym {
     char * chr = &self.str_symbols[sym->n_un.n_strx];
     // If not a valid symbol
@@ -157,17 +172,7 @@
     printf("%s%s%s ", dcolor(DSCOLOR_CYAN), chr, colorEnd());
     if (isObjC && xref_options.objc_only && sym->n_value) {
         
-        uintptr_t fileOff = [self loadAddressToFileOffset:sym->n_value + sizeof(void*)];
-        uintptr_t buff;
-        pread(self.fd, &buff, sizeof(void*), fileOff + self.file_offset);
-        
-        // That buff is 0, then the class is defined elsewhere, use the opcode symbol bindings instead
-        DSXRObjCClass *objcReference;
-        if (buff == 0) {
-            objcReference = self.addressObjCDictionary[@(sym->n_value + sizeof(void*))];
-        } else {
-            objcReference = self.addressObjCDictionary[@(buff)];
-        }
+        DSXRObjCClass * objcReference = [self objCClassFromSymbol:sym];
         
         printf(": %s%s%s",dcolor(DSCOLOR_GREEN), objcReference.shortName?  [objcReference.shortName UTF8String] : "<ROOT>", colorEnd());
     }
