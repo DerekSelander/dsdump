@@ -190,7 +190,7 @@ const uintptr_t r_sleb128_decode(uint8_t *byte, uintptr_t* datalen, uint64_t *v)
     
     size_t size = sizeof(signed int);
     uint8_t *cur = byte;
-    int l;
+    int l =0;
     do{
         
         l++;
