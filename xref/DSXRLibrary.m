@@ -9,7 +9,6 @@
 #import "DSXRLibrary.h"
 #import "miscellaneous.h"
 #import "DSXRLibrary.h"
-#import "dyld_cache_format.h"
 #import "DSXRLibrary+SymbolDumper.h"
 #import "capstone/capstone.h"
 #import "DSXRLibrary+Opcode.h"
@@ -135,8 +134,8 @@ extern DSXRLibrary *mainExecutable;
                     
                 } else if (ld_cmd->cmd == LC_DYLD_INFO || ld_cmd->cmd == LC_DYLD_INFO_ONLY) {
                     self.dyldInfo = (struct dyld_info_command *)ld_cmd;
-                    if (xref_options.objc_only) {
-                        [self parseOpcodes:_fd];
+                    if (xref_options.objc_mode) {
+                        [self parseOpcodes];
                     }
 
                     
@@ -253,7 +252,7 @@ extern DSXRLibrary *mainExecutable;
         return nil;
     }
     
-    if (xref_options.objc_only) {
+    if (xref_options.objc_mode) {
         [self preparseObjectiveCSymbols];
     }
     
@@ -477,31 +476,55 @@ extern DSXRLibrary *mainExecutable;
 }
 
 - (void)dumpReferencesForSymbol:(NSString *)symbol {
+    
+    if (xref_options.objc_mode) {
+        symbol = [@"_OBJC_CLASS_$_" stringByAppendingString:symbol];
+    }
     const char *search_symbol = [symbol UTF8String];
+    
+    
     struct nlist_64 *foundSymbol = NULL;
     for (int i = 0; i < self.symtab->nsyms; i++) {
         char * symbol_name = &self.str_symbols[self.symbols[i].n_un.n_strx];
+
         if (strcmp(symbol_name, search_symbol) == 0 || strcmp(&symbol_name[1], search_symbol) == 0) {
             foundSymbol = &self.symbols[i];
             break;
         }
     }
     
-    
+    uintptr_t resolvedAddress = 0;
     if (!foundSymbol) {
-        printf("Couldn't find symbol %s\"%s\"%s in symbol table\n", dcolor(DSCOLOR_RED), search_symbol, colorEnd());
+        // Local symbols can be stripped in symbol table but still found in dyld opcodes...
+        DSXRObjCClass* objcClass;
+        if (xref_options.objc_mode) {
+            objcClass = self.stringObjCDictionary[symbol];
+            resolvedAddress = objcClass.address.unsignedLongValue;
+        }
+        
+        if (!objcClass) {
+            printf("Couldn't find symbol %s\"%s\"%s in symbol table\n", dcolor(DSCOLOR_RED), search_symbol, colorEnd());
+        }
         return;
     }
     
+//    self.stringObjCDictionary[symbol]
     printf("Searching for: ");
+
     [self printSymbol:foundSymbol];
     
-    // It's in the symbol table, so now see what exactly it is
-    uintptr_t resolvedAddress = 0;
-    if ((foundSymbol->n_type & N_TYPE) == N_SECT) {
-        resolvedAddress = foundSymbol->n_value;
+    
+
+    
+    if (xref_options.objc_mode) {
+        self.stringObjCDictionary[symbol];
     } else {
-        resolvedAddress = [self externalSymbolStubAddress:symbol];
+        // It's in the symbol table, so now see what exactly it is
+        if ((foundSymbol->n_type & N_TYPE) == N_SECT) {
+            resolvedAddress = foundSymbol->n_value;
+        } else {
+            resolvedAddress = [self externalSymbolStubAddress:symbol];
+        }
     }
     
     if (resolvedAddress == 0) {
@@ -540,6 +563,7 @@ extern DSXRLibrary *mainExecutable;
 //  Find internal methods
 ********************************************************************************/
 
+/// x86 (usually) references library memory addresses via offsets of the IP, so look for that
 - (NSArray <NSNumber*> *)findAddressInCode_x86:(uintptr_t)address {
     NSMutableArray <NSNumber*>*foundAddresses = [NSMutableArray array];
     if (!self.instructions) { [mainExecutable parseData]; }
@@ -566,6 +590,7 @@ extern DSXRLibrary *mainExecutable;
     return foundAddresses;
 }
 
+/// ARM (usually) references library memory addresses via the ADRP, ADD combo
 - (NSArray <NSNumber *>*)findAddressInCode_ARM64:(uintptr_t)address {
     if (!self.instructions) { [mainExecutable parseData]; }
     NSMutableArray <NSNumber*> *foundAddresses = [NSMutableArray array];
@@ -620,8 +645,7 @@ extern DSXRLibrary *mainExecutable;
     if (!stubs_section) { return 0; }
     
     void* buf = calloc(sizeof(char), stubs_section->size);
-    int fd = open(self.realizedPath.UTF8String, O_RDONLY);
-    pread(fd, buf, stubs_section->size, stubs_section->offset + self.file_offset);
+    pread(self.fd, buf, stubs_section->size, stubs_section->offset + self.file_offset);
     
     
     cs_insn *instructions = NULL;
@@ -648,13 +672,8 @@ extern DSXRLibrary *mainExecutable;
         if (insn.detail->x86.operands[0].mem.disp + insn.address + insn.size == stubAddress) {
             return insn.address;
         }
-        
-        
-        
     }
 
-
-    close(fd);
     return 0;
     
 }
@@ -745,7 +764,6 @@ extern DSXRLibrary *mainExecutable;
         
         if (xref_options.all_sections) {
             
-            
             for (int i = 1; i < self.sectionCommandsArray.count; i++) {
                 struct section_64 *section = (struct section_64 *)self.sectionCommandsArray[i].longValue;
                 
@@ -753,14 +771,9 @@ extern DSXRLibrary *mainExecutable;
                     printf("%s%s,%s%s %s%p%s\n", dcolor(DSCOLOR_YELLOW), section->segname, section->sectname, colorEnd(),  dcolor(DSCOLOR_CYAN), (void*)cur, colorEnd());
                 }
             }
-            
-            
         }
-        
     }
 }
-
-
 
 
 - (uintptr_t)externalSymbolStubAddress:(NSString *)symbol {
@@ -781,12 +794,11 @@ extern DSXRLibrary *mainExecutable;
 
         if (strcmp(chr, searched_symbol) == 0 || strcmp(&chr[1], searched_symbol) == 0 ) {
             uintptr_t buf_stub_helper;
-            int fd = open(self.realizedPath.UTF8String, O_RDONLY);
-            pread(fd, &buf_stub_helper, sizeof(uintptr_t), self.file_offset + self.lazy_ptr_section->offset + (8 * i));
+
+            pread(self.fd, &buf_stub_helper, sizeof(uintptr_t), self.file_offset + self.lazy_ptr_section->offset + (PTR_SIZE * i));
             
     
-            close(fd);
-            return self.lazy_ptr_section->addr + (8 * i);
+            return self.lazy_ptr_section->addr + (PTR_SIZE * i);
             return buf_stub_helper;
         }
     }

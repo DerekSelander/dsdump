@@ -94,6 +94,7 @@ typedef struct {
 - (NSString *)realizedPath;
 - (void)dumpReferencesForAddress:(uintptr_t)address;
 - (void)dumpReferencesForSymbol:(NSString *)symbol;
+- (void)dumpObjectiveCReferencesForSymbol:(NSString *)symbol;
 - (void)dumpReferencesForFileOffset:(uintptr_t)file_offset;
 
 - (uintptr_t)loadAddressToFileOffset:(uintptr_t)loadAddress;

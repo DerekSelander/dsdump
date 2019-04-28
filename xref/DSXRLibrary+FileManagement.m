@@ -7,7 +7,6 @@
 //
 
 #import "DSXRLibrary.h"
-#import "progressbar.h"
 #import <sys/mman.h>
 
 #define PAYLOAD_FILE_SIZE(c)  (sizeof(long) + (sizeof(cs_insn) * (c)) + (sizeof(cs_detail) * (c)))

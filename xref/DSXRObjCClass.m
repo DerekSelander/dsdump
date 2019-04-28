@@ -11,9 +11,9 @@
 @implementation DSXRObjCClass
 
 - (instancetype)initWithAddress:(NSNumber *)address symbol:(NSString *)symbol {
-    
-    if (![symbol hasPrefix:@"_OBJC_CLASS_$_"]) { return nil; }
-    
+    if (![symbol hasPrefix:@"_OBJC_CLASS_$_"]) {
+        return nil;
+    }
     if (self = [super init]) {
         self.name = symbol;
         self.address = address;

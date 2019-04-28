@@ -22,19 +22,32 @@ static void __attribute__((constructor))InitializeStuff() {
     rpathSet = [NSMutableSet set];
 }
 
+/********************************************************************************
+ //  Options 
+ ********************************************************************************/
+
+static const char *_options[] = {
+    "--objc         Switch to Objective-C mode\n",
+    "--all          Search in all functions, even ones that are stripped out\n",
+    "--verbose (-v) <level>  verbose modes, there are 4 levels\n",
+    "--symbol  (-s) <symbol> Find references to a symbol, use --objc for non-C\n",
+    "--undefined (-u) Dump only undefined (externally referenced) symbols\n",
+    "--defined   (-U) Dump only defined (internally implemented) symbols\n"
+    
+};
 
 void print_usage() {
     static char* desc =
-    "Usage: xref <options> file\n\
-    \t-s symbol\tsearches for references for that symbol in code\n\
-    \t-x \t\texternal symbols, lists undefined symbols\n\
-    \t-v \t\tverbose\n\
-    \t-c \t\tUse color, alternatively export DSCOLOR environment var\n";
+    " Usage: xref <options> macho_file\n A cross between nm and vmmap for finding references to symbols (C, ObjC, Swift), both statically and in programs in memory\n";
     printf("%s\n", desc);
+    for (int i = 0; i < sizeof(_options)/sizeof(_options[0]); i++) {
+        printf("  %s\n", _options[i]);
+    }
 }
 
-
-
+/********************************************************************************
+ //  Colors
+ ********************************************************************************/
 
 char* dcolor(DSCOLOR c) {
     static BOOL useColor = NO;
@@ -86,39 +99,10 @@ char *colorEnd() {
     
     return "";
 }
-//
-//void dsprintf(FILE * f, const char *format, ...) {
-//    if (quiet_mode) {
-//        return;
-//    }
-//    va_list args;
-//    va_start( args, format );
-//    vfprintf(f, format, args );
-//    va_end( args );
-//}
-//
-//void dsdebug(const char *format, ...) {
-//    if (quiet_mode) { return; }
-//    
-//    static dispatch_once_t onceToken;
-//    static BOOL debugFlag = 0;
-//    dispatch_once(&onceToken, ^{
-//        if (getenv("DSDEBUG")) {
-//            debugFlag = YES;
-//        } else {
-//            debugFlag = NO;
-//        }
-//    });
-//    
-//    if (debugFlag) {
-//        va_list args;
-//        va_start( args, format);
-//        vfprintf(stdout, format, args );
-//        va_end( args );
-//    }
-//    
-//}
 
+/********************************************************************************
+ //  Leb128 Encoding
+ ********************************************************************************/
 
 /* Read a ULEB128 into a 64-bit word.  Return (uint64_t)-1 on overflow
  or error.  On overflow, skip past the rest of the uleb128.  */
@@ -144,29 +128,6 @@ uint64_t read_uleb128 (const uint8_t ** offset, const uint8_t * end) {
     return result;
 }
 
-/*
- 
- const uint8_t* infoStart = (uint8_t*)fHeader + fFunctionStartsInfo->dataoff();
- const uint8_t* infoEnd = &infoStart[fFunctionStartsInfo->datasize()];
- uint64_t address = fBaseAddress;
- for(const uint8_t* p = infoStart; (*p != 0) && (p < infoEnd); ) {
- uint64_t delta = 0;
- uint32_t shift = 0;
- bool more = true;
- do {
- uint8_t byte = *p++;
- delta |= ((byte & 0x7F) << shift);
- shift += 7;
- if ( byte < 0x80 ) {
- address += delta;
- printFunctionStartLine(address);
- more = false;
- }
- } while (more);
- }
- }
- */
-
 const uint8_t *r_uleb128_decode(uint8_t *data, int *datalen, uint64_t *v) {
     uint8_t c = 0xff;
     uint64_t s = 0, sum = 0, l = 0;
@@ -183,20 +144,18 @@ const uint8_t *r_uleb128_decode(uint8_t *data, int *datalen, uint64_t *v) {
     return data;
 }
 
-
 const uintptr_t r_sleb128_decode(uint8_t *byte, uintptr_t* datalen, uint64_t *v) {
     uintptr_t result = 0;
     uintptr_t shift = 0;
     
     size_t size = sizeof(signed int);
     uint8_t *cur = byte;
-    int l =0;
+    int l =0 ;
     do{
-        
         l++;
         result |= ((0x7f & *cur) << shift);
         shift += 7;
-    }while((*cur & 0x80) != 0);
+    } while((*cur & 0x80) != 0);
     
     /* sign bit of byte is second high order bit (0x40) */
     if ((shift < size) && (*cur & 0x80)) {
@@ -204,7 +163,7 @@ const uintptr_t r_sleb128_decode(uint8_t *byte, uintptr_t* datalen, uint64_t *v)
         result |= (~0 << shift);
     }
     
-    if (v) {*v = result;}
-    if (datalen) {*datalen = l;}
+    if (v) { *v = result; }
+    if (datalen) { *datalen = l; }
     return result;
 }

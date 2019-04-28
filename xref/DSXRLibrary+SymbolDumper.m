@@ -8,8 +8,8 @@
 
 #import "DSXRLibrary+SymbolDumper.h"
 #import "DSXRLibrary+Opcode.h"
-@implementation DSXRLibrary (SymbolDumper)
 
+@implementation DSXRLibrary (SymbolDumper)
 
 
 /********************************************************************************
@@ -31,41 +31,27 @@
                extreloff: %d, nextrel: %d\n\
                locreloff: %d, nlocrel: %d\n", d->ilocalsym, d->nlocalsym, d->iextdefsym, d->nextdefsym, d->iundefsym, d->nundefsym, d->modtaboff, d->nmodtab, d->extrefsymoff, d->nextrefsyms, d->indirectsymoff, d->nindirectsyms, d->extrefsymoff, d->nextrel, d->locreloff, d->nlocrel);
     }
+    
+    NSMutableOrderedSet * funcStartsSet;
+    if (xref_options.all_symbols) {
+        funcStartsSet  = [self.function_starts mutableCopy];
+    }
+    
     for (int i = 0; i < self.symtab->nsyms; i++) {
         
         struct nlist_64 symbol = self.symbols[i];
         
         
-        // if stripped
-        if (!symbol.n_un.n_strx && xref_options.verbose < 4)  { continue; }
-        
-        
-        char * chr = &self.str_symbols[symbol.n_un.n_strx];
-        
-
-        
-        // If not a valid symbol
-        if (strlen(chr) < 2 && xref_options.verbose < 4) {
-            continue;
-        }
         
         // If a debugging symbol only print if really verbose
-        if ((symbol.n_type & N_STAB) && xref_options.verbose < 3) {
+        if ((symbol.n_type & N_STAB) && xref_options.verbose < VERBOSE_3) {
             continue;
         }
         
-//        // objc tmp stuff
-//        if (!strnstr(chr, "_OBJC_CLASS_$_", 14) || !symbol.n_value ) {
-//            continue;
-//        }
-        
-//        [self addToDictionaries:symbol.n_value symbol:chr];
-        
-        
-        if (xref_options.verbose > 2 && !xref_options.objc_only) {
-            printf("(%d) ", i);
-        }
 
+        
+        
+   
         if (xref_options.defined || xref_options.undefined) {
             if ((xref_options.defined && symbol.n_type & N_TYPE & N_SECT) || (xref_options.undefined && (symbol.n_type & N_TYPE) == N_UNDF)) {
                 [self printSymbol:&self.symbols[i]];
@@ -73,10 +59,23 @@
         } else {
             [self printSymbol:&self.symbols[i]];
         }
+    
+        if (xref_options.all_symbols) {            
+            NSNumber *val = @(symbol.n_value);
+            [funcStartsSet removeObject:val];
+        }
+        
         
     }
     
-//    [self dumpObjectiveCSymbols];
+    if (xref_options.all_symbols) {
+        
+        for (NSNumber *address in funcStartsSet) {
+            printf("0x%011llx %s<stripped>%s\n", address.unsignedLongLongValue, dcolor(DSCOLOR_RED), colorEnd());
+        }
+    }
+    
+
 }
 
 //- (void)dumpObjectiveCSymbols {
@@ -121,14 +120,14 @@
 
 
 - (DSXRObjCClass *)objCClassFromSymbol:(struct nlist_64 * _Nonnull)sym {
-    uintptr_t fileOff = [self loadAddressToFileOffset:sym->n_value + sizeof(void*)];
+    uintptr_t fileOff = [self loadAddressToFileOffset:sym->n_value + PTR_SIZE];
     uintptr_t buff;
     pread(self.fd, &buff, sizeof(void*), fileOff + self.file_offset);
     
     // That buff is 0, then the class is defined elsewhere, use the opcode symbol bindings instead
     DSXRObjCClass *objcReference;
     if (buff == 0) {
-        objcReference = self.addressObjCDictionary[@(sym->n_value + sizeof(void*))];
+        objcReference = self.addressObjCDictionary[@(sym->n_value + PTR_SIZE)];
     } else {
         objcReference = self.addressObjCDictionary[@(buff)];
     }
@@ -142,11 +141,11 @@
         chr = "<stripped symbol>";
     }
     
-    if (xref_options.objc_only && !strnstr(chr, "_OBJC_CLASS_$_", 14)) {
+    if (xref_options.objc_mode && !strnstr(chr, "_OBJC_CLASS_$_", 14)) {
         return;
     }
     BOOL isObjC = NO;
-    if (xref_options.objc_only) {
+    if (xref_options.objc_mode) {
         chr += 14;
         isObjC = YES;
     }
@@ -170,7 +169,7 @@
         }
     }
     printf("%s%s%s ", dcolor(DSCOLOR_CYAN), chr, colorEnd());
-    if (isObjC && xref_options.objc_only && sym->n_value) {
+    if (isObjC && xref_options.objc_mode && sym->n_value) {
         
         DSXRObjCClass * objcReference = [self objCClassFromSymbol:sym];
         

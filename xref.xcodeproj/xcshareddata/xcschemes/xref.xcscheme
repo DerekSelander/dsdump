@@ -87,6 +87,10 @@
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
+            argument = "/Users/lolgrep/Desktop/Payload/Twitter.app/Frameworks/TwitterNetworkLayer.framework/TwitterNetworkLayer --objc -U"
+            isEnabled = "NO">
+         </CommandLineArgument>
+         <CommandLineArgument
             argument = "-s _strcmp"
             isEnabled = "NO">
          </CommandLineArgument>
@@ -99,8 +103,20 @@
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = " --objc  $(TARGET_BUILD_DIR)/xref "
-            isEnabled = "YES">
+            argument = " --objc  $(TARGET_BUILD_DIR)/xref  -s DSXRObjCClass"
+            isEnabled = "NO">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "/Users/lolgrep/Desktop/Payload/Twitter.app/Frameworks/TwitterVectorGraphics.framework/TwitterVectorGraphics --objc "
+            isEnabled = "NO">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "/usr/lib/libobjc.A.dylib --objc"
+            isEnabled = "NO">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "--objc /Users/lolgrep/Desktop/Payload/Twitter.app/Frameworks/TFSTwitterAPI.framework/TFSTwitterAPI"
+            isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
             argument = "/usr/local/bin/procexp"

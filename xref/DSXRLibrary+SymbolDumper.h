@@ -12,7 +12,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface DSXRLibrary (SymbolDumper)
 - (void)dumpSymbols;
-- (void)dumpObjectiveCSymbols;
+//- (void)dumpObjectiveCSymbols;
 - (void)dumpExternalSymbols;
 - (DSXRObjCClass *)objCClassFromSymbol:(struct nlist_64 * _Nonnull)sym;
 

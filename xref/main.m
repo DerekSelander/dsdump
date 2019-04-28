@@ -81,7 +81,8 @@ static void handle_args(int argc, const char * argv[]) {
             {"color",    no_argument, &xref_options.color,  1 },
             {"defined",    no_argument, &xref_options.defined,  1 },
             {"undefined",    no_argument, &xref_options.undefined,  1 },
-            {"objc",    no_argument, &xref_options.objc_only,  1 },
+            {"objc",    no_argument, &xref_options.objc_mode,  1 },
+            {"all",    no_argument, &xref_options.all_symbols,  1 },
             {0,         0,                 0,  0 }
         };
         
@@ -102,7 +103,7 @@ static void handle_args(int argc, const char * argv[]) {
                     xref_options.file_offset = strtol(optarg, 0, 0);
                 } else if (strcmp(long_options[option_index].name, "verbose") == 0) {
                     xref_options.verbose = (int)strtol(optarg, 0, 0);
-                }
+                } 
 //                if (optarg)
 //                    printf(" with arg %s", optarg);
 //                printf("\n");
@@ -154,9 +155,9 @@ static void handle_args(int argc, const char * argv[]) {
                 
          
                 
-            case 'd':
-//                printf("option d with value '%s'\n", optarg);
-                break;
+//            case 'd':
+////                printf("option d with value '%s'\n", optarg);
+//                break;
                 
             case '?':
                 break;

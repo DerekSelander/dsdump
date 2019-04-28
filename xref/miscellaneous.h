@@ -74,11 +74,18 @@ void ErrorMessageThenDie(const char *message, ...);
 
 ///
 
+#define VERBOSE_NONE 0
+#define VERBOSE_1    1
+#define VERBOSE_2    2
+#define VERBOSE_3    3
+#define VERBOSE_4    4
+
 typedef struct {
     int showLibReferences;
     int verbose;
     int undefined;
-    int objc_only;
+    int objc_mode;
+    int all_symbols;
     int defined;
     int color;
     int use_regex;
@@ -107,10 +114,12 @@ typedef struct {
 const uint8_t *r_uleb128_decode(uint8_t *data, int *datalen, uint64_t *v);
 const uintptr_t r_sleb128_decode(uint8_t *byte, uintptr_t* shift, uint64_t *v);
 
-//#ifdef DEBUG_VERBOSE
+
+#define PTR_SIZE sizeof(void*)
+
+
+///
 #define DEBUG_PRINT(fmt, args...)    if (xref_options.debug) printf(fmt, ## args)
-//#else
-//#define DEBUG_PRINT(fmt, args...)    /* Don't do anything in release builds */
-//#endif
+
 
 #endif // MISCELLANEOUS_H
