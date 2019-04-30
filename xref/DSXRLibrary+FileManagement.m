@@ -109,8 +109,8 @@
 
 - (BOOL)parseDataOnDisk {
 
-    cs_arch arch = self.header.h64.cputype == CPU_TYPE_ARM64? CS_ARCH_ARM64 : CS_ARCH_X86;
-    cs_mode mode = self.header.h64.cputype == CPU_TYPE_ARM64? CS_MODE_ARM : CS_MODE_64;
+    cs_arch arch = self.header.cputype == CPU_TYPE_ARM64? CS_ARCH_ARM64 : CS_ARCH_X86;
+    cs_mode mode = self.header.cputype == CPU_TYPE_ARM64? CS_MODE_ARM : CS_MODE_64;
     csh handle = 0;
     
     int err = cs_open(arch, mode, &handle);

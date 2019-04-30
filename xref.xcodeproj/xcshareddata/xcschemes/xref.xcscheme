@@ -67,6 +67,10 @@
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
+            argument = "/System/Library/Frameworks/Cocoa.framework/Cocoa "
+            isEnabled = "NO">
+         </CommandLineArgument>
+         <CommandLineArgument
             argument = "/tmp/a.out -vvvv"
             isEnabled = "NO">
          </CommandLineArgument>
@@ -92,7 +96,7 @@
          </CommandLineArgument>
          <CommandLineArgument
             argument = "/Users/lolgrep/Desktop/Payload/Twitter.app/Frameworks/T1Twitter.framework/T1Twitter  -s _CC_SHA1"
-            isEnabled = "YES">
+            isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
             argument = "-s _strcmp"
@@ -107,8 +111,8 @@
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = " --objc  $(TARGET_BUILD_DIR)/xref  -v"
-            isEnabled = "NO">
+            argument = "  $(TARGET_BUILD_DIR)/xref  -v"
+            isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
             argument = "/Users/lolgrep/Desktop/Payload/Twitter.app/Frameworks/TwitterVectorGraphics.framework/TwitterVectorGraphics --objc "

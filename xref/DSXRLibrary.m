@@ -26,9 +26,7 @@
 
 @implementation DSXRLibrary
 
-- (instancetype)initWithPath:(NSString*)path
-{
-    
+- (instancetype)initWithPath:(NSString*)path {
     if (self = [super init]) {
         self.path = path;
         self.depdencies = [NSMutableArray array];
@@ -63,53 +61,54 @@
         self.data = malloc(fsize + 1);
         fread(self.data, 1, fsize, f);
         fclose(f);
-        
         if (fsize < 4) {
             perror("File too small"); return nil;
         }
         
-        uint32 magic = 0;
-        memcpy(&magic, _data, 4);
+        uint32 magic = *(uint32_t *)_data;
         
-       
+    // If this is a fat executable, it'll go back here and try again
     LOL:
         
         if (magic == MH_MAGIC || magic == MH_MAGIC) {
             printf("da fuck %s, %s", [self.realizedPath UTF8String], [path UTF8String]);
             assert(0);
         } else if (magic == MH_MAGIC_64 || magic == MH_CIGAM_64) {
-            pread(_fd, &_header, sizeof(struct mach_header_64), _file_offset);
-            
-            self.load_cmd_buffer = calloc(1, _header.h64.sizeofcmds);
-            pread(_fd, _load_cmd_buffer, _header.h64.sizeofcmds, sizeof(struct mach_header_64) + _file_offset);
-            
+
+            _header = *(struct mach_header_64 *)&_data[_file_offset];
+            _load_cmd_buffer = (void*)&_data[sizeof(struct mach_header_64) + _file_offset];
             uintptr_t cur = (uintptr_t)_load_cmd_buffer;
             
-            
-            
-            for (int i = 0; i < _header.h64.ncmds; i++) {
-                struct load_command *ld_cmd = (struct load_command *)cur;
+            for (int i = 0; i < _header.ncmds; i++) {
+                struct load_command *load_cmd = (struct load_command *)cur;
                 
-                if (ld_cmd->cmd == LC_LOAD_DYLIB || ld_cmd->cmd == LC_LOAD_WEAK_DYLIB || ld_cmd->cmd == LC_REEXPORT_DYLIB || ld_cmd->cmd == LC_LOAD_UPWARD_DYLIB) {
+                if (load_cmd->cmd == LC_LOAD_DYLIB || load_cmd->cmd == LC_LOAD_WEAK_DYLIB || load_cmd->cmd == LC_REEXPORT_DYLIB || load_cmd->cmd == LC_LOAD_UPWARD_DYLIB) {
+                    
                     struct dylib_command *dylib_cmd = (struct dylib_command *)cur;
                     NSString * libPath = [NSString stringWithUTF8String:(char *)(cur + dylib_cmd->dylib.name.offset)];
                     [pathsSet addObject:libPath];
                     [self.depdencies addObject:libPath];
-                } else if (ld_cmd->cmd == LC_BUILD_VERSION) {
+                    
+                } else if (load_cmd->cmd == LC_BUILD_VERSION) {
+                    
                     struct build_version_command *build_version = (struct build_version_command *)cur;
                     self.build_cmd = build_version;
-                }  else if (ld_cmd->cmd == LC_VERSION_MIN_IPHONEOS) {
+                    
+                }  else if (load_cmd->cmd == LC_VERSION_MIN_IPHONEOS) {
+                    
                     self.version_cmd = (struct version_min_command *)cur;
-                }  else if (ld_cmd->cmd == LC_RPATH) {
+                    
+                }  else if (load_cmd->cmd == LC_RPATH) {
+                    
                     struct rpath_command *r_cmd = (struct rpath_command*)cur;
                     NSMutableString* rpathString = [NSMutableString stringWithUTF8String:(char *)(cur + r_cmd->path.offset)];
-                    
                     [rpathSet addObject:rpathString];
-                } else if (ld_cmd->cmd == LC_FUNCTION_STARTS) {
+                    
+                } else if (load_cmd->cmd == LC_FUNCTION_STARTS) {
                     
                     self.function_starts_cmd = (struct linkedit_data_command *)cur;
-                    void * functions = calloc(self.function_starts_cmd->datasize, 1);
-                    pread(_fd, functions, self.function_starts_cmd->datasize, _file_offset + self.function_starts_cmd->dataoff);
+                    void * functions = &_data[_file_offset + self.function_starts_cmd->dataoff];
+                    
                     const uint8_t* infoStart = (uint8_t*)functions;
                     const uint8_t* infoEnd = functions + self.function_starts_cmd->dataoff;
                     struct segment_command_64* code_segment = [self.segmentCommandsDictionary[@"__TEXT"] pointerValue];
@@ -132,101 +131,81 @@
                         } while (more);
                     }
                     
-                    free(functions);
+                } else if (load_cmd->cmd == LC_SYMTAB) {
                     
-                } else if (ld_cmd->cmd == LC_SYMTAB) {
+                    self.symtab = (struct symtab_command *)load_cmd;
+                    self.symbols = (struct nlist_64 *)&_data[_file_offset + self.symtab->symoff];
+                    self.str_symbols = (char *)&_data[_file_offset + self.symtab->stroff];
+
+                } else if (load_cmd->cmd == LC_DYLD_INFO || load_cmd->cmd == LC_DYLD_INFO_ONLY) {
                     
-                    self.symtab = calloc(1, sizeof(struct symtab_command));
-                    memcpy(self->_symtab, ld_cmd, sizeof(struct symtab_command));
-                    
-                    self.symbols = calloc(self.symtab->nsyms, sizeof(struct nlist_64));
-                    pread(_fd, self.symbols, self.symtab->nsyms * sizeof(struct nlist_64), self.symtab->symoff + _file_offset);
-                    
-                    self.str_symbols = calloc(self.symtab->strsize, sizeof(char));
-                    pread(_fd, self.str_symbols, self.symtab->strsize, self.symtab->stroff + _file_offset);
-                    
-                } else if (ld_cmd->cmd == LC_DYLD_INFO || ld_cmd->cmd == LC_DYLD_INFO_ONLY) {
-                    self.dyldInfo = (struct dyld_info_command *)ld_cmd;
+                    self.dyldInfo = (struct dyld_info_command *)load_cmd;
                     if (xref_options.objectiveC_mode) {
                         [self parseOpcodes];
                     }
                     
-                } else if (ld_cmd->cmd == LC_DYSYMTAB) {
-                    self.dysymtab = (struct dysymtab_command *)ld_cmd;
+                } else if (load_cmd->cmd == LC_DYSYMTAB) {
                     
-                } else if (ld_cmd->cmd == LC_SEGMENT_64) {
+                    self.dysymtab = (struct dysymtab_command *)load_cmd;
+                    
+                } else if (load_cmd->cmd == LC_SEGMENT_64) {
              
                     [self.segmentCommandsArray addObject:@(cur)];
-                    struct segment_command_64 * cmd = (struct segment_command_64 *)ld_cmd;
+                    struct segment_command_64 * cmd = (struct segment_command_64 *)load_cmd;
                     struct section_64 *sections = (struct section_64 *)(cur + sizeof(struct segment_command_64));
                     
-                    
-                    char seg_buf[17] = {};
-                    memcpy(seg_buf, cmd->segname, 16);
-                    NSString *segmentKey = [NSString stringWithUTF8String:seg_buf];
+                    char seg_name[17] = {};
+                    memcpy(seg_name, cmd->segname, 16);
+                    NSString *segmentKey = [NSString stringWithUTF8String:seg_name];
                     self.segmentCommandsDictionary[segmentKey] = @((uintptr_t)cmd);
                     
-                    
                     for (int j = 0; j < cmd->nsects; j++) {
-                        struct section_64 sec = sections[j];
-                        char seg_buff[17] = {}; // add one more than MachO to for null terminator
-                        
-                        char sect_buff[17] = {};
-                        memcpy(seg_buff, &sec.segname, 16);
-                        memcpy(sect_buff, &sec.sectname, 16);
-        
-                        NSString *sectionKey = [NSString stringWithFormat:@"%s.%s", seg_buff, sect_buff];
+                        struct section_64 section = sections[j];
+                        char sect_name[17] = {};
+                        memcpy(seg_name, &section.segname, 16);
+                        memcpy(sect_name, &section.sectname, 16);
+                        NSString *sectionKey = [NSString stringWithFormat:@"%s.%s", seg_name, sect_name];
                         
                         uintptr_t sec_ptr = (uintptr_t)&sections[j];
                         self.sectionCommandsDictionary[sectionKey] = @(sec_ptr);
                         [self.sectionCommandsArray addObject:@(sec_ptr)];
                         
-                      if ( strcmp(sec.segname, "__DATA") == 0 && strcmp(sec.sectname, "__la_symbol_ptr") == 0) {
+                        if (strcmp(section.segname, "__DATA") == 0 && strcmp(section.sectname, "__la_symbol_ptr") == 0) {
                             self.lazy_ptr_section = &sections[j]; //calloc(1, sizeof(struct section_64));
-
-                        } else if ( strcmp(sec.segname, "__DATA") == 0 && strcmp(sec.sectname, "__cfstring") == 0) {
-//                            self.lazy_ptr_section = &sections[j];
-                            self.cfstring_buffer = calloc(1, (long)&sections[j].size);
                         }
-                        
                     }
-                    //                    }
                     
-                } else if (ld_cmd->cmd == LC_UUID) {
+                } else if (load_cmd->cmd == LC_UUID) {
+                    
                     self.uuid_cmd = calloc(1, sizeof(struct uuid_command));
-                    memcpy(self->_uuid_cmd, ld_cmd, sizeof(struct uuid_command));
-                } else if (ld_cmd->cmd == LC_FUNCTION_STARTS) {
+                    memcpy(self->_uuid_cmd, load_cmd, sizeof(struct uuid_command));
                     
                 }
-                cur += ld_cmd->cmdsize;
+                cur += load_cmd->cmdsize;
             }
             
         } else if (magic == FAT_MAGIC || magic == FAT_CIGAM) {
             
-            struct fat_header fatHeader ;
-            pread(_fd, &fatHeader, sizeof(struct fat_header), 0);
+            struct fat_header fatHeader;
+            fatHeader = *(struct fat_header *)_data;
             uint32_t numArchs = htonl(fatHeader.nfat_arch);
             
-            
-            struct fat_arch *arches = calloc(numArchs, sizeof(struct fat_arch));
-            pread(_fd, arches, sizeof(struct fat_arch) * numArchs, sizeof(struct fat_header));
-            
+            struct fat_arch *arches = (struct fat_arch *)&_data[sizeof(struct fat_header)];
             for (int j = 0; j < numArchs; j++) {
-                if (arches[j].cputype == 0x07000001) {
+                if (ntohl(arches[j].cputype) & CPU_ARCH_ABI64 ) {
                     _file_offset = htonl(arches[j].offset);
-                    pread(_fd, &magic, 4, _file_offset);
-                    free(arches);
+                    magic = *(uint32_t *)&_data[_file_offset];
                     goto LOL;
                 }
                 
             }
-            
+            printf("Shouldn't have gotten here...\n");
             assert(0);
-            free(arches);
             
         } else if (magic == FAT_MAGIC_64 || magic == FAT_CIGAM_64) {
             struct fat_arch_64 fatHeader;
-            pread(_fd, &fatHeader, sizeof(struct fat_header), 0);
+            fatHeader = *(struct fat_arch_64 *)_data;
+            printf("FAT MAGIC 64 headers not implemented... tell Derek what module is using this\n");
             assert(0);
         }
         
@@ -242,7 +221,7 @@
     
 
     if (!self.symtab) {
-        printf("Warning: no symbol table\n");
+        perror("Warning: no symbol table\n");
         return nil;
     }
     
@@ -291,7 +270,6 @@
                 rpathReplacement = [potentialPath stringByReplacingOccurrencesOfString:@"@executable_path" withString:executablePath];
             }
             
-            
             NSString *realizedPath = [self.path stringByReplacingOccurrencesOfString:@"@rpath" withString:rpathReplacement];
             
             if ([[NSFileManager defaultManager] fileExistsAtPath:realizedPath]) {
@@ -303,23 +281,9 @@
         return [self.path stringByReplacingOccurrencesOfString:@"@rpath" withString:[self.path stringByDeletingLastPathComponent]];
         
         // Still can't find it... try simulator then try dyld shared cache
-    } else if (YES ) {//|| [self isSimulatorLibrary] || [mainExecutable isSimulatorLibrary]) {
-        _realizedPath = [[self simulatorPath] stringByAppendingPathComponent:self.path];
-        return _realizedPath;
     }
     
     return self.path;
-}
-
-- (NSString *)simulatorPath {
-    NSString *cachePath;
-    //    switch (self.build_cmd->platform) {
-    //        case PLATFORM_IOSSIMULATOR:
-    cachePath = @"/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/Library/CoreSimulator/Profiles/Runtimes/iOS.simruntime/Contents/Resources/RuntimeRoot/";
-    //    }
-    
-    assert(cachePath);
-    return cachePath;
 }
 
 - (NSString *)dyldSharedCachePath {
@@ -391,7 +355,7 @@
     
     printf("Searching for references to: %s%p%s\n", dcolor(DSCOLOR_CYAN), (void*)address, colorEnd());
     NSArray <NSNumber *>*foundAddresses = nil;
-    if (self.header.h64.cputype == CPU_TYPE_ARM64) {
+    if (self.header.cputype == CPU_TYPE_ARM64) {
         foundAddresses = [self findAddressInCode_ARM64:address];
     } else {
         foundAddresses = [self findAddressInCode_x86:address];
@@ -439,12 +403,12 @@
     
     if (!resolvedAddress) {
         printf("Couldn't find address 0x%lx\n", resolvedAddress);
-    } else if (self.header.h64.cputype == CPU_TYPE_ARM64) {
+    } else if (self.header.cputype == CPU_TYPE_ARM64) {
         foundAddresses = [self findAddressInCode_ARM64:resolvedAddress];
-    } else if (self.header.h64.cputype == CPU_TYPE_X86_64) {
+    } else if (self.header.cputype == CPU_TYPE_X86_64) {
         foundAddresses = [self findAddressInCode_x86:resolvedAddress];
     } else {
-        printf("cputype 0x%x not supported... womp womp\n", self.header.h64.cputype);
+        printf("cputype 0x%x not supported... womp womp\n", self.header.cputype);
         return;
     }
     
@@ -458,9 +422,6 @@
     } else {
         [self printFunctionsContainingAddresses:foundAddresses];
     }
-    //    if (!resolvedAddress) { printf("Couldn't resolve offset %d\n", file_offset); return ;}
-    
-    
 }
 
 - (void)dumpReferencesForSymbol:(NSString *)symbol {
@@ -519,7 +480,7 @@
     // Is the symbol implemented in this module or elsewhere
     BOOL isInternal = ((foundSymbol->n_type & N_TYPE) == N_SECT);
     NSArray *foundAddresses = nil;
-    if (self.header.h64.cputype == CPU_TYPE_ARM64) {
+    if (self.header.cputype == CPU_TYPE_ARM64) {
         uintptr_t resolvedStub = isInternal ? resolvedAddress : [self findStub_ARM64:resolvedAddress];
         if (!resolvedStub) {
             printf("Couldn't find symbol %s\"%s\"%s in code...\n", dcolor(DSCOLOR_RED), search_symbol, colorEnd());
@@ -527,12 +488,12 @@
         }
         
         foundAddresses = [self findAddressInCode_ARM64:resolvedStub];
-    } else if (self.header.h64.cputype == CPU_TYPE_X86_64) {
+    } else if (self.header.cputype == CPU_TYPE_X86_64) {
         
         uintptr_t resolvedStub = isInternal ? resolvedAddress : [self findStub_x86_64:resolvedAddress];
         foundAddresses = [self findAddressInCode_x86:resolvedStub];
     } else {
-        printf("cputype 0x%x not supported... womp womp\n", self.header.h64.cputype);
+        printf("cputype 0x%x not supported... womp womp\n", self.header.cputype);
         return;
     }
     if ([foundAddresses count] == 0) {
@@ -574,7 +535,7 @@
     return foundAddresses;
 }
 
-/// ARM (usually) references library memory addresses via the ADRP, ADD combo
+/// ARM64 (usually) references library memory addresses via the ADRP, ADD combo
 - (NSArray <NSNumber *>*)findAddressInCode_ARM64:(uintptr_t)address {
     if (!self.instructions) { [self parseData]; }
     NSMutableArray <NSNumber*> *foundAddresses = [NSMutableArray array];

@@ -44,7 +44,7 @@ typedef struct {
 @property (nonatomic, assign) cs_insn *instructions;
 @property (nonatomic, assign) size_t instructions_count;
 
-@property (nonatomic, assign) macho_generic_header header;
+@property (nonatomic, assign) struct mach_header_64 header;
 
 @property (nonatomic, strong) NSMutableDictionary <NSString *, DSXRObjCClass *>*stringObjCDictionary;
 @property (nonatomic, strong) NSMutableDictionary <NSNumber *, DSXRObjCClass *>*addressObjCDictionary;
@@ -66,7 +66,6 @@ typedef struct {
 @property (nonatomic, assign) struct version_min_command *version_cmd;
 @property (nonatomic, assign) struct uuid_command *uuid_cmd; 
 
-@property (nonatomic, assign) uintptr_t *cfstring_buffer; 
 @property (nonatomic, assign) struct symtab_command *symtab;
 @property (nonatomic, assign) struct dysymtab_command *dysymtab;
 @property (nonatomic, assign) struct nlist_64 *symbols;
