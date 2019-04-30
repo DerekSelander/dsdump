@@ -21,16 +21,12 @@
                                          pointerValue];
         if (class_list) {
             uintptr_t offset = [self translateLoadAddressToFileOffset:class_list->addr] + self.file_offset;
-            uintptr_t *buff = calloc(1, class_list->size);
-            pread(self.fd, buff, class_list->size, offset);
+            uintptr_t *buff = (uintptr_t *)&self.data[offset];
             
             for (int i = 0; i < class_list->size / PTR_SIZE; i++) {
                 printf("0x%011lx %s%s%s", buff[i],  dcolor(DSCOLOR_CYAN), [self nameForObjCClass:buff[i]], colorEnd());
-                
-                
+
                 if (xref_options.verbose) {
-    
-                    
                     // Check if it's an external symbol first via the dylds binding opcodes....
                     DSXRObjCClass *objcReference = self.addressObjCDictionary[@(buff[i] + PTR_SIZE)];
                     const char *name = objcReference.shortName.UTF8String;
@@ -38,21 +34,22 @@
                     char *color = dcolor(DSCOLOR_GREEN);
                                         
                     if (!name) {
-                        uintptr_t supercls;
-                        pread(self.fd, &supercls, PTR_SIZE, [self translateLoadAddressToFileOffset:buff[i] + PTR_SIZE]);
+                        offset = [self translateLoadAddressToFileOffset:buff[i] + PTR_SIZE];
+                        uintptr_t supercls = *(uintptr_t *)&self.data[offset];
+                        
                         if (supercls) {
                             name = [self nameForObjCClass:supercls];
                             color = dcolor(DSCOLOR_MAGENTA);
                         }
                     }
-                    color = name ? color :  dcolor(DSCOLOR_RED);
+                    color = name ? color : dcolor(DSCOLOR_RED);
                     printf(" : %s%s%s", color, name ? name : "<ROOT>", colorEnd());
                 }
                 
                 putchar('\n');
             }
             
-            free(buff);
+       
         }
     }
     
@@ -74,31 +71,40 @@
 -(const char *)nameForObjCClass:(uintptr_t)address {
     // Going after the class_ro_t of an ObjectiveC class
     // ommitting using Apple headers since their legal agreement is a PoS
-    static char s[200];
-    s[0] = '\00';
     
     uintptr_t offset;
-    uintptr_t buff;
+    // Starts at __DATA.__objc_data, translate to file offset
     if (!(offset = [self translateLoadAddressToFileOffset:address] + self.file_offset)) {
         return NULL;
     }
-    pread(self.fd, &buff, PTR_SIZE, (offset + (4 * PTR_SIZE)));
+    
+    // Grab the  the class_rw_t data found in __DATA__objc_const
+    uintptr_t buff = *(uintptr_t *)&self.data[offset + (4 * PTR_SIZE)];
     if (!buff) {
         return NULL;
     }
+    
+    // ... Which then points to the class_ro_t type,
+    // ignoring flags (32), instanceStart (32), instanceSize (32), reserved (32), ivarLayout (64)
+    // And then finally char * name;
     if (!(offset = [self translateLoadAddressToFileOffset:(buff & FAST_DATA_MASK) + (3 * PTR_SIZE)] + self.file_offset)) {
         return NULL;
     }
     
-    pread(self.fd, &buff, PTR_SIZE, offset);
-    if (!buff) {
+    // This finally gets to the __TEXT.__objc_classname
+    if (!(buff = *(uintptr_t *)&self.data[offset])) {
         return  NULL;
     }
+    
+    // Which can then be translated to a file offset for reading
     if (!(offset = [self translateLoadAddressToFileOffset:buff])) {
         return NULL;
     }
     
-    pread(self.fd, s, 200, offset);
+    
+//    char
+    char *s = (char *)&self.data[offset];
+//    pread(self.fd, s, 200, offset);
     if (strlen(s)) {
         return s;
     }

@@ -22,8 +22,6 @@
 
 @end
 
-
-
 @implementation DSXRLibrary
 
 - (instancetype)initWithPath:(NSString*)path {
@@ -197,7 +195,6 @@
                     magic = *(uint32_t *)&_data[_file_offset];
                     goto LOL;
                 }
-                
             }
             printf("Shouldn't have gotten here...\n");
             assert(0);

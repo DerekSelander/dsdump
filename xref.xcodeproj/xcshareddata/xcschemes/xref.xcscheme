@@ -111,7 +111,7 @@
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = "  $(TARGET_BUILD_DIR)/xref  -v"
+            argument = "  $(TARGET_BUILD_DIR)/xref  -v --objc"
             isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument

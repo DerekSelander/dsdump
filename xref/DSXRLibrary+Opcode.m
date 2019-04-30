@@ -23,9 +23,7 @@
         self.addressObjCDictionary = [NSMutableDictionary dictionaryWithCapacity:100];
     }
     
-    uint8_t *bind_buffer = calloc(self.dyldInfo->bind_size, 1);
-    pread(self.fd, bind_buffer, self.dyldInfo->bind_size, self.dyldInfo->bind_off + self.file_offset);
-    
+    uint8_t *bind_buffer = &self.data[self.dyldInfo->bind_off + self.file_offset]; 
     int i = 0;
     uint64_t pointer = 0;
     char *symbol = NULL;
