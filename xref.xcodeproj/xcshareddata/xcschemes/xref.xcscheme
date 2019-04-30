@@ -87,8 +87,12 @@
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = "/Users/lolgrep/Desktop/Payload/Twitter.app/Frameworks/TwitterNetworkLayer.framework/TwitterNetworkLayer --objc -U"
+            argument = "/Users/lolgrep/Desktop/Payload/Twitter.app/Frameworks/TwitterNetworkLayer.framework/TwitterNetworkLayer --objc -U -v"
             isEnabled = "NO">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "/Users/lolgrep/Desktop/Payload/Twitter.app/Frameworks/T1Twitter.framework/T1Twitter  -s _CC_SHA1"
+            isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
             argument = "-s _strcmp"
@@ -103,7 +107,7 @@
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = " --objc  $(TARGET_BUILD_DIR)/xref  -s DSXRObjCClass"
+            argument = " --objc  $(TARGET_BUILD_DIR)/xref  -v"
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument

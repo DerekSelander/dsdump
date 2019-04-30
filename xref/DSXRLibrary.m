@@ -16,20 +16,20 @@
 
 
 @interface DSXRLibrary ()
+
 @property (nonatomic, readonly) NSString *realizedPath;
 @property (nonatomic, assign) int maxlibNameLength;
+
 @end
 
 
-extern DSXRLibrary *mainExecutable;
 
 @implementation DSXRLibrary
 
-
 - (instancetype)initWithPath:(NSString*)path
 {
-    self = [super init];
-    if (self) {
+    
+    if (self = [super init]) {
         self.path = path;
         self.depdencies = [NSMutableArray array];
         [self.depdencies addObject:(NSString *)[NSNull null]];
@@ -44,9 +44,9 @@ extern DSXRLibrary *mainExecutable;
         self.function_starts = [NSMutableArray array];
         self.file_offset = 0;
         
-        self.stringObjCDictionary = [NSMutableDictionary dictionaryWithCapacity:200];
-        self.addressObjCDictionary = [NSMutableDictionary dictionaryWithCapacity:200];
+
         self.addressSymbolDictionary = [NSMutableDictionary dictionaryWithCapacity:800];
+        self.externalObjectiveClassesDict = [NSMutableDictionary dictionaryWithCapacity:100];
         
         if (![[NSFileManager defaultManager] fileExistsAtPath:self.resolvedPath]) {
             printf("No file at \"%s\"\n", [self.resolvedPath UTF8String]);
@@ -56,9 +56,22 @@ extern DSXRLibrary *mainExecutable;
         self.fd = open([self.resolvedPath UTF8String], O_RDONLY);
         if (_fd == -1) { perror("Couldn't open file"); return nil; }
         
-        uint32 magic = 0;
+        FILE* f = fdopen(self.fd, "r");
+        fseek(f, 0, SEEK_END);
+        long fsize = ftell(f);
+        fseek(f, 0, SEEK_SET);  /* same as rewind(f); */
+        self.data = malloc(fsize + 1);
+        fread(self.data, 1, fsize, f);
+        fclose(f);
         
-        if (pread(_fd, &magic, 4, 0) != 4) { perror("File too small"); return nil; }
+        if (fsize < 4) {
+            perror("File too small"); return nil;
+        }
+        
+        uint32 magic = 0;
+        memcpy(&magic, _data, 4);
+        
+       
     LOL:
         
         if (magic == MH_MAGIC || magic == MH_MAGIC) {
@@ -134,10 +147,9 @@ extern DSXRLibrary *mainExecutable;
                     
                 } else if (ld_cmd->cmd == LC_DYLD_INFO || ld_cmd->cmd == LC_DYLD_INFO_ONLY) {
                     self.dyldInfo = (struct dyld_info_command *)ld_cmd;
-                    if (xref_options.objc_mode) {
+                    if (xref_options.objectiveC_mode) {
                         [self parseOpcodes];
                     }
-
                     
                 } else if (ld_cmd->cmd == LC_DYSYMTAB) {
                     self.dysymtab = (struct dysymtab_command *)ld_cmd;
@@ -175,18 +187,6 @@ extern DSXRLibrary *mainExecutable;
                         } else if ( strcmp(sec.segname, "__DATA") == 0 && strcmp(sec.sectname, "__cfstring") == 0) {
 //                            self.lazy_ptr_section = &sections[j];
                             self.cfstring_buffer = calloc(1, (long)&sections[j].size);
-                        } else if ( strcmp(sec.sectname, "__objc_classrefs__DATA") == 0) {
-                            // sectname uses the full 16 bytes, so include segment (no null terminator)
-                            
-                            sec.size / sizeof(void*);
-
-                            
-                        } else if ( strcmp(sec.sectname, "__objc_classlist__DATA") == 0) {
-                            // sectname uses the full 16 bytes, so include segment (no null terminator)
-                            
-                            sec.size / sizeof(void*);
-                            
-                            
                         }
                         
                     }
@@ -236,42 +236,32 @@ extern DSXRLibrary *mainExecutable;
             _indirect_symbols.indirect_sym = calloc(self.indirect_symbols.count, sizeof(uint32_t));
              pread(_fd, _indirect_symbols.indirect_sym, _indirect_symbols.count * sizeof(uint32_t), syms);
         }
-//        close(fd);
     }
     
     [exploredSet addObject:path];
     
 
-//    Had this for print formatting, dunno of you still want it though for future idea...
-//    for (int i = 1; i < self.depdencies.count; i++) {
-//
-//        _maxlibNameLength =  MAX((int)self.depdencies[i].length, _maxlibNameLength);
-//    }
     if (!self.symtab) {
         printf("Warning: no symbol table\n");
         return nil;
     }
     
-    if (xref_options.objc_mode) {
-        [self preparseObjectiveCSymbols];
+    if (xref_options.objectiveC_mode) {
+        [self preparseExternalObjectiveCSymbols];
     }
     
     return self;
 }
 
-- (void)preparseObjectiveCSymbols {
-
-    for (int i = 0; i < self.symtab->nsyms; i++) {
-        
+/// Grab externally referenced ObjectiveC Swift classes, which are located in externals in symbol table
+- (void)preparseExternalObjectiveCSymbols {
+    for (int i = self.dysymtab->iundefsym; i < self.dysymtab->nundefsym + self.dysymtab->iundefsym; i++) {
         struct nlist_64 symbol = self.symbols[i];
         char * chr = &self.str_symbols[symbol.n_un.n_strx];
-        
-        if (!strnstr(chr, "_OBJC_CLASS_$_", 14) || !symbol.n_value) {
-            continue;
-        }
-        [self addToDictionaries:symbol.n_value symbol:chr];
+        if (!strnstr(chr, "_OBJC_CLASS_$_", OBJC_CLASS_LENGTH)) { continue; }
+        NSString *str = [NSString stringWithUTF8String:chr];
+        self.externalObjectiveClassesDict[str] = @(i);
     }
-    
 }
 
 
@@ -285,12 +275,12 @@ extern DSXRLibrary *mainExecutable;
         return _realizedPath;
     }
     
-    if ([self.path hasPrefix:@"@rpath"] && mainExecutable) {
+    if ([self.path hasPrefix:@"@rpath"]) {
         
         static dispatch_once_t once;
         static NSString *executablePath = nil;
         dispatch_once(&once, ^{
-            executablePath = [mainExecutable.path stringByDeletingLastPathComponent];
+            executablePath = [self.path stringByDeletingLastPathComponent];
         });
         
         NSString *rpathReplacement = nil;
@@ -310,7 +300,7 @@ extern DSXRLibrary *mainExecutable;
             }
         }
         
-        return [self.path stringByReplacingOccurrencesOfString:@"@rpath" withString:[mainExecutable.path stringByDeletingLastPathComponent]];
+        return [self.path stringByReplacingOccurrencesOfString:@"@rpath" withString:[self.path stringByDeletingLastPathComponent]];
         
         // Still can't find it... try simulator then try dyld shared cache
     } else if (YES ) {//|| [self isSimulatorLibrary] || [mainExecutable isSimulatorLibrary]) {
@@ -376,8 +366,6 @@ extern DSXRLibrary *mainExecutable;
 - (NSArray *)searchNonTextAddresses:(uintptr_t)address {
     NSMutableArray *foundAddresses = [NSMutableArray array];
     
-    int fd = open(self.realizedPath.UTF8String, O_RDONLY);
-    
     for (int i = 1; i < self.sectionCommandsArray.count; i++) {
         
         struct section_64 *section = (struct section_64 *)self.sectionCommandsArray[i].longValue;
@@ -386,7 +374,7 @@ extern DSXRLibrary *mainExecutable;
             
             uintptr_t *base = calloc(1, section->size);
             size_t count = (uintptr_t)section->size / sizeof(uintptr_t);
-            pread(fd, base, section->size, section->offset + self.file_offset);
+            pread(self.fd, base, section->size, section->offset + self.file_offset);
             for (int z = 0; z < count; z++) {
                 if (address == base[z]) {
                     [foundAddresses addObject:@((z * sizeof(uintptr_t)) + section->addr)];
@@ -395,7 +383,7 @@ extern DSXRLibrary *mainExecutable;
             free(base);
         }
     }
-    close(fd);
+
     return foundAddresses;
 }
 
@@ -477,16 +465,14 @@ extern DSXRLibrary *mainExecutable;
 
 - (void)dumpReferencesForSymbol:(NSString *)symbol {
     
-    if (xref_options.objc_mode) {
+    if (xref_options.objectiveC_mode) {
         symbol = [@"_OBJC_CLASS_$_" stringByAppendingString:symbol];
     }
     const char *search_symbol = [symbol UTF8String];
     
-    
     struct nlist_64 *foundSymbol = NULL;
     for (int i = 0; i < self.symtab->nsyms; i++) {
         char * symbol_name = &self.str_symbols[self.symbols[i].n_un.n_strx];
-
         if (strcmp(symbol_name, search_symbol) == 0 || strcmp(&symbol_name[1], search_symbol) == 0) {
             foundSymbol = &self.symbols[i];
             break;
@@ -496,8 +482,8 @@ extern DSXRLibrary *mainExecutable;
     uintptr_t resolvedAddress = 0;
     if (!foundSymbol) {
         // Local symbols can be stripped in symbol table but still found in dyld opcodes...
-        DSXRObjCClass* objcClass;
-        if (xref_options.objc_mode) {
+        DSXRObjCClass* objcClass = nil;
+        if (xref_options.objectiveC_mode) {
             objcClass = self.stringObjCDictionary[symbol];
             resolvedAddress = objcClass.address.unsignedLongValue;
         }
@@ -508,16 +494,14 @@ extern DSXRLibrary *mainExecutable;
         return;
     }
     
-//    self.stringObjCDictionary[symbol]
+    
     printf("Searching for: ");
-
-    [self printSymbol:foundSymbol];
-    
-    
-
-    
-    if (xref_options.objc_mode) {
-        self.stringObjCDictionary[symbol];
+    print_symbol(self, foundSymbol);
+  
+    if (xref_options.objectiveC_mode) {
+        
+        DSXRObjCClass *cls = self.stringObjCDictionary[symbol];
+        resolvedAddress = cls.address.unsignedLongLongValue;
     } else {
         // It's in the symbol table, so now see what exactly it is
         if ((foundSymbol->n_type & N_TYPE) == N_SECT) {
@@ -566,7 +550,7 @@ extern DSXRLibrary *mainExecutable;
 /// x86 (usually) references library memory addresses via offsets of the IP, so look for that
 - (NSArray <NSNumber*> *)findAddressInCode_x86:(uintptr_t)address {
     NSMutableArray <NSNumber*>*foundAddresses = [NSMutableArray array];
-    if (!self.instructions) { [mainExecutable parseData]; }
+    if (!self.instructions) { [self parseData]; }
     
     size_t count = self.instructions_count;
     
@@ -592,7 +576,7 @@ extern DSXRLibrary *mainExecutable;
 
 /// ARM (usually) references library memory addresses via the ADRP, ADD combo
 - (NSArray <NSNumber *>*)findAddressInCode_ARM64:(uintptr_t)address {
-    if (!self.instructions) { [mainExecutable parseData]; }
+    if (!self.instructions) { [self parseData]; }
     NSMutableArray <NSNumber*> *foundAddresses = [NSMutableArray array];
     size_t count = self.instructions_count;
     
@@ -799,7 +783,6 @@ extern DSXRLibrary *mainExecutable;
             
     
             return self.lazy_ptr_section->addr + (PTR_SIZE * i);
-            return buf_stub_helper;
         }
     }
     
@@ -821,14 +804,13 @@ extern DSXRLibrary *mainExecutable;
 
 
 
-- (uintptr_t)loadAddressToFileOffset:(uintptr_t)loadAddress {
+- (uintptr_t)translateLoadAddressToFileOffset:(uintptr_t)loadAddress {
     for (int i = 1; i < self.sectionCommandsArray.count; i++) {
         NSNumber *sectionNumber = self.sectionCommandsArray[i];
         struct section_64 *sec = sectionNumber.pointerValue;
         if (sec->addr <= loadAddress && loadAddress < sec->addr + sec->size) {
             return loadAddress - sec->addr  + sec->offset;
         }
-        
     }
     printf("WARNING: couldn't find address 0x%lx in binary!\n", loadAddress);
     return 0;

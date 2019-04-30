@@ -1,8 +1,8 @@
 //
-//  DSXRExecutable.h
+//  TestClass.h
 //  xref
 //
-//  Created by Derek Selander on 3/7/19.
+//  Created by Derek Selander on 4/29/19.
 //  Copyright © 2019 Selander. All rights reserved.
 //
 
@@ -10,9 +10,7 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface DSXRExecutable : DSXRLibrary
-
-
+@interface TestClass : DSXRLibrary
 
 @end
 

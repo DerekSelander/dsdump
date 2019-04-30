@@ -14,13 +14,12 @@
 #import "DSXRLibrary.h"
 #import "capstone/capstone.h"
 #import "capstone/platform.h"
-#import "DSXRExecutable.h"
 #import "DSXRLibrary+SymbolDumper.h"
 
 @import MachO;
 static NSArray <NSString *>* exc_rpaths = nil;
 
-extern DSXRLibrary *mainExecutable;
+static DSXRLibrary *mainExecutable;
 
 static void handle_args(int argc, const char * argv[]);
 
@@ -40,7 +39,7 @@ int main(int argc, const char * argv[], const char*envp[]) {
         exit(1);
     }
     
-    mainExecutable = [[DSXRExecutable alloc] initWithPath:path];
+    mainExecutable = [[DSXRLibrary alloc] initWithPath:path];
     
     
     if (! (xref_options.address || xref_options.symbol || xref_options.file_offset  || xref_options.analyze)) {
@@ -81,7 +80,7 @@ static void handle_args(int argc, const char * argv[]) {
             {"color",    no_argument, &xref_options.color,  1 },
             {"defined",    no_argument, &xref_options.defined,  1 },
             {"undefined",    no_argument, &xref_options.undefined,  1 },
-            {"objc",    no_argument, &xref_options.objc_mode,  1 },
+            {"objc",    no_argument, &xref_options.objectiveC_mode,  1 },
             {"all",    no_argument, &xref_options.all_symbols,  1 },
             {0,         0,                 0,  0 }
         };

@@ -16,6 +16,13 @@
 - (void)parseOpcodes {
     assert(self.dyldInfo);
     
+    if (!self.stringObjCDictionary) {
+        self.stringObjCDictionary = [NSMutableDictionary dictionaryWithCapacity:100];
+    }
+    if (!self.addressObjCDictionary) {
+        self.addressObjCDictionary = [NSMutableDictionary dictionaryWithCapacity:100];
+    }
+    
     uint8_t *bind_buffer = calloc(self.dyldInfo->bind_size, 1);
     pread(self.fd, bind_buffer, self.dyldInfo->bind_size, self.dyldInfo->bind_off + self.file_offset);
     
@@ -151,15 +158,19 @@
     
     NSString *s = [NSString stringWithUTF8String:symbol];
     NSNumber *a = @(address);
-    
+
     if (self.addressObjCDictionary[a]) {
-        
+
         dprintf(STDERR_FILENO, "overriding dict: old %s, %p, new; %s, %p\n", self.addressObjCDictionary[a].name.UTF8String, self.addressObjCDictionary[a].address.pointerValue, symbol, (void*)address);
     }
     DSXRObjCClass * obj = [[DSXRObjCClass alloc] initWithAddress:a symbol:s];
-    
+
     self.stringObjCDictionary[s] = obj;
     self.addressObjCDictionary[a] = obj;
+    
+//    dsclass_ref_t ref = ClassRefCreate(address, symbol);
+//    hash_add_objcref_str(ref);
+//    hash_add_objcref_addr(ref);
 }
 
 @end

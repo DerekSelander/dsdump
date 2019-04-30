@@ -13,7 +13,6 @@ NS_ASSUME_NONNULL_BEGIN
 @interface DSXRLibrary (Opcode)
 
 - (void)parseOpcodes;
-- (void)addToDictionaries:(uintptr_t)address symbol:(char *)symbol;
 @end
 
 NS_ASSUME_NONNULL_END

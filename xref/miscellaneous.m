@@ -8,7 +8,6 @@
 
 #import "miscellaneous.h"
 
-
 BOOL quiet_mode = NO;
 NSMutableSet <NSString*> *pathsSet = nil;
 NSMutableSet <NSString*> *exploredSet = nil;
@@ -16,7 +15,7 @@ NSMutableSet <NSString*> *rpathSet;
 
 xref_options_t xref_options;
 
-static void __attribute__((constructor))InitializeStuff() {
+__attribute__((constructor)) static void InitializeStuff() {
     pathsSet = [NSMutableSet set];
     exploredSet = [NSMutableSet set];
     rpathSet = [NSMutableSet set];
@@ -33,7 +32,6 @@ static const char *_options[] = {
     "--symbol  (-s) <symbol> Find references to a symbol, use --objc for non-C\n",
     "--undefined (-u) Dump only undefined (externally referenced) symbols\n",
     "--defined   (-U) Dump only defined (internally implemented) symbols\n"
-    
 };
 
 void print_usage() {
@@ -167,3 +165,8 @@ const uintptr_t r_sleb128_decode(uint8_t *byte, uintptr_t* datalen, uint64_t *v)
     if (datalen) { *datalen = l; }
     return result;
 }
+
+#define FAST_DATA_MASK          0x00007ffffffffff8UL
+
+
+

@@ -6,17 +6,32 @@
 //  Copyright © 2019 Selander. All rights reserved.
 //
 
+//#ifdef __cplusplus
+//extern "C" {
+//#endif
+    
 #import "DSXRLibrary.h"
-
+    
 NS_ASSUME_NONNULL_BEGIN
 
-@interface DSXRLibrary (SymbolDumper)
-- (void)dumpSymbols;
-//- (void)dumpObjectiveCSymbols;
-- (void)dumpExternalSymbols;
-- (DSXRObjCClass *)objCClassFromSymbol:(struct nlist_64 * _Nonnull)sym;
 
-- (void)printSymbol:(struct nlist_64 *)sym;
+@interface DSXRLibrary (SymbolDumper)
+
+- (void)dumpSymbols;
+- (void)dumpExternalSymbols;
+- (DSXRObjCClass *)objCSuperClassFromSymbol:(struct nlist_64 * _Nonnull)sym;
+
 @end
 
+OS_ALWAYS_INLINE
+void print_symbol(id  object, struct nlist_64 * _Nonnull sym);
+    
 NS_ASSUME_NONNULL_END
+    
+//#ifdef __cplusplus
+//} // extern c
+//#endif
+
+#define OBJC_CLASS_LENGTH (strlen("_OBJC_CLASS_$_"))
+
+

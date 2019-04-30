@@ -9,7 +9,7 @@
 #import "DSXRLibrary.h"
 #import <sys/mman.h>
 
-#define PAYLOAD_FILE_SIZE(c)  (sizeof(long) + (sizeof(cs_insn) * (c)) + (sizeof(cs_detail) * (c)))
+//#define PAYLOAD_FILE_SIZE(c)  (sizeof(long) + (sizeof(cs_insn) * (c)) + (sizeof(cs_detail) * (c)))
 
 
 @implementation DSXRLibrary (FileManagement)
@@ -19,25 +19,32 @@
 // Public methods
 ////////////////////////////////////////////////////////////////
 
-/// Generates the data
+/// Generates the data, you might want to redesign this if you want to parse multiple frameworks
+// currently only does one, so dispatch_once logic might be over the top
 - (BOOL)parseData {
-    // Already parsed it, don't need to do it again
-    if (self.instructions) { return YES; }
+    static dispatch_once_t onceToken;
+    static BOOL done = NO;
+    dispatch_once(&onceToken, ^{
+        struct section_64* text_section = [self.sectionCommandsDictionary[@"__TEXT.__text"] pointerValue];
+        if (!text_section) {
+            done = NO;
+        } else {
+            done = [self parseDataOnDisk];
+        }
+    });
+
     
+
+    // This is for the --analyze option, not implemented yet
+//    size_t count = 0;
+//    cs_insn *instructions = [self loadInstructionsIfAvailable:&count];
+//    if (instructions) {
+//        self.instructions = instructions;
+//        self.instructions_count = count;
+//        return YES;
+//    }
     
-    struct section_64* text_section = [self.sectionCommandsDictionary[@"__TEXT.__text"] pointerValue];
-    if (!text_section) { return NO; }
-    
-    size_t count = 0;
-//    printf("starting...\n");
-    cs_insn *instructions = [self loadInstructionsIfAvailable:&count];
-    if (instructions) {
-        self.instructions = instructions;
-        self.instructions_count = count;
-        return YES;
-    }
-    
-    return [self parseDataOnDisk];
+    return done;
 }
 
 /// Will save the instructions to disk
@@ -54,7 +61,7 @@
     cs_detail *buffer = calloc(count, sizeof(*buffer));
     printf("memcpy...\n");
     BOOL isATerminal = isatty(STDERR_FILENO);
-//    progressbar *progress = NULL;
+
     if (isATerminal) {
 //        progress = progressbar_new("Processing... ", 100);
     }
@@ -101,7 +108,7 @@
 ////////////////////////////////////////////////////////////////
 
 - (BOOL)parseDataOnDisk {
-    int fd = open([self.realizedPath UTF8String], O_RDONLY);
+
     cs_arch arch = self.header.h64.cputype == CPU_TYPE_ARM64? CS_ARCH_ARM64 : CS_ARCH_X86;
     cs_mode mode = self.header.h64.cputype == CPU_TYPE_ARM64? CS_MODE_ARM : CS_MODE_64;
     csh handle = 0;
@@ -116,7 +123,7 @@
     if (!text_section) { return NO; }
     
     void *buffer = calloc(text_section->size, sizeof(char));
-    pread(fd, buffer, text_section->size, text_section->offset + self.file_offset);
+    pread(self.fd, buffer, text_section->size, text_section->offset + self.file_offset);
     
     
     cs_insn *instructions = NULL;
@@ -135,7 +142,7 @@
     
     self.instructions = instructions;
     self.instructions_count = count;
-    close(fd);
+
     
     cs_close(&handle);
     return YES;
@@ -149,17 +156,17 @@
     if (fd == -1) {
         if (c) { *c = 0; }
         return NULL;
-        
+
     }
     
     size_t count = 0;
-    pread(fd, &count, sizeof(long), 0);
+    pread(self.fd, &count, sizeof(long), 0);
     
     cs_insn *instructions = calloc(count, sizeof(cs_insn));
-    pread(fd, instructions, sizeof(cs_insn) * count, sizeof(long));
+    pread(self.fd, instructions, sizeof(cs_insn) * count, sizeof(long));
     
     cs_detail *deets = calloc(count, sizeof(cs_detail));
-    pread(fd, deets, sizeof(cs_detail) * count, sizeof(long) + sizeof(cs_insn) * count);
+    pread(self.fd, deets, sizeof(cs_detail) * count, sizeof(long) + sizeof(cs_insn) * count);
     for (int i = 0; i < count; i++) {
         cs_insn insn = instructions[i];
         if (insn.detail) {

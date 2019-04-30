@@ -6,11 +6,12 @@
 //  Copyright © 2019 Selander. All rights reserved.
 //
 
-#import <Foundation/Foundation.h>
+
 #import "miscellaneous.h"
 #import "DSXRLibrary.h"
 #import "DSXRObjCClass.h"
 
+@import Foundation;
 @import MachO;
 
 NS_ASSUME_NONNULL_BEGIN
@@ -48,6 +49,7 @@ typedef struct {
 @property (nonatomic, strong) NSMutableDictionary <NSString *, DSXRObjCClass *>*stringObjCDictionary;
 @property (nonatomic, strong) NSMutableDictionary <NSNumber *, DSXRObjCClass *>*addressObjCDictionary;
 @property (nonatomic, strong) NSMutableDictionary <NSNumber *, NSNumber *>*addressSymbolDictionary;
+@property (nonatomic, strong) NSMutableDictionary <NSString *, NSNumber *>* externalObjectiveClassesDict;
 
 /// The initial MachO command to dictate the file, other ivars will reference offsets of this
 @property (nonatomic, assign) void *load_cmd_buffer;
@@ -70,6 +72,8 @@ typedef struct {
 @property (nonatomic, assign) struct nlist_64 *symbols;
 @property (nonatomic, assign) char *str_symbols;
 
+@property (nonatomic, assign) uint8_t *data;
+
 
 
 
@@ -90,14 +94,13 @@ typedef struct {
 @property (nonatomic, assign) uintptr_t file_offset;
 
 - (instancetype)initWithPath:(NSString*)path;
-//- (void)dumpSymbols;
+
 - (NSString *)realizedPath;
 - (void)dumpReferencesForAddress:(uintptr_t)address;
 - (void)dumpReferencesForSymbol:(NSString *)symbol;
-- (void)dumpObjectiveCReferencesForSymbol:(NSString *)symbol;
-- (void)dumpReferencesForFileOffset:(uintptr_t)file_offset;
 
-- (uintptr_t)loadAddressToFileOffset:(uintptr_t)loadAddress;
+- (void)dumpReferencesForFileOffset:(uintptr_t)file_offset;
+- (uintptr_t)translateLoadAddressToFileOffset:(uintptr_t)loadAddress;
 @end
 
 
