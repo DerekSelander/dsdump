@@ -20,7 +20,7 @@
         struct section_64* class_list = [self.sectionCommandsDictionary[@"__DATA.__objc_classlist"]
                                          pointerValue];
         if (class_list) {
-            uintptr_t offset = [self translateLoadAddressToFileOffset:class_list->addr] + self.file_offset;
+            uintptr_t offset = [self translateLoadAddressToFileOffset:class_list->addr useFatOffset:NO] + self.file_offset;
             uintptr_t *buff = (uintptr_t *)&self.data[offset];
             
             for (int i = 0; i < class_list->size / PTR_SIZE; i++) {
@@ -34,8 +34,8 @@
                     char *color = dcolor(DSCOLOR_GREEN);
                                         
                     if (!name) {
-                        offset = [self translateLoadAddressToFileOffset:buff[i] + PTR_SIZE];
-                        uintptr_t supercls = *(uintptr_t *)&self.data[offset];
+                        offset = [self translateLoadAddressToFileOffset:buff[i] + PTR_SIZE useFatOffset:NO];
+                        uintptr_t supercls = *(uintptr_t *)&self.data[offset + self.file_offset];
                         
                         if (supercls) {
                             name = [self nameForObjCClass:supercls];
@@ -63,7 +63,9 @@
             if (!strnstr(chr, "_OBJC_CLASS_$_", OBJC_CLASS_LENGTH)) {
                 continue;
             }
-            print_symbol(self, &sym);
+            NSString *name = [NSString stringWithUTF8String:chr];
+            uintptr_t addr = self.stringObjCDictionary[name].address.unsignedLongValue;
+            print_symbol(self, &sym, &addr);
         }
     }
 }
@@ -71,40 +73,39 @@
 -(const char *)nameForObjCClass:(uintptr_t)address {
     // Going after the class_ro_t of an ObjectiveC class
     // ommitting using Apple headers since their legal agreement is a PoS
+    // On disk, class_ro_t seems to be stored at class_rw_t, so flip those around while on disk...
     
-    uintptr_t offset;
-    // Starts at __DATA.__objc_data, translate to file offset
-    if (!(offset = [self translateLoadAddressToFileOffset:address] + self.file_offset)) {
+    uintptr_t offset = [self translateLoadAddressToFileOffset:address useFatOffset:NO ] + self.file_offset;
+    // Starts at __DATA.__objc_data, translate to file offset, going after class_rw_t 8
+    if (!(offset )) {
         return NULL;
     }
     
-    // Grab the  the class_rw_t data found in __DATA__objc_const
-    uintptr_t buff = *(uintptr_t *)&self.data[offset + (4 * PTR_SIZE)];
+    // Grab the  the class_rw_t data found in __DATA__objc_const, need to apply the FAST_DATA_MASK on the
+    // class_data_bits_t since it can be not pointer aligned
+//    uintptr_t buff = *(uintptr_t *)DATABUF(offset);
+    
+    
+
+    uintptr_t buff = *(uintptr_t *)((uintptr_t)DATABUF(offset + (4 * PTR_SIZE)) & FAST_DATA_MASK);
+    
+
+    if (!(offset = [self translateLoadAddressToFileOffset:(buff & FAST_DATA_MASK) useFatOffset:NO])) {
+        return NULL;
+    }
+    
+
+    buff = *(uintptr_t *)DATABUF(offset + self.file_offset + (3 * PTR_SIZE));
     if (!buff) {
         return NULL;
     }
     
-    // ... Which then points to the class_ro_t type,
-    // ignoring flags (32), instanceStart (32), instanceSize (32), reserved (32), ivarLayout (64)
-    // And then finally char * name;
-    if (!(offset = [self translateLoadAddressToFileOffset:(buff & FAST_DATA_MASK) + (3 * PTR_SIZE)] + self.file_offset)) {
+//    // transform it into file offset and deref...
+    if (!(offset = [self translateLoadAddressToFileOffset:buff useFatOffset:NO])) {
         return NULL;
     }
     
-    // This finally gets to the __TEXT.__objc_classname
-    if (!(buff = *(uintptr_t *)&self.data[offset])) {
-        return  NULL;
-    }
-    
-    // Which can then be translated to a file offset for reading
-    if (!(offset = [self translateLoadAddressToFileOffset:buff])) {
-        return NULL;
-    }
-    
-    
-//    char
-    char *s = (char *)&self.data[offset];
-//    pread(self.fd, s, 200, offset);
+    char *s = (void*)&self.data[offset + self.file_offset];
     if (strlen(s)) {
         return s;
     }

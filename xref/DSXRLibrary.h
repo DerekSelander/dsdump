@@ -14,6 +14,8 @@
 @import Foundation;
 @import MachO;
 
+#define DATABUF(offset) (void*)&self.data[(offset)]
+
 NS_ASSUME_NONNULL_BEGIN
 
 /// Deal with 32/64 in one value
@@ -99,7 +101,10 @@ typedef struct {
 - (void)dumpReferencesForSymbol:(NSString *)symbol;
 
 - (void)dumpReferencesForFileOffset:(uintptr_t)file_offset;
-- (uintptr_t)translateLoadAddressToFileOffset:(uintptr_t)loadAddress;
+//- (uintptr_t)translateLoadAddressToFileOffset:(uintptr_t)loadAddress;
+- (uintptr_t)translateLoadAddressToFileOffset:(uintptr_t)loadAddress useFatOffset:(BOOL)useFatOffset;
+- (uintptr_t)translateOffsetToLoadAddress:(uintptr_t)offset;
+
 @end
 
 

@@ -52,10 +52,10 @@
         
         if (xref_options.defined || xref_options.undefined) {
             if ((xref_options.defined && symbol.n_type & N_TYPE & N_SECT) || (xref_options.undefined && (symbol.n_type & N_TYPE) == N_UNDF)) {
-                print_symbol(self, &self.symbols[i]);
+                print_symbol(self, &self.symbols[i], NULL);
             }
         } else {
-            print_symbol(self, &self.symbols[i]);
+            print_symbol(self, &self.symbols[i], NULL);
         }
         
         
@@ -106,7 +106,7 @@
     DSXRObjCClass *objcReference;
 //    dsclass_ref_t ref;
     uintptr_t buff = 0;
-    uintptr_t fileOff = [self translateLoadAddressToFileOffset:sym->n_value + PTR_SIZE];
+    uintptr_t fileOff = [self translateLoadAddressToFileOffset:sym->n_value + PTR_SIZE useFatOffset:NO];
     pread(self.fd, &buff, sizeof(void*), fileOff + self.file_offset);
     
     // That buff is 0, then the class is defined elsewhere, use the opcode symbol bindings instead
@@ -126,7 +126,7 @@
 
 
 OS_ALWAYS_INLINE
-inline void print_symbol(DSXRLibrary *object, struct nlist_64 * _Nonnull sym) {
+void print_symbol(DSXRLibrary *object, struct nlist_64 * _Nonnull sym, uintptr_t * _Nullable override_addr) {
     char * chr = &object.str_symbols[sym->n_un.n_strx];
     BOOL isObjC = NO;
     int output_len = 0;
@@ -134,7 +134,7 @@ inline void print_symbol(DSXRLibrary *object, struct nlist_64 * _Nonnull sym) {
     if (xref_options.objectiveC_mode && !strnstr(chr, "_OBJC_CLASS_$_", OBJC_CLASS_LENGTH)) {
         return;
     }
-    output_len += printf("0x%011llx ", sym->n_value);
+    output_len += printf("0x%011llx ", override_addr ? *override_addr : sym->n_value);
     if (xref_options.objectiveC_mode) {
         chr += OBJC_CLASS_LENGTH;
         isObjC = YES;

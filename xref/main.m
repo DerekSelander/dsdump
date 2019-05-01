@@ -72,6 +72,7 @@ static void handle_args(int argc, const char * argv[]) {
         static struct option long_options[] = {
             {"library", required_argument, 0,  0 },
             {"symbol",  required_argument, 0,  0 },
+            {"arch",  required_argument, 0,  0 },
             {"file_offset",  required_argument, 0,  0 },
             {"regex",   no_argument,       &xref_options.use_regex,  1},
             {"verbose", optional_argument,     &xref_options.verbose,  1 },
@@ -82,6 +83,7 @@ static void handle_args(int argc, const char * argv[]) {
             {"undefined",    no_argument, &xref_options.undefined,  1 },
             {"objc",    no_argument, &xref_options.objectiveC_mode,  1 },
             {"all",    no_argument, &xref_options.all_symbols,  1 },
+            {"debug",    no_argument, &xref_options.debug,  1 },
             {0,         0,                 0,  0 }
         };
         
@@ -102,7 +104,9 @@ static void handle_args(int argc, const char * argv[]) {
                     xref_options.file_offset = strtol(optarg, 0, 0);
                 } else if (strcmp(long_options[option_index].name, "verbose") == 0) {
                     xref_options.verbose = (int)strtol(optarg, 0, 0);
-                } 
+                }  else if (strcmp(long_options[option_index].name, "arch") == 0) {
+                    xref_options.arch = optarg;
+                }
 //                if (optarg)
 //                    printf(" with arg %s", optarg);
 //                printf("\n");

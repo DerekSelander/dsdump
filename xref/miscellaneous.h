@@ -67,6 +67,7 @@ typedef struct {
     uintptr_t file_offset;
     char * symbol;
     char * library;
+    char * arch;
     char * showSymbolReferences;
     int debug;
 } xref_options_t;

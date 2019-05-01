@@ -74,7 +74,7 @@
         } else if (magic == MH_MAGIC_64 || magic == MH_CIGAM_64) {
 
             _header = *(struct mach_header_64 *)&_data[_file_offset];
-            _load_cmd_buffer = (void*)&_data[sizeof(struct mach_header_64) + _file_offset];
+            _load_cmd_buffer = DATABUF(sizeof(struct mach_header_64) + _file_offset);
             uintptr_t cur = (uintptr_t)_load_cmd_buffer;
             
             for (int i = 0; i < _header.ncmds; i++) {
@@ -132,8 +132,8 @@
                 } else if (load_cmd->cmd == LC_SYMTAB) {
                     
                     self.symtab = (struct symtab_command *)load_cmd;
-                    self.symbols = (struct nlist_64 *)&_data[_file_offset + self.symtab->symoff];
-                    self.str_symbols = (char *)&_data[_file_offset + self.symtab->stroff];
+                    self.symbols = DATABUF(_file_offset + self.symtab->symoff); //(struct nlist_64 *)&_data[_file_offset + self.symtab->symoff];
+                    self.str_symbols = DATABUF(_file_offset + self.symtab->stroff); // (char *)&_data[_file_offset + self.symtab->stroff];
 
                 } else if (load_cmd->cmd == LC_DYLD_INFO || load_cmd->cmd == LC_DYLD_INFO_ONLY) {
                     
@@ -183,14 +183,40 @@
             }
             
         } else if (magic == FAT_MAGIC || magic == FAT_CIGAM) {
-            
+            if (!xref_options.arch) {
+                dprintf(STDERR_FILENO, "Multiple architectures, defaulting to first 64 bit slice, use --arch to specify a specific arch\n");
+            }
             struct fat_header fatHeader;
             fatHeader = *(struct fat_header *)_data;
             uint32_t numArchs = htonl(fatHeader.nfat_arch);
             
             struct fat_arch *arches = (struct fat_arch *)&_data[sizeof(struct fat_header)];
+            
+            // TODO put this in a function for itself...
+            cpu_subtype_t cpu_subtype = 0;
+            cpu_type_t cpu_type = 0;
+            if (xref_options.arch) {
+                if (strcmp("x86_64", xref_options.arch) == 0) {
+                    cpu_type = CPU_TYPE_X86_64;
+                    cpu_subtype = CPU_SUBTYPE_X86_64_ALL;
+                } else if (strcmp("x86_64h", xref_options.arch) == 0) {
+                    cpu_type = CPU_TYPE_X86_64;
+                    cpu_subtype = CPU_SUBTYPE_X86_64_H;
+                    
+                } else if (strcmp("ARM", xref_options.arch) == 0) {
+                    // TODO
+                    assert(0);
+                }
+            }
             for (int j = 0; j < numArchs; j++) {
-                if (ntohl(arches[j].cputype) & CPU_ARCH_ABI64 ) {
+                // Default to anything 64 bit, else select the appropriate ARCH
+                if (xref_options.arch) {
+                    if (ntohl(arches[j].cputype) == cpu_type &&  ntohl(arches[j].cpusubtype) == cpu_subtype) {
+                        _file_offset = htonl(arches[j].offset);
+                        magic = *(uint32_t *)&_data[_file_offset];
+                        goto LOL;
+                    }
+                } else if (ntohl(arches[j].cputype) & CPU_ARCH_ABI64 ) {
                     _file_offset = htonl(arches[j].offset);
                     magic = *(uint32_t *)&_data[_file_offset];
                     goto LOL;
@@ -454,7 +480,7 @@
     
     
     printf("Searching for: ");
-    print_symbol(self, foundSymbol);
+    print_symbol(self, foundSymbol, NULL);
   
     if (xref_options.objectiveC_mode) {
         
@@ -762,15 +788,31 @@
 
 
 
-- (uintptr_t)translateLoadAddressToFileOffset:(uintptr_t)loadAddress {
+- (uintptr_t)translateLoadAddressToFileOffset:(uintptr_t)loadAddress useFatOffset:(BOOL)useFatOffset {
+   __unused  uintptr_t f = useFatOffset ? self.file_offset : 0;
     for (int i = 1; i < self.sectionCommandsArray.count; i++) {
         NSNumber *sectionNumber = self.sectionCommandsArray[i];
         struct section_64 *sec = sectionNumber.pointerValue;
         if (sec->addr <= loadAddress && loadAddress < sec->addr + sec->size) {
-            return loadAddress - sec->addr  + sec->offset;
+            return loadAddress - sec->addr  + sec->offset + f;
         }
     }
-    printf("WARNING: couldn't find address 0x%lx in binary!\n", loadAddress);
+    dprintf(STDERR_FILENO, "WARNING: couldn't find address 0x%lx in binary!\n", loadAddress);
+
+    return 0;
+}
+
+- (uintptr_t)translateOffsetToLoadAddress:(uintptr_t)offset {
+    uintptr_t f = -self.file_offset;
+    for (int i = 1; i < self.sectionCommandsArray.count; i++) {
+        NSNumber *sectionNumber = self.sectionCommandsArray[i];
+        struct section_64 *sec = sectionNumber.pointerValue;
+        
+        if (sec->offset <= (offset + f) && (offset + f) < sec->offset + sec->size) {
+            return offset - sec->offset + sec->addr + f;
+        }
+    }
+    dprintf(STDERR_FILENO, "WARNING: couldn't find offset 0x%lx in binary!\n", offset);
     return 0;
 }
 @end

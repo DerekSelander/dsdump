@@ -24,7 +24,7 @@ NS_ASSUME_NONNULL_BEGIN
 @end
 
 OS_ALWAYS_INLINE
-void print_symbol(id  object, struct nlist_64 * _Nonnull sym);
+void print_symbol(DSXRLibrary *object, struct nlist_64 * _Nonnull sym, uintptr_t * _Nullable override_addr);
     
 NS_ASSUME_NONNULL_END
     
