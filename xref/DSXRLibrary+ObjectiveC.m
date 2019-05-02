@@ -22,7 +22,6 @@
         if (class_list) {
             uintptr_t offset = [self translateLoadAddressToFileOffset:class_list->addr useFatOffset:NO] + self.file_offset;
             uintptr_t *buff = (uintptr_t *)&self.data[offset];
-            
             for (int i = 0; i < class_list->size / PTR_SIZE; i++) {
                 printf("0x%011lx %s%s%s", buff[i],  dcolor(DSCOLOR_CYAN), [self nameForObjCClass:buff[i]], colorEnd());
 
@@ -63,9 +62,9 @@
             if (!strnstr(chr, "_OBJC_CLASS_$_", OBJC_CLASS_LENGTH)) {
                 continue;
             }
-            NSString *name = [NSString stringWithUTF8String:chr];
-            uintptr_t addr = self.stringObjCDictionary[name].address.unsignedLongValue;
-            print_symbol(self, &sym, &addr);
+//            NSString *name = [NSString stringWithUTF8String:chr];
+//            uintptr_t addr = self.stringObjCDictionary[name].address.unsignedLongValue;
+            print_symbol(self, &sym, NULL);
         }
     }
 }
