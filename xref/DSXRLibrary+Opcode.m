@@ -23,7 +23,7 @@
     
     uint8_t *bind_buffer = &self.data[self.dyldInfo->bind_off + self.file_offset]; 
     int i = 0;
-    uint64_t pointer = 0;
+    uint64_t bind_address = 0;
     char *symbol = NULL;
     char type = 0;
 
@@ -65,11 +65,9 @@
                 break;
             } case BIND_OPCODE_SET_ADDEND_SLEB: {
                 uintptr_t datalen = 0;
-                uint64_t v = 0;
-                r_sleb128_decode(&bind_buffer[++i], &datalen, &v);
+                r_sleb128_decode(&bind_buffer[++i], &datalen, &addend);
                 i += datalen - 1; // -1, cuz i++ later
-                addend = v;
-                DEBUG_PRINT("BIND_OPCODE_SET_ADDEND_SLEB (0x%llx)\n", v);
+                DEBUG_PRINT("BIND_OPCODE_SET_ADDEND_SLEB (0x%llx)\n", addend);
                 break;
             } case BIND_OPCODE_SET_SEGMENT_AND_OFFSET_ULEB: {
                 int datalen = 0;
@@ -78,50 +76,51 @@
                 i += datalen - 1; // -1, cuz i++ later
 
                 struct segment_command_64 *seg = (struct segment_command_64 *)self.segmentCommandsArray[imm].longValue;
-                pointer = seg->vmaddr + v;
-                DEBUG_PRINT("BIND_OPCODE_SET_SEGMENT_AND_OFFSET_ULEB (%d, 0x%08llx) (%p)\n", imm, v, (void*)pointer);
+                bind_address = seg->vmaddr + v;
+                DEBUG_PRINT("BIND_OPCODE_SET_SEGMENT_AND_OFFSET_ULEB (%d, 0x%08llx) (%p)\n", imm, v, (void*)bind_address);
                 break;
             } case BIND_OPCODE_ADD_ADDR_ULEB: {
                 int datalen = 0;
                 uint64_t v = 0;
                 r_uleb128_decode(&bind_buffer[++i], &datalen, &v);
                 i += datalen - 1; // -1, cuz i++ later
-                pointer += v;
-                DEBUG_PRINT("BIND_OPCODE_ADD_ADDR_ULEB (0x%llx) (%p)\n", v, (void*)(pointer));
+                bind_address += v;
+                DEBUG_PRINT("BIND_OPCODE_ADD_ADDR_ULEB (0x%llx) (%p)\n", v, (void*)(bind_address));
                 break;
             } case BIND_OPCODE_DO_BIND: {
-                DEBUG_PRINT("BIND_OPCODE_DO_BIND (%p)\n", (void*)pointer);
-                [self addToDictionaries:pointer symbol:symbol];
-                pointer += PTR_SIZE;
+                DEBUG_PRINT("BIND_OPCODE_DO_BIND (%p)\n", (void*)bind_address);
+                [self addToDictionaries:bind_address symbol:symbol];
+                bind_address += PTR_SIZE;
                 break;
             } case BIND_OPCODE_DO_BIND_ADD_ADDR_ULEB: {
                 int datalen = 0;
                 uint64_t v = 0;
                 r_uleb128_decode(&bind_buffer[++i], &datalen, &v);
-                DEBUG_PRINT("BIND_OPCODE_DO_BIND_ADD_ADDR_ULEB (%08llx) (%p)\n", v, (void*)pointer);
-                [self addToDictionaries:pointer symbol:symbol];
-                pointer += (v + PTR_SIZE);
+                DEBUG_PRINT("BIND_OPCODE_DO_BIND_ADD_ADDR_ULEB (%08llx) (%p)\n", v, (void*)bind_address);
+                [self addToDictionaries:bind_address symbol:symbol];
+                bind_address += (v + PTR_SIZE);
                 i += datalen - 1;
+                
                 break;
             } case BIND_OPCODE_DO_BIND_ADD_ADDR_IMM_SCALED: {
-                DEBUG_PRINT("BIND_OPCODE_DO_BIND_ADD_ADDR_IMM_SCALED (0x%lx) (%p)\n", imm * PTR_SIZE + PTR_SIZE, (void*)pointer);
-                [self addToDictionaries:pointer symbol:symbol];
-                pointer += imm * PTR_SIZE + PTR_SIZE;
+                DEBUG_PRINT("BIND_OPCODE_DO_BIND_ADD_ADDR_IMM_SCALED (0x%lx) (%p)\n", imm * PTR_SIZE + PTR_SIZE, (void*)bind_address);
+                [self addToDictionaries:bind_address symbol:symbol];
+                bind_address += imm * PTR_SIZE + PTR_SIZE;
                 break;
             } case BIND_OPCODE_DO_BIND_ULEB_TIMES_SKIPPING_ULEB: {
                 int datalen = 0;
-                uint64_t v = 0;
-                r_uleb128_decode(&bind_buffer[++i], &datalen, &v);
+                uint64 count = 0;
+                r_uleb128_decode(&bind_buffer[++i], &datalen, &count);
                 i += datalen - 1; // -1, cuz i++ later
-                uint64 count = v;
+                uint64_t v = 0;
                 r_uleb128_decode(&bind_buffer[++i], &datalen, &v);
                 uint64_t skip = v;
                 
                 DEBUG_PRINT("BIND_OPCODE_DO_BIND_ULEB_TIMES_SKIPPING_ULEB (%llu, 0x%08llx)\n", count, v);
                 for (int j = 0; j < count; j++) {
-                    DEBUG_PRINT("\tDO_BIND (%p)\n", (void*)pointer);
-                    [self addToDictionaries:pointer symbol:symbol];
-                    pointer += (skip + PTR_SIZE); // do bind, so sizeof(void*)
+                    DEBUG_PRINT("\tDO_BIND (%p)\n", (void*)bind_address);
+                    [self addToDictionaries:bind_address symbol:symbol];
+                    bind_address += (skip + PTR_SIZE); // do bind, so sizeof(void*)
                 }
                 i += datalen - 1; // -1, cuz i++ later
                 
@@ -145,7 +144,7 @@
         }
 
         i++;
-        pointer += addend;
+//        bind_address += addend;
 
     }
 }
