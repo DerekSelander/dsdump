@@ -6,11 +6,11 @@
 //  Copyright © 2019 Selander. All rights reserved.
 //
 
-#import "DSXRLibrary.h"
+#import "XRMachOLibrary.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface TestClass : DSXRLibrary
+@interface TestClass : XRMachOLibrary
 
 @end
 

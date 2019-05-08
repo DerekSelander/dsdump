@@ -1,16 +1,16 @@
 //
-//  DSXRLibrary+Opcode.h
+//  XRMachOLibrary+Opcode.h
 //  xref
 //
 //  Created by Derek Selander on 4/21/19.
 //  Copyright © 2019 Selander. All rights reserved.
 //
 
-#import "DSXRLibrary.h"
+#import "XRMachOLibrary.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface DSXRLibrary (Opcode)
+@interface XRMachOLibrary (Opcode)
 
 - (void)parseOpcodes;
 @end

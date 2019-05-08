@@ -1,5 +1,5 @@
 //
-//  DSXRLibrary.h
+//  XRMachOLibrary.h
 //  xref
 //
 //  Created by Derek Selander on 3/7/19.
@@ -8,7 +8,7 @@
 
 
 #import "miscellaneous.h"
-#import "DSXRLibrary.h"
+#import "XRMachOLibrary.h"
 #import "DSXRObjCClass.h"
 #import "capstone/capstone.h"
 
@@ -35,7 +35,7 @@ typedef struct {
     uint32_t *indirect_sym;
 } indirect_symbols_t;
 
-@interface DSXRLibrary : NSObject {
+@interface XRMachOLibrary : NSObject {
     size_t _instructions_count;
 
 }
@@ -114,7 +114,7 @@ typedef struct {
 
 
 /// File handling logic
-@interface DSXRLibrary (FileManagement)
+@interface XRMachOLibrary (FileManagement)
 
 - (BOOL)saveInstructions:(cs_insn *)instructions count:(NSUInteger)count;
 - (BOOL)parseData;

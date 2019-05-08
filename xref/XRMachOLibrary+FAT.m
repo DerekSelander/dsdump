@@ -1,17 +1,17 @@
 //
-//  DSXRLibrary+FAT.m
+//  XRMachOLibrary+FAT.m
 //  xref
 //
 //  Created by Derek Selander on 5/1/19.
 //  Copyright © 2019 Selander. All rights reserved.
 //
 
-#import "DSXRLibrary+FAT.h"
+#import "XRMachOLibrary+FAT.h"
 #include <sys/types.h>
 #include <sys/sysctl.h>
 
 
-@implementation DSXRLibrary (FAT)
+@implementation XRMachOLibrary (FAT)
 
 
 //+ (void)load {

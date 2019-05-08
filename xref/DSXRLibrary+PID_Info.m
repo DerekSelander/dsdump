@@ -1,12 +1,12 @@
 //
-//  DSXRLibrary+PID_Info.m
+//  XRMachOLibrary+PID_Info.m
 //  xref
 //
 //  Created by Derek Selander on 5/3/19.
 //  Copyright © 2019 Selander. All rights reserved.
 //
 
-#import "DSXRLibrary+PID_Info.h"
+#import "XRMachOLibrary+PID_Info.h"
 #import <Foundation/Foundation.h>
 #import <sys/proc.h>
 #import <sys/proc_info.h>
@@ -19,7 +19,7 @@
 #include <dlfcn.h>
 //#include "dyld_process_info_internal.h"
 
-@implementation DSXRLibrary (PID_Info)
+@implementation XRMachOLibrary (PID_Info)
 
 
 

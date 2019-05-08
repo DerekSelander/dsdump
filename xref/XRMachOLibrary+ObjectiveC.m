@@ -1,13 +1,13 @@
 //
-//  DSXRLibrary+ObjectiveC.m
+//  XRMachOLibrary+ObjectiveC.m
 //  xref
 //
 //  Created by Derek Selander on 4/29/19.
 //  Copyright © 2019 Selander. All rights reserved.
 //
 
-#import "DSXRLibrary+ObjectiveC.h"
-#import "DSXRLibrary+SymbolDumper.h"
+#import "XRMachOLibrary+ObjectiveC.h"
+#import "XRMachOLibrary+SymbolDumper.h"
 #include <libgen.h>
 
 
@@ -21,7 +21,7 @@ typedef struct  {
     BOOL success : 1;
 } d_offsets;
 
-@implementation DSXRLibrary (ObjectiveC)
+@implementation XRMachOLibrary (ObjectiveC)
 
 - (void)dumpObjectiveCClasses {
     // Defined symbols, will go after the __DATA.__objc_classlist pointers

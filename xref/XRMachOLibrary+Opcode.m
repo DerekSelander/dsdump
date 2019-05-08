@@ -1,17 +1,17 @@
 //
-//  DSXRLibrary+Opcode.m
+//  XRMachOLibrary+Opcode.m
 //  xref
 //
 //  Created by Derek Selander on 4/21/19.
 //  Copyright © 2019 Selander. All rights reserved.
 //
 
-#import "DSXRLibrary+Opcode.h"
+#import "XRMachOLibrary+Opcode.h"
 #import "miscellaneous.h"
 #import "DSXRObjCClass.h"
 
 @import MachO;
-@implementation DSXRLibrary (Opcode)
+@implementation XRMachOLibrary (Opcode)
 
 - (void)parseOpcodes {
     assert(self.dyldInfo);

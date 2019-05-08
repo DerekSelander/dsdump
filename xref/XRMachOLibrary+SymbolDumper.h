@@ -1,5 +1,5 @@
 //
-//  DSXRLibrary+SymbolDumper.h
+//  XRMachOLibrary+SymbolDumper.h
 //  xref
 //
 //  Created by Derek Selander on 4/22/19.
@@ -10,12 +10,12 @@
 //extern "C" {
 //#endif
     
-#import "DSXRLibrary.h"
+#import "XRMachOLibrary.h"
     
 NS_ASSUME_NONNULL_BEGIN
 
 
-@interface DSXRLibrary (SymbolDumper)
+@interface XRMachOLibrary (SymbolDumper)
 
 - (void)dumpSymbols;
 - (void)dumpExternalSymbols;
@@ -24,7 +24,7 @@ NS_ASSUME_NONNULL_BEGIN
 @end
 
 OS_ALWAYS_INLINE
-void print_symbol(DSXRLibrary *object, struct nlist_64 * _Nonnull sym, uintptr_t * _Nullable override_addr);
+void print_symbol(XRMachOLibrary *object, struct nlist_64 * _Nonnull sym, uintptr_t * _Nullable override_addr);
     
 NS_ASSUME_NONNULL_END
     

@@ -1,18 +1,18 @@
 //
-//  DSXRLibrary+FileManagement.m
+//  XRMachOLibrary+FileManagement.m
 //  xref
 //
 //  Created by Derek Selander on 4/10/19.
 //  Copyright © 2019 Selander. All rights reserved.
 //
 
-#import "DSXRLibrary.h"
+#import "XRMachOLibrary.h"
 #import <sys/mman.h>
 
 //#define PAYLOAD_FILE_SIZE(c)  (sizeof(long) + (sizeof(cs_insn) * (c)) + (sizeof(cs_detail) * (c)))
 
 
-@implementation DSXRLibrary (FileManagement)
+@implementation XRMachOLibrary (FileManagement)
 
 
 ////////////////////////////////////////////////////////////////

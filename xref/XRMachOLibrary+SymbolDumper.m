@@ -1,16 +1,16 @@
 //
-//  DSXRLibrary+SymbolDumper.m
+//  XRMachOLibrary+SymbolDumper.m
 //  xref
 //
 //  Created by Derek Selander on 4/22/19.
 //  Copyright © 2019 Selander. All rights reserved.
 //
 
-#import "DSXRLibrary+SymbolDumper.h"
-#import "DSXRLibrary+Opcode.h"
-#import "DSXRLibrary+ObjectiveC.h"
+#import "XRMachOLibrary+SymbolDumper.h"
+#import "XRMachOLibrary+Opcode.h"
+#import "XRMachOLibrary+ObjectiveC.h"
 
-@implementation DSXRLibrary (SymbolDumper)
+@implementation XRMachOLibrary (SymbolDumper)
 
 /********************************************************************************
  // Dump symbols
@@ -126,7 +126,7 @@
 
 
 OS_ALWAYS_INLINE
-void print_symbol(DSXRLibrary *object, struct nlist_64 * _Nonnull sym, uintptr_t * _Nullable override_addr) {
+void print_symbol(XRMachOLibrary *object, struct nlist_64 * _Nonnull sym, uintptr_t * _Nullable override_addr) {
     char * chr = &object.str_symbols[sym->n_un.n_strx];
     BOOL isObjC = NO;
     int output_len = 0;

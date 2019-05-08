@@ -12,10 +12,10 @@
 #import <getopt.h>
 
 #import "miscellaneous.h"
-#import "DSXRLibrary.h"
+#import "XRMachOLibrary.h"
 #import "capstone/capstone.h"
 #import "capstone/platform.h"
-#import "DSXRLibrary+SymbolDumper.h"
+#import "XRMachOLibrary+SymbolDumper.h"
 #import "TaskPath.h"
 
 @import MachO;
@@ -46,7 +46,7 @@ int main(int argc, const char * argv[], const char*envp[]) {
         exit(1);
     }
     
-    DSXRLibrary *image = [[DSXRLibrary alloc] initWithPath:path];
+    XRMachOLibrary *image = [[XRMachOLibrary alloc] initWithPath:path];
     
     
     if (! (xref_options.address || xref_options.symbol || xref_options.file_offset  || xref_options.analyze || xref_options.library)) {

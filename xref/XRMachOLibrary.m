@@ -1,28 +1,28 @@
 //
-//  DSXRLibrary.m
+//  XRMachOLibrary.m
 //  xref
 //
 //  Created by Derek Selander on 3/7/19.
 //  Copyright © 2019 Selander. All rights reserved.
 //
 
-#import "DSXRLibrary.h"
+#import "XRMachOLibrary.h"
 #import "miscellaneous.h"
-#import "DSXRLibrary.h"
-#import "DSXRLibrary+SymbolDumper.h"
+#import "XRMachOLibrary.h"
+#import "XRMachOLibrary+SymbolDumper.h"
 #import "capstone/capstone.h"
-#import "DSXRLibrary+Opcode.h"
+#import "XRMachOLibrary+Opcode.h"
 
 
 
-@interface DSXRLibrary ()
+@interface XRMachOLibrary ()
 
 @property (nonatomic, readonly) NSString *realizedPath;
 @property (nonatomic, assign) int maxlibNameLength;
 
 @end
 
-@implementation DSXRLibrary
+@implementation XRMachOLibrary
 
 - (instancetype)initWithPath:(NSString*)path {
     if (self = [super init]) {

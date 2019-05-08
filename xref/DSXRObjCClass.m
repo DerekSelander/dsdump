@@ -7,7 +7,7 @@
 //
 
 #import "DSXRObjCClass.h"
-#import "DSXRLibrary+SymbolDumper.h"
+#import "XRMachOLibrary+SymbolDumper.h"
 
 @implementation DSXRObjCClass
 
