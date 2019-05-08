@@ -376,7 +376,7 @@
 
 - (void)dumpReferencesForAddress:(uintptr_t)address {
     
-    printf("Searching for references to: %s%p%s\n", dcolor(DSCOLOR_CYAN), (void*)address, colorEnd());
+    printf("Searching for references to: %s%p%s\n", dcolor(DSCOLOR_CYAN), (void*)address, color_end());
     NSArray <NSNumber *>*foundAddresses = nil;
     if (self.header.cputype == CPU_TYPE_ARM64) {
         foundAddresses = [self findAddressInCode_ARM64:address];
@@ -415,7 +415,7 @@
                 
                 if (file_offset >= sec_start && file_offset < sec_stop) {
                     resolvedAddress = seg->vmaddr + file_offset;
-                    printf("Found file offset 0x%0lx in %s0x%011lx%s in %s%s,%s%s\n", file_offset,  dcolor(DSCOLOR_CYAN), resolvedAddress, colorEnd(), dcolor(DSCOLOR_YELLOW), sec.segname, sec.sectname, colorEnd());
+                    printf("Found file offset 0x%0lx in %s0x%011lx%s in %s%s,%s%s\n", file_offset,  dcolor(DSCOLOR_CYAN), resolvedAddress, color_end(), dcolor(DSCOLOR_YELLOW), sec.segname, sec.sectname, color_end());
                     break;
                 }
             }
@@ -473,7 +473,7 @@
         }
         
         if (!objcClass) {
-            printf("Couldn't find symbol %s\"%s\"%s in symbol table\n", dcolor(DSCOLOR_RED), search_symbol, colorEnd());
+            printf("Couldn't find symbol %s\"%s\"%s in symbol table\n", dcolor(DSCOLOR_RED), search_symbol, color_end());
         }
         return;
     }
@@ -496,7 +496,7 @@
     }
     
     if (resolvedAddress == 0) {
-        printf("Couldn't find symbol %s\"%s\"%s in code...\n", dcolor(DSCOLOR_RED), search_symbol, colorEnd());
+        printf("Couldn't find symbol %s\"%s\"%s in code...\n", dcolor(DSCOLOR_RED), search_symbol, color_end());
         return;
     }
     
@@ -506,7 +506,7 @@
     if (self.header.cputype == CPU_TYPE_ARM64) {
         uintptr_t resolvedStub = isInternal ? resolvedAddress : [self findStub_ARM64:resolvedAddress];
         if (!resolvedStub) {
-            printf("Couldn't find symbol %s\"%s\"%s in code...\n", dcolor(DSCOLOR_RED), search_symbol, colorEnd());
+            printf("Couldn't find symbol %s\"%s\"%s in code...\n", dcolor(DSCOLOR_RED), search_symbol, color_end());
             return;
         }
         
@@ -715,7 +715,7 @@
                     char * chr = &self.str_symbols[self.symbols[z].n_un.n_strx];
                     if (self.symbols[z].n_value == start  && strlen(chr) > 1) {
                         
-                        printf(" %s%s%s\n", dcolor(DSCOLOR_CYAN), &self.str_symbols[self.symbols[z].n_un.n_strx], colorEnd());
+                        printf(" %s%s%s\n", dcolor(DSCOLOR_CYAN), &self.str_symbols[self.symbols[z].n_un.n_strx], color_end());
                         
                         found_symbol_name = YES;
                         break;
@@ -723,7 +723,7 @@
                 }
                 // Found where it resides in, but couldn't obtain the name...
                 if (!found_symbol_name) {
-                    printf(" %s___lldb_unnamed_symbol%d$$%s%s\n", dcolor(DSCOLOR_CYAN), j + 1, [[self.path lastPathComponent] UTF8String], colorEnd());
+                    printf(" %s___lldb_unnamed_symbol%d$$%s%s\n", dcolor(DSCOLOR_CYAN), j + 1, [[self.path lastPathComponent] UTF8String], color_end());
                     
                 }
             }
@@ -736,7 +736,7 @@
                 struct section_64 *section = (struct section_64 *)self.sectionCommandsArray[i].longValue;
                 
                 if (strcmp(section->sectname, "__text") != 0 && section->addr <= cur && cur < (section->addr + section->size)) {
-                    printf("%s%s,%s%s %s%p%s\n", dcolor(DSCOLOR_YELLOW), section->segname, section->sectname, colorEnd(),  dcolor(DSCOLOR_CYAN), (void*)cur, colorEnd());
+                    printf("%s%s,%s%s %s%p%s\n", dcolor(DSCOLOR_YELLOW), section->segname, section->sectname, color_end(),  dcolor(DSCOLOR_CYAN), (void*)cur, color_end());
                 }
             }
         }

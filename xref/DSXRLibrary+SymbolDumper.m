@@ -70,7 +70,7 @@
     // Enumerate the stripped symbols if all_symbols is set
     if (xref_options.all_symbols) {
         for (NSNumber *address in funcStartsSet) {
-            printf("0x%011llx %s<stripped>%s\n", address.unsignedLongLongValue, dcolor(DSCOLOR_RED), colorEnd());
+            printf("0x%011llx %s<stripped>%s\n", address.unsignedLongLongValue, dcolor(DSCOLOR_RED), color_end());
         }
     }
 }
@@ -81,7 +81,7 @@
     uintptr_t base = self.lazy_ptr_section->addr;
     size_t align_size = 1 << (self.lazy_ptr_section->align);
     char *cyan = dcolor(DSCOLOR_CYAN);
-    char *end = colorEnd();
+    char *end = color_end();
     char *yellow = dcolor(DSCOLOR_YELLOW);
     
     for (int i = 0; i < self.indirect_symbols.count; i++) {
@@ -150,15 +150,15 @@ void print_symbol(DSXRLibrary *object, struct nlist_64 * _Nonnull sym, uintptr_t
     if (xref_options.verbose >= VERBOSE_1) {
         if (sym->n_type & N_SECT && sym->n_sect) {
             struct section_64 * sec = (struct section_64 *)object.sectionCommandsArray[sym->n_sect].longValue;
-            output_len += printf("%s%s.%s%s ", dcolor(DSCOLOR_GRAY), sec->segname, sec->sectname, colorEnd());
+            output_len += printf("%s%s.%s%s ", dcolor(DSCOLOR_GRAY), sec->segname, sec->sectname, color_end());
         } else if (libIndex > 0 && (sym->n_type & N_TYPE) == N_UNDF) {
             const char *libName = [object.depdencies[libIndex] UTF8String];
-            output_len += printf("%s%s%s: ", dcolor(DSCOLOR_YELLOW), libName, colorEnd());
+            output_len += printf("%s%s%s: ", dcolor(DSCOLOR_YELLOW), libName, color_end());
         }
     }
     
     // The actual symbol
-    printf("%s%s%s ", dcolor(DSCOLOR_CYAN), chr, colorEnd());
+    printf("%s%s%s ", dcolor(DSCOLOR_CYAN), chr, color_end());
     
     // If local ObjC class, print parent class
     if (isObjC && xref_options.objectiveC_mode && sym->n_value) {
@@ -166,7 +166,7 @@ void print_symbol(DSXRLibrary *object, struct nlist_64 * _Nonnull sym, uintptr_t
         DSXRObjCClass * objc_ref = [object objCSuperClassFromSymbol:sym];
 //        const char* superclassName =  ClassRefGetName(objc_ref);
         const char* superclassName =  [[objc_ref shortName] UTF8String];
-        printf(": %s%s%s",dcolor(DSCOLOR_GREEN), superclassName?  superclassName : "<ROOT>", colorEnd());
+        printf(": %s%s%s",dcolor(DSCOLOR_GREEN), superclassName?  superclassName : "<ROOT>", color_end());
     }
     
     putchar('\n');

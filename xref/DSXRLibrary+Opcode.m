@@ -47,6 +47,7 @@
                 uint64_t v = 0;
                 r_uleb128_decode(&bind_buffer[++i], &datalen, &v);
                 i += datalen - 1;
+                dylib_ord = v;
                 DEBUG_PRINT("BIND_OPCODE_SET_DYLIB_ORDINAL_ULEB (0x%llx)\n", v);
                 break;
             } case BIND_OPCODE_SET_DYLIB_SPECIAL_IMM: {
@@ -54,9 +55,7 @@
                 break;
             } case BIND_OPCODE_SET_SYMBOL_TRAILING_FLAGS_IMM: {
                 symbol = (char *)&bind_buffer[++i];
-                while(bind_buffer[i] != BIND_OPCODE_DONE) {
-                    i++;
-                }
+                while(bind_buffer[i] != BIND_OPCODE_DONE) { i++; }
                 DEBUG_PRINT("BIND_OPCODE_SET_SYMBOL_TRAILING_FLAGS_IMM (0x%02x, %s)\n", imm, symbol);
                 break;
             } case BIND_OPCODE_SET_TYPE_IMM: {
@@ -74,7 +73,6 @@
                 uint64_t v = 0;
                 r_uleb128_decode(&bind_buffer[++i], &datalen, &v);
                 i += datalen - 1; // -1, cuz i++ later
-
                 struct segment_command_64 *seg = (struct segment_command_64 *)self.segmentCommandsArray[imm].longValue;
                 bind_address = seg->vmaddr + v;
                 DEBUG_PRINT("BIND_OPCODE_SET_SEGMENT_AND_OFFSET_ULEB (%d, 0x%08llx) (%p)\n", imm, v, (void*)bind_address);
@@ -89,7 +87,7 @@
                 break;
             } case BIND_OPCODE_DO_BIND: {
                 DEBUG_PRINT("BIND_OPCODE_DO_BIND (%p)\n", (void*)bind_address);
-                [self addToDictionaries:bind_address symbol:symbol];
+                [self addToDictionaries:bind_address symbol:symbol libord:dylib_ord addend:addend];
                 bind_address += PTR_SIZE;
                 break;
             } case BIND_OPCODE_DO_BIND_ADD_ADDR_ULEB: {
@@ -97,14 +95,13 @@
                 uint64_t v = 0;
                 r_uleb128_decode(&bind_buffer[++i], &datalen, &v);
                 DEBUG_PRINT("BIND_OPCODE_DO_BIND_ADD_ADDR_ULEB (%08llx) (%p)\n", v, (void*)bind_address);
-                [self addToDictionaries:bind_address symbol:symbol];
+                [self addToDictionaries:bind_address symbol:symbol libord:dylib_ord addend:addend];
                 bind_address += (v + PTR_SIZE);
                 i += datalen - 1;
-                
                 break;
             } case BIND_OPCODE_DO_BIND_ADD_ADDR_IMM_SCALED: {
                 DEBUG_PRINT("BIND_OPCODE_DO_BIND_ADD_ADDR_IMM_SCALED (0x%lx) (%p)\n", imm * PTR_SIZE + PTR_SIZE, (void*)bind_address);
-                [self addToDictionaries:bind_address symbol:symbol];
+               [self addToDictionaries:bind_address symbol:symbol libord:dylib_ord addend:addend];
                 bind_address += imm * PTR_SIZE + PTR_SIZE;
                 break;
             } case BIND_OPCODE_DO_BIND_ULEB_TIMES_SKIPPING_ULEB: {
@@ -119,19 +116,19 @@
                 DEBUG_PRINT("BIND_OPCODE_DO_BIND_ULEB_TIMES_SKIPPING_ULEB (%llu, 0x%08llx)\n", count, v);
                 for (int j = 0; j < count; j++) {
                     DEBUG_PRINT("\tDO_BIND (%p)\n", (void*)bind_address);
-                    [self addToDictionaries:bind_address symbol:symbol];
+                    [self addToDictionaries:bind_address symbol:symbol libord:dylib_ord addend:addend];
                     bind_address += (skip + PTR_SIZE); // do bind, so sizeof(void*)
                 }
                 i += datalen - 1; // -1, cuz i++ later
                 
                 break;
             } case BIND_OPCODE_THREADED:
-                printf("BIND_OPCODE_THREADED Not implemented!\n");
+                printf("BIND_OPCODE_THREADED Not implemented!, tell Derek what you used this on pls\n");
                 assert(0);
                 break;
                 
             case BIND_SUBOPCODE_THREADED_APPLY:
-                printf("BIND_SUBOPCODE_THREADED_APPLY Not implemented!");
+                printf("BIND_SUBOPCODE_THREADED_APPLY Not implemented!, tell Derek what you used this on pls");
                 assert(0);
                 break;
             case BIND_OPCODE_DONE:
@@ -149,17 +146,16 @@
     }
 }
 
-- (void)addToDictionaries:(uintptr_t)address symbol:(char *)symbol {
+- (void)addToDictionaries:(uintptr_t)address symbol:(char *)symbol libord:(int)ordinal addend:(uint64_t)addend {
     
     NSString *s = [NSString stringWithUTF8String:symbol];
     NSNumber *a = @(address);
-
     if (self.addressObjCDictionary[a]) {
         if (xref_options.debug) {
             dprintf(STDERR_FILENO, "overriding dict: old %s, %p, new; %s, %p\n", self.addressObjCDictionary[a].name.UTF8String, self.addressObjCDictionary[a].address.pointerValue, symbol, (void*)address);
         }
     }
-    DSXRObjCClass * obj = [[DSXRObjCClass alloc] initWithAddress:a symbol:s];
+    DSXRObjCClass * obj = [[DSXRObjCClass alloc] initWithAddress:a symbol:s libord:ordinal addend:addend];
     if (!obj) { return; }
 
     self.addressObjCDictionary[a] = obj;

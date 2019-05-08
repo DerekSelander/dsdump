@@ -7,11 +7,13 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		3F29124A22820A99003C2BD7 /* TaskPath.mm in Sources */ = {isa = PBXBuildFile; fileRef = 3F29124822820A99003C2BD7 /* TaskPath.mm */; };
 		3F480806227A322E0078AE76 /* DSXRLibrary+FAT.m in Sources */ = {isa = PBXBuildFile; fileRef = 3F480805227A322E0078AE76 /* DSXRLibrary+FAT.m */; };
 		3F5F41AB226EA3A800D3DCB1 /* DSXRLibrary+SymbolDumper.m in Sources */ = {isa = PBXBuildFile; fileRef = 3F5F41AA226EA3A800D3DCB1 /* DSXRLibrary+SymbolDumper.m */; };
 		3F5F41B1226EC1FC00D3DCB1 /* DSXRObjCClass.m in Sources */ = {isa = PBXBuildFile; fileRef = 3F5F41B0226EC1FC00D3DCB1 /* DSXRObjCClass.m */; };
 		3F98C3B3225F06E900606F97 /* DSXRLibrary+FileManagement.m in Sources */ = {isa = PBXBuildFile; fileRef = 3F98C3B2225F06E900606F97 /* DSXRLibrary+FileManagement.m */; };
 		3FEAB9D8226D0C0E00ED706A /* DSXRLibrary+Opcode.m in Sources */ = {isa = PBXBuildFile; fileRef = 3FEAB9D7226D0C0E00ED706A /* DSXRLibrary+Opcode.m */; };
+		3FEBCB60227C98D200D3AD07 /* DSXRLibrary+PID_Info.m in Sources */ = {isa = PBXBuildFile; fileRef = 3FEBCB5F227C98D200D3AD07 /* DSXRLibrary+PID_Info.m */; };
 		3FF9AE0822777A9500F71FA5 /* DSXRLibrary+ObjectiveC.m in Sources */ = {isa = PBXBuildFile; fileRef = 3FF9AE0722777A9500F71FA5 /* DSXRLibrary+ObjectiveC.m */; };
 		3FF9AE0B2277A0E100F71FA5 /* TestClass.m in Sources */ = {isa = PBXBuildFile; fileRef = 3FF9AE0A2277A0E100F71FA5 /* TestClass.m */; };
 		A66A9CBF22316CF3006602AB /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = A66A9CBE22316CF3006602AB /* main.m */; };
@@ -46,6 +48,9 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		3F291247228207C7003C2BD7 /* dyld_process_info_internal.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = dyld_process_info_internal.h; sourceTree = "<group>"; };
+		3F29124822820A99003C2BD7 /* TaskPath.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = TaskPath.mm; sourceTree = "<group>"; };
+		3F29124922820A99003C2BD7 /* TaskPath.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = TaskPath.h; sourceTree = "<group>"; };
 		3F480804227A322E0078AE76 /* DSXRLibrary+FAT.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "DSXRLibrary+FAT.h"; sourceTree = "<group>"; };
 		3F480805227A322E0078AE76 /* DSXRLibrary+FAT.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = "DSXRLibrary+FAT.m"; sourceTree = "<group>"; };
 		3F5F41A9226EA3A800D3DCB1 /* DSXRLibrary+SymbolDumper.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "DSXRLibrary+SymbolDumper.h"; sourceTree = "<group>"; };
@@ -56,6 +61,8 @@
 		3FEAB9D6226D0C0E00ED706A /* DSXRLibrary+Opcode.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "DSXRLibrary+Opcode.h"; sourceTree = "<group>"; };
 		3FEAB9D7226D0C0E00ED706A /* DSXRLibrary+Opcode.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = "DSXRLibrary+Opcode.m"; sourceTree = "<group>"; };
 		3FEAB9D9226DA7A900ED706A /* uthash.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = uthash.h; sourceTree = "<group>"; };
+		3FEBCB5E227C98D200D3AD07 /* DSXRLibrary+PID_Info.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "DSXRLibrary+PID_Info.h"; sourceTree = "<group>"; };
+		3FEBCB5F227C98D200D3AD07 /* DSXRLibrary+PID_Info.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = "DSXRLibrary+PID_Info.m"; sourceTree = "<group>"; };
 		3FF9AE0622777A9500F71FA5 /* DSXRLibrary+ObjectiveC.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "DSXRLibrary+ObjectiveC.h"; sourceTree = "<group>"; };
 		3FF9AE0722777A9500F71FA5 /* DSXRLibrary+ObjectiveC.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = "DSXRLibrary+ObjectiveC.m"; sourceTree = "<group>"; };
 		3FF9AE092277A0E100F71FA5 /* TestClass.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = TestClass.h; sourceTree = "<group>"; };
@@ -130,6 +137,11 @@
 				3F480805227A322E0078AE76 /* DSXRLibrary+FAT.m */,
 				3F5F41A9226EA3A800D3DCB1 /* DSXRLibrary+SymbolDumper.h */,
 				3F5F41AA226EA3A800D3DCB1 /* DSXRLibrary+SymbolDumper.m */,
+				3FEBCB5E227C98D200D3AD07 /* DSXRLibrary+PID_Info.h */,
+				3F291247228207C7003C2BD7 /* dyld_process_info_internal.h */,
+				3FEBCB5F227C98D200D3AD07 /* DSXRLibrary+PID_Info.m */,
+				3F29124822820A99003C2BD7 /* TaskPath.mm */,
+				3F29124922820A99003C2BD7 /* TaskPath.h */,
 				3FEAB9D6226D0C0E00ED706A /* DSXRLibrary+Opcode.h */,
 				3FEAB9D7226D0C0E00ED706A /* DSXRLibrary+Opcode.m */,
 				A66A9CC722316D7F006602AB /* miscellaneous.h */,
@@ -226,8 +238,10 @@
 				3FF9AE0B2277A0E100F71FA5 /* TestClass.m in Sources */,
 				3F5F41AB226EA3A800D3DCB1 /* DSXRLibrary+SymbolDumper.m in Sources */,
 				3FEAB9D8226D0C0E00ED706A /* DSXRLibrary+Opcode.m in Sources */,
+				3FEBCB60227C98D200D3AD07 /* DSXRLibrary+PID_Info.m in Sources */,
 				3F480806227A322E0078AE76 /* DSXRLibrary+FAT.m in Sources */,
 				A66A9CBF22316CF3006602AB /* main.m in Sources */,
+				3F29124A22820A99003C2BD7 /* TaskPath.mm in Sources */,
 				3F5F41B1226EC1FC00D3DCB1 /* DSXRObjCClass.m in Sources */,
 				3F98C3B3225F06E900606F97 /* DSXRLibrary+FileManagement.m in Sources */,
 			);

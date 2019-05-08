@@ -45,6 +45,7 @@
       buildConfiguration = "Debug"
       selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
+      debugAsWhichUser = "root"
       launchStyle = "0"
       useCustomWorkingDirectory = "NO"
       ignoresPersistentStateOnLaunch = "NO"
@@ -63,11 +64,15 @@
       </BuildableProductRunnable>
       <CommandLineArguments>
          <CommandLineArgument
-            argument = "--library yodude"
+            argument = "--library /System/Library/PrivateFrameworks/MobileDevice.framework/MobileDevice --arch x86_64"
+            isEnabled = "YES">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "/Users/lolgrep/Desktop/SwiftTest.app/SwiftTest --swift -v"
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = "/System/Library/Frameworks/Cocoa.framework/Cocoa "
+            argument = "-v --objc /System/Library/PrivateFrameworks/MobileDevice.framework/MobileDevice  --arch x86_64"
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
@@ -91,11 +96,11 @@
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = "/Users/lolgrep/Desktop/Payload/Twitter.app/Frameworks/TwitterNetworkLayer.framework/TwitterNetworkLayer --objc -U -v"
+            argument = "/Users/lolgrep/Desktop/Payload/Twitter.app/Frameworks/TwitterNetworkLayer.framework/TwitterNetworkLayer --swift -U -v"
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = "/Users/lolgrep/Desktop/Payload/Twitter.app/Frameworks/T1Twitter.framework/T1Twitter  -s _CC_SHA1"
+            argument = "/Users/lolgrep/Desktop/Payload/Twitter.app/Frameworks/T1Twitter.framework/T1Twitter  --swift -v"
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
@@ -112,7 +117,7 @@
          </CommandLineArgument>
          <CommandLineArgument
             argument = "  $(TARGET_BUILD_DIR)/xref  -v --objc"
-            isEnabled = "YES">
+            isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
             argument = "/Users/lolgrep/Desktop/Payload/Twitter.app/Frameworks/TwitterVectorGraphics.framework/TwitterVectorGraphics --objc "
@@ -168,6 +173,16 @@
             key = "DSDEBUG"
             value = ""
             isEnabled = "NO">
+         </EnvironmentVariable>
+         <EnvironmentVariable
+            key = "DSCOLOR=1"
+            value = ""
+            isEnabled = "YES">
+         </EnvironmentVariable>
+         <EnvironmentVariable
+            key = "DBG"
+            value = ""
+            isEnabled = "YES">
          </EnvironmentVariable>
       </EnvironmentVariables>
       <AdditionalOptions>

@@ -10,10 +10,11 @@
 #ifndef MISCELLANEOUS_H
 #define MISCELLANEOUS_H
 
-@import Foundation;
-#import "capstone/capstone.h"
-
-NS_ASSUME_NONNULL_BEGIN
+//@import Foundation;
+//#import "capstone/capstone.h"
+#import <Foundation/Foundation.h>
+#import <stdlib.h>
+//NS_ASSUME_NONNULL_BEGIN
 
 
 /// Usage deets
@@ -24,9 +25,9 @@ void print_usage(void);
  /// Globals for exploring multiple references
  ********************************************************************************/
 
-extern NSMutableSet <NSString*> *pathsSet;
-extern NSMutableSet <NSString*> *exploredSet;
-extern NSMutableSet <NSString*> *rpathSet;
+//extern NSMutableSet <NSString*> *pathsSet;
+//extern NSMutableSet <NSString*> *exploredSet;
+//extern NSMutableSet <NSString*> *rpathSet;
 
 
 typedef NS_OPTIONS(NSUInteger, DSCOLOR) {
@@ -42,7 +43,7 @@ typedef NS_OPTIONS(NSUInteger, DSCOLOR) {
 char* dcolor(DSCOLOR c);
 
 /// Ends the color option if the DSCOLOR env var is set
-char *colorEnd(void);
+char *color_end(void);
 
 
 #define VERBOSE_NONE 0
@@ -56,6 +57,7 @@ typedef struct {
     int verbose;
     int undefined;
     int objectiveC_mode;
+    int swift_mode;
     int all_symbols;
     int defined;
     int color;
@@ -66,19 +68,15 @@ typedef struct {
     uintptr_t address;
     uintptr_t file_offset;
     char * symbol;
-    char * library;
+    int library;
     char * arch;
     char * showSymbolReferences;
     int debug;
+    int help;
 } xref_options_t;
 
 extern xref_options_t xref_options;
 
-
-typedef struct {
-    cs_insn ins;
-    cs_detail detail;
-} ds_ins;
 
 
 //uint64_t read_uleb128 (const uint8_t ** offset, const uint8_t * end);
@@ -92,7 +90,7 @@ const uintptr_t r_sleb128_decode(uint8_t *byte, uintptr_t* shift, uint64_t *v);
 /// Only print if DEBUG flag is set
 #define DEBUG_PRINT(fmt, args...)    if (xref_options.debug) printf(fmt, ## args)
 
-NS_ASSUME_NONNULL_END
+//NS_ASSUME_NONNULL_END
 
 #endif // MISCELLANEOUS_H
 

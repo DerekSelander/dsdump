@@ -11,7 +11,7 @@
 BOOL quiet_mode = NO;
 NSMutableSet <NSString*> *pathsSet = nil;
 NSMutableSet <NSString*> *exploredSet = nil;
-NSMutableSet <NSString*> *rpathSet;
+NSMutableSet <NSString*> *rpathSet = nil;
 
 xref_options_t xref_options;
 
@@ -27,7 +27,9 @@ __attribute__((constructor)) static void InitializeStuff() {
 
 static const char *_options[] = {
     "--objc         Switch to Objective-C mode\n",
+    "--swift        Switch to Swift mode\n",
     "--all          Search in all functions, even ones that are stripped out\n",
+    "--arch         <arch> Display info for specified arch (defaults to your CPU)\n",
     "--verbose (-v) <level>  verbose modes, there are 4 levels\n",
     "--symbol  (-s) <symbol> Find references to a symbol, use --objc for non-C\n",
     "--undefined (-u) Dump only undefined (externally referenced) symbols\n",
@@ -35,6 +37,12 @@ static const char *_options[] = {
 };
 
 void print_usage() {
+    static char* desc =
+    " Usage: %s <options> macho_file\n";
+    printf("%s\n", desc);
+}
+
+void print_options() {
     static char* desc =
     " Usage: xref <options> macho_file\n A cross between nm and vmmap for finding references to symbols (C, ObjC, Swift), both statically and in programs in memory\n";
     printf("%s\n", desc);
@@ -44,12 +52,11 @@ void print_usage() {
 }
 
 /********************************************************************************
- //  Colors
+ //  Colors!
  ********************************************************************************/
 
 char* dcolor(DSCOLOR c) {
     static BOOL useColor = NO;
-    
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
         if (xref_options.color || getenv("DSCOLOR")) {
@@ -79,11 +86,10 @@ char* dcolor(DSCOLOR c) {
              return "\e[1m";
         default:
             return "";
-            
     }
 }
 
-char *colorEnd() {
+char *color_end() {
     static BOOL useColor = NO;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
@@ -94,7 +100,6 @@ char *colorEnd() {
     if (useColor) {
         return "\e[0m";
     }
-    
     return "";
 }
 
@@ -165,8 +170,3 @@ const uintptr_t r_sleb128_decode(uint8_t *byte, uintptr_t* datalen, uint64_t *v)
     if (datalen) { *datalen = l; }
     return result;
 }
-
-#define FAST_DATA_MASK          0x00007ffffffffff8UL
-
-
-

@@ -11,13 +11,15 @@
 
 @implementation DSXRObjCClass
 
-- (instancetype)initWithAddress:(NSNumber *)address symbol:(NSString *)symbol {
+- (instancetype)initWithAddress:(NSNumber *)address symbol:(NSString *)symbol libord:(int)ordinal addend:(uint64_t)addend {
     if (![symbol hasPrefix:@"_OBJC_CLASS_$_"]) {
         return nil;
     }
     if (self = [super init]) {
         self.name = symbol;
         self.address = address;
+        self.libOrdinal = ordinal;
+        self.addend = addend;
     }
     return self;
 }

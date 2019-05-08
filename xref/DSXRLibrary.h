@@ -10,6 +10,7 @@
 #import "miscellaneous.h"
 #import "DSXRLibrary.h"
 #import "DSXRObjCClass.h"
+#import "capstone/capstone.h"
 
 @import Foundation;
 @import MachO;
@@ -17,6 +18,10 @@
 #define DATABUF(offset) (void*)&self.data[(offset)]
 
 NS_ASSUME_NONNULL_BEGIN
+
+extern NSMutableSet <NSString*> *pathsSet;
+extern NSMutableSet <NSString*> *exploredSet;
+extern NSMutableSet <NSString*> *rpathSet;
 
 /// Deal with 32/64 in one value
 typedef union {
