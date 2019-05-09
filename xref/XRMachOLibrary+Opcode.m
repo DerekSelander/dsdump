@@ -123,14 +123,56 @@
                 
                 break;
             } case BIND_OPCODE_THREADED:
-                printf("BIND_OPCODE_THREADED Not implemented!, tell Derek what you used this on pls\n");
-                assert(0);
+                
+                switch (imm) {
+                        
+                    case BIND_SUBOPCODE_THREADED_SET_BIND_ORDINAL_TABLE_SIZE_ULEB: {
+                        int datalen = 0;
+                        uint64 count = 0;
+                        r_uleb128_decode(&bind_buffer[++i], &datalen, &count);
+                        i += datalen - 1; // -1, cuz i++ later
+                        DEBUG_PRINT("BIND_SUBOPCODE_THREADED_SET_BIND_ORDINAL_TABLE_SIZE_ULEB (%llu)\n", count);
+                        break;
+                    } case BIND_SUBOPCODE_THREADED_APPLY: {
+                        DEBUG_PRINT("BIND_SUBOPCODE_THREADED_APPLY (%p)\n", (void*)bind_address);
+                        bool isAuthenticated = (bind_address & (1ULL << 63)) != 0;
+                        BOOL isRebase = (bind_address & (1ULL << 62)) == 0 ? YES : NO;
+                
+                        if (isRebase) {
+                            if (isAuthenticated) {
+                                uint64_t targetValue = bind_address & 0xFFFFFFFFULL;
+//                                targetValue += fBaseAddress;
+                                
+                            } else {
+                                // Regular pointer which needs to fit in 51-bits of value.
+                                // C++ RTTI uses the top bit, so we'll allow the whole top-byte
+                                // and the signed-extended bottom 43-bits to be fit in to 51-bits.
+                                uint64_t top8Bits = bind_address & 0x0007F80000000000ULL;
+                                uint64_t bottom43Bits = bind_address & 0x000007FFFFFFFFFFULL;
+                                uint64_t targetValue = ( top8Bits << 13 ) | (((intptr_t)(bottom43Bits << 21) >> 21) & 0x00FFFFFFFFFFFFFF);
+                                 [self addToDictionaries:targetValue symbol:symbol libord:dylib_ord addend:addend];
+//                                printf("%-7s %-16s 0x%08llX  %s  0x%08llX\n", segName, sectionName(segIndex, segStartAddr+segOffset), segStartAddr+segOffset, typeName, targetValue);
+//                                printf("not authenticated\n");
+                            }
+                        } else {
+
+//                            uint64_t top8Bits = (*(uint64_t*)bind_address) & 0x0007F80000000000ULL;
+//                            uint64_t bottom43Bits = (*(uint64_t*)bind_address) & 0x000007FFFFFFFFFFULL;
+//                            uint64_t targetValue = ( top8Bits << 13 ) | (((intptr_t)(bottom43Bits << 21) >> 21) & 0x00FFFFFFFFFFFFFF);
+                            
+                            [self addToDictionaries:bind_address symbol:symbol libord:dylib_ord addend:addend];
+                        }
+                        break;
+                    } default:
+                        break;
+                }
+                
+
                 break;
                 
-            case BIND_SUBOPCODE_THREADED_APPLY:
-                printf("BIND_SUBOPCODE_THREADED_APPLY Not implemented!, tell Derek what you used this on pls");
-                assert(0);
-                break;
+     
+                
+                
             case BIND_OPCODE_DONE:
                 DEBUG_PRINT("BIND_OPCODE_DONE\n");
                 break;
