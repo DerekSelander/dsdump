@@ -10,7 +10,7 @@
 		3F29124A22820A99003C2BD7 /* TaskPath.mm in Sources */ = {isa = PBXBuildFile; fileRef = 3F29124822820A99003C2BD7 /* TaskPath.mm */; };
 		3F480806227A322E0078AE76 /* XRMachOLibrary+FAT.m in Sources */ = {isa = PBXBuildFile; fileRef = 3F480805227A322E0078AE76 /* XRMachOLibrary+FAT.m */; };
 		3F5F41AB226EA3A800D3DCB1 /* XRMachOLibrary+SymbolDumper.m in Sources */ = {isa = PBXBuildFile; fileRef = 3F5F41AA226EA3A800D3DCB1 /* XRMachOLibrary+SymbolDumper.m */; };
-		3F5F41B1226EC1FC00D3DCB1 /* DSXRObjCClass.m in Sources */ = {isa = PBXBuildFile; fileRef = 3F5F41B0226EC1FC00D3DCB1 /* DSXRObjCClass.m */; };
+		3F5F41B1226EC1FC00D3DCB1 /* XRBindSymbol.m in Sources */ = {isa = PBXBuildFile; fileRef = 3F5F41B0226EC1FC00D3DCB1 /* XRBindSymbol.m */; };
 		3F98C3B3225F06E900606F97 /* XRMachOLibrary+FileManagement.m in Sources */ = {isa = PBXBuildFile; fileRef = 3F98C3B2225F06E900606F97 /* XRMachOLibrary+FileManagement.m */; };
 		3FEAB9D8226D0C0E00ED706A /* XRMachOLibrary+Opcode.m in Sources */ = {isa = PBXBuildFile; fileRef = 3FEAB9D7226D0C0E00ED706A /* XRMachOLibrary+Opcode.m */; };
 		3FEBCB60227C98D200D3AD07 /* DSXRLibrary+PID_Info.m in Sources */ = {isa = PBXBuildFile; fileRef = 3FEBCB5F227C98D200D3AD07 /* DSXRLibrary+PID_Info.m */; };
@@ -55,8 +55,8 @@
 		3F480805227A322E0078AE76 /* XRMachOLibrary+FAT.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = "XRMachOLibrary+FAT.m"; sourceTree = "<group>"; };
 		3F5F41A9226EA3A800D3DCB1 /* XRMachOLibrary+SymbolDumper.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "XRMachOLibrary+SymbolDumper.h"; sourceTree = "<group>"; };
 		3F5F41AA226EA3A800D3DCB1 /* XRMachOLibrary+SymbolDumper.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = "XRMachOLibrary+SymbolDumper.m"; sourceTree = "<group>"; };
-		3F5F41AF226EC1FC00D3DCB1 /* DSXRObjCClass.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = DSXRObjCClass.h; sourceTree = "<group>"; };
-		3F5F41B0226EC1FC00D3DCB1 /* DSXRObjCClass.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = DSXRObjCClass.m; sourceTree = "<group>"; };
+		3F5F41AF226EC1FC00D3DCB1 /* XRBindSymbol.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = XRBindSymbol.h; sourceTree = "<group>"; };
+		3F5F41B0226EC1FC00D3DCB1 /* XRBindSymbol.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = XRBindSymbol.m; sourceTree = "<group>"; };
 		3F98C3B2225F06E900606F97 /* XRMachOLibrary+FileManagement.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = "XRMachOLibrary+FileManagement.m"; sourceTree = "<group>"; };
 		3FEAB9D6226D0C0E00ED706A /* XRMachOLibrary+Opcode.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "XRMachOLibrary+Opcode.h"; sourceTree = "<group>"; };
 		3FEAB9D7226D0C0E00ED706A /* XRMachOLibrary+Opcode.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = "XRMachOLibrary+Opcode.m"; sourceTree = "<group>"; };
@@ -124,8 +124,8 @@
 			children = (
 				A6F6CDF7223712EC00913E35 /* capstone */,
 				A6F6CDF522370F0A00913E35 /* libcapstone.a */,
-				3F5F41AF226EC1FC00D3DCB1 /* DSXRObjCClass.h */,
-				3F5F41B0226EC1FC00D3DCB1 /* DSXRObjCClass.m */,
+				3F5F41AF226EC1FC00D3DCB1 /* XRBindSymbol.h */,
+				3F5F41B0226EC1FC00D3DCB1 /* XRBindSymbol.m */,
 				3FEAB9D9226DA7A900ED706A /* uthash.h */,
 				A66A9CBE22316CF3006602AB /* main.m */,
 				A66A9CCA22316EA5006602AB /* XRMachOLibrary.h */,
@@ -242,7 +242,7 @@
 				3F480806227A322E0078AE76 /* XRMachOLibrary+FAT.m in Sources */,
 				A66A9CBF22316CF3006602AB /* main.m in Sources */,
 				3F29124A22820A99003C2BD7 /* TaskPath.mm in Sources */,
-				3F5F41B1226EC1FC00D3DCB1 /* DSXRObjCClass.m in Sources */,
+				3F5F41B1226EC1FC00D3DCB1 /* XRBindSymbol.m in Sources */,
 				3F98C3B3225F06E900606F97 /* XRMachOLibrary+FileManagement.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

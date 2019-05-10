@@ -9,7 +9,7 @@
 
 #import "miscellaneous.h"
 #import "XRMachOLibrary.h"
-#import "DSXRObjCClass.h"
+#import "XRBindSymbol.h"
 #import "capstone/capstone.h"
 
 @import Foundation;
@@ -44,6 +44,9 @@ typedef struct {
 @property (nonatomic, strong) NSMutableArray <NSString *>*depdencies;
 @property (nonatomic, copy) NSString *path;
 
+#define ARM64e_PTRMASK(data)  self.isARM64e ? ((data)&0x000007FFFFFFFFFFUL) : (data)
+//#define ARM64e_PTRMASK(data)  (data)
+@property (nonatomic, readonly) BOOL isARM64e;
 
 /// File descriptor
 @property (nonatomic, assign) int fd;
@@ -53,8 +56,8 @@ typedef struct {
 
 @property (nonatomic, assign) struct mach_header_64 header;
 
-@property (nonatomic, strong) NSMutableDictionary <NSString *, DSXRObjCClass *>*stringObjCDictionary;
-@property (nonatomic, strong) NSMutableDictionary <NSNumber *, DSXRObjCClass *>*addressObjCDictionary;
+@property (nonatomic, strong) NSMutableDictionary <NSString *, XRBindSymbol *>*stringObjCDictionary;
+@property (nonatomic, strong) NSMutableDictionary <NSNumber *, XRBindSymbol *>*addressObjCDictionary;
 @property (nonatomic, strong) NSMutableDictionary <NSNumber *, NSNumber *>*addressSymbolDictionary;
 @property (nonatomic, strong) NSMutableDictionary <NSString *, NSNumber *>* externalObjectiveClassesDict;
 

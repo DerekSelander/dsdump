@@ -18,6 +18,11 @@
 
 - (void)dumpSymbols {
     
+    if (xref_options.objectiveC_mode) {
+        [self dumpObjectiveCClasses];
+        return;
+    }
+    
     if (xref_options.verbose >= VERBOSE_4) {
         struct dysymtab_command * d = self.dysymtab;
         printf("\
@@ -31,10 +36,6 @@
                locreloff: %d, nlocrel: %d\n", d->ilocalsym, d->nlocalsym, d->iextdefsym, d->nextdefsym, d->iundefsym, d->nundefsym, d->modtaboff, d->nmodtab, d->extrefsymoff, d->nextrefsyms, d->indirectsymoff, d->nindirectsyms, d->extrefsymoff, d->nextrel, d->locreloff, d->nlocrel);
     }
     
-    if (xref_options.objectiveC_mode) {
-        [self dumpObjectiveCClasses];
-        return;
-    }
     
     NSMutableOrderedSet * funcStartsSet;
     if (xref_options.all_symbols) {
@@ -98,12 +99,12 @@
     }
 }
 
-- (DSXRObjCClass *)objCSuperClassFromSymbol:(struct nlist_64 * _Nonnull)sym {
+- (XRBindSymbol *)objCSuperClassFromSymbol:(struct nlist_64 * _Nonnull)sym {
     if (!(sym && sym->n_value)) {
         return nil;
     }
     
-    DSXRObjCClass *objcReference;
+    XRBindSymbol *objcReference;
 //    dsclass_ref_t ref;
     uintptr_t buff = 0;
     uintptr_t fileOff = [self translateLoadAddressToFileOffset:sym->n_value + PTR_SIZE useFatOffset:NO];
@@ -163,7 +164,7 @@ void print_symbol(XRMachOLibrary *object, struct nlist_64 * _Nonnull sym, uintpt
     // If local ObjC class, print parent class
     if (isObjC && xref_options.objectiveC_mode && sym->n_value) {
 //        dsclass_ref_t objc_ref = [object objCSuperClassFromSymbol:sym];
-        DSXRObjCClass * objc_ref = [object objCSuperClassFromSymbol:sym];
+        XRBindSymbol * objc_ref = [object objCSuperClassFromSymbol:sym];
 //        const char* superclassName =  ClassRefGetName(objc_ref);
         const char* superclassName =  [[objc_ref shortName] UTF8String];
         printf(": %s%s%s",dcolor(DSCOLOR_GREEN), superclassName?  superclassName : "<ROOT>", color_end());

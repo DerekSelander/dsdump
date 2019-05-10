@@ -466,7 +466,7 @@
     uintptr_t resolvedAddress = 0;
     if (!foundSymbol) {
         // Local symbols can be stripped in symbol table but still found in dyld opcodes...
-        DSXRObjCClass* objcClass = nil;
+        XRBindSymbol* objcClass = nil;
         if (xref_options.objectiveC_mode) {
             objcClass = self.stringObjCDictionary[symbol];
             resolvedAddress = objcClass.address.unsignedLongValue;
@@ -484,7 +484,7 @@
   
     if (xref_options.objectiveC_mode) {
         
-        DSXRObjCClass *cls = self.stringObjCDictionary[symbol];
+        XRBindSymbol *cls = self.stringObjCDictionary[symbol];
         resolvedAddress = cls.address.unsignedLongLongValue;
     } else {
         // It's in the symbol table, so now see what exactly it is
@@ -814,5 +814,19 @@
     }
     dprintf(STDERR_FILENO, "WARNING: couldn't find offset 0x%lx in binary!\n", offset);
     return 0;
+}
+
+- (BOOL)isARM64e {
+    static dispatch_once_t onceToken;
+    static BOOL isARM64e = NO;
+    __weak XRMachOLibrary * wself = self;
+    dispatch_once(&onceToken, ^{
+        XRMachOLibrary *sself = wself;
+        cpu_type_t type = *(cpu_type_t *)&sself->_data[sself->_file_offset + 4];
+        cpu_subtype_t subtype = *(cpu_subtype_t *)&sself->_data[sself->_file_offset + 8];
+        
+        isARM64e = ((CPU_ARCH_ABI64|CPU_TYPE_ARM) == type && CPU_SUBTYPE_ARM64E == subtype) ? YES : NO;
+    });
+    return isARM64e;
 }
 @end

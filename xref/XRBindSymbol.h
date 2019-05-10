@@ -7,13 +7,11 @@
 //
 
 @import Foundation;
-//#import <Foundation/Foundation.h>
 #import "uthash.h"
-//#include <stdlib.h>
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface DSXRObjCClass : NSObject
+@interface XRBindSymbol : NSObject
 
 @property (nonatomic, assign) NSNumber *address;
 @property (nonatomic, assign) int symidx;

@@ -65,6 +65,10 @@
       <CommandLineArguments>
          <CommandLineArgument
             argument = "--library /System/Library/PrivateFrameworks/MobileDevice.framework/MobileDevice --arch x86_64"
+            isEnabled = "NO">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation --objc -v"
             isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
@@ -76,7 +80,7 @@
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = "/tmp/a.out -vvvv"
+            argument = "/tmp/a.out --objc -v"
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
@@ -124,7 +128,7 @@
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = "/usr/lib/libobjc.A.dylib --objc"
+            argument = "/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation --objc -v"
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
@@ -170,19 +174,19 @@
       </CommandLineArguments>
       <EnvironmentVariables>
          <EnvironmentVariable
-            key = "DSDEBUG"
+            key = "DSDEBUG=1"
             value = ""
             isEnabled = "NO">
          </EnvironmentVariable>
          <EnvironmentVariable
             key = "DSCOLOR=1"
             value = ""
-            isEnabled = "YES">
+            isEnabled = "NO">
          </EnvironmentVariable>
          <EnvironmentVariable
             key = "DBG"
             value = ""
-            isEnabled = "YES">
+            isEnabled = "NO">
          </EnvironmentVariable>
       </EnvironmentVariables>
       <AdditionalOptions>

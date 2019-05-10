@@ -12,6 +12,7 @@
 
 
 #define FAST_DATA_MASK          0x00007ffffffffff8UL
+#define ARM64e_MASK             0x000007FFFFFFFFFFUL
 
 typedef struct  {
     uint16_t mod_off : 16;
@@ -39,29 +40,32 @@ typedef struct  {
                     continue;
                 }
                 
+                uintptr_t resolvedAddress = self.isARM64e ? (buff[i] & ARM64e_MASK) : buff[i];
                 const char *name = [self nameForObjCClass:buff[i]];
                 d_offsets off;
                 if (xref_options.swift_mode && [self demangleSwiftName:name offset:&off]) {
                     strncpy(modname, &name[off.mod_off], off.mod_len);
                     modname[off.mod_len] = '\00';
-                    printf("0x%011lx %s%s.%s%s", buff[i],  dcolor(DSCOLOR_CYAN), modname, &name[off.cls_off], color_end());
+                    printf("0x%011lx %s%s.%s%s", resolvedAddress,  dcolor(DSCOLOR_CYAN), modname, &name[off.cls_off], color_end());
 
                 } else {
           
-                    printf("0x%011lx %s%s%s", buff[i],  dcolor(DSCOLOR_CYAN), name, color_end());
+                    printf("0x%011lx %s%s%s", resolvedAddress,  dcolor(DSCOLOR_CYAN), name, color_end());
                 }
 
-                DSXRObjCClass *objcReference;
+                XRBindSymbol *objcReference;
                 if (xref_options.verbose > VERBOSE_NONE) {
-                    // Check if it's an external symbol first via the dylds binding opcodes....
-                    objcReference = self.addressObjCDictionary[@(buff[i] + PTR_SIZE)];
+                    // Check if it's a local symbol first via the dylds binding opcodes....
+                    objcReference = self.addressObjCDictionary[@((resolvedAddress + PTR_SIZE))];
                     const char *name = objcReference.shortName.UTF8String;
                     
                     char *color = dcolor(DSCOLOR_GREEN);
                                         
                     if (!name) {
-                        offset = [self translateLoadAddressToFileOffset:buff[i] + PTR_SIZE useFatOffset:NO];
-                        uintptr_t supercls = *(uintptr_t *)&self.data[offset + self.file_offset];
+                        uintptr_t superClassAddress = ARM64e_PTRMASK(resolvedAddress + PTR_SIZE);
+                        
+                        offset = [self translateLoadAddressToFileOffset:superClassAddress useFatOffset:YES];
+                        uintptr_t supercls = ARM64e_PTRMASK(*(uintptr_t *)&self.data[offset]);
                         
                         if (supercls) {
                             name = [self nameForObjCClass:supercls];
@@ -114,6 +118,11 @@ typedef struct  {
     // ommitting using Apple headers since their legal agreement is a PoS
     // On disk, class_ro_t seems to be stored at class_rw_t, so flip those around while on disk...
     
+    
+    address = ARM64e_PTRMASK(address);
+
+    
+    
     uintptr_t offset = [self translateLoadAddressToFileOffset:address useFatOffset:NO ] + self.file_offset;
     // Starts at __DATA.__objc_data, translate to file offset, going after class_rw_t 8
     if (!(offset )) {
@@ -127,15 +136,15 @@ typedef struct  {
     
     
 //    if (*(uintptr_t *)((uintptr_t)DATABUF(offset + (4 * PTR_SIZE)))
-    uintptr_t buff = *(uintptr_t *)((uintptr_t)DATABUF(offset + (4 * PTR_SIZE)) & FAST_DATA_MASK);
-    
+    uintptr_t buff = ARM64e_PTRMASK(*(uintptr_t *)((uintptr_t)DATABUF(offset + (4 * PTR_SIZE)) & FAST_DATA_MASK));
+
 
     if (!(offset = [self translateLoadAddressToFileOffset:(buff & FAST_DATA_MASK) useFatOffset:NO])) {
         return NULL;
     }
     
 
-    buff = *(uintptr_t *)DATABUF(offset + self.file_offset + (3 * PTR_SIZE));
+    buff = ARM64e_PTRMASK(*(uintptr_t *)DATABUF(offset + self.file_offset + (3 * PTR_SIZE)));
     if (!buff) {
         return NULL;
     }
@@ -160,7 +169,7 @@ typedef struct  {
         return NO;
     }
     
-#define FAST_IS_SWIFT_LEGACY 1
+#define FAST_IS_SWIFT_LEGACY 1 // f'ing swift devs changing their minds every 3 seconds...
 #define FAST_IS_SWIFT_STABLE 2
     
     uintptr_t buff = (*(uintptr_t *)DATABUF(offset + (4 * PTR_SIZE)));

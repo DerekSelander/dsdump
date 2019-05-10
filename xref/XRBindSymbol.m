@@ -6,15 +6,13 @@
 //  Copyright © 2019 Selander. All rights reserved.
 //
 
-#import "DSXRObjCClass.h"
+#import "XRBindSymbol.h"
 #import "XRMachOLibrary+SymbolDumper.h"
 
-@implementation DSXRObjCClass
+@implementation XRBindSymbol
 
 - (instancetype)initWithAddress:(NSNumber *)address symbol:(NSString *)symbol libord:(int)ordinal addend:(uint64_t)addend {
-    if (![symbol hasPrefix:@"_OBJC_CLASS_$_"]) {
-        return nil;
-    }
+
     if (self = [super init]) {
         self.name = symbol;
         self.address = address;
@@ -25,11 +23,16 @@
 }
 
 - (NSString *)shortName {
-    return self.name.length > 14 ? [self.name substringFromIndex:14] : nil;
+    NSInteger index = [self.name rangeOfString:@"_$_"].location;
+    if (index) {
+        return [self.name substringFromIndex:index + 3];
+    }
+    
+    return self.name;
 }
 
 - (NSString *)description {
-    return [NSString stringWithFormat:@"%p %@: <%p>", self.address.pointerValue, self.shortName, self];
+    return [NSString stringWithFormat:@"%p %@: <%p>", self.address.pointerValue, _name, self];
 }
 
 @end
