@@ -16,27 +16,27 @@
 
 -(NSString *)nameForCPU:(cpu_type_t)cputype subtype:(cpu_subtype_t)subtype {
     
-    if (cputype == CPU_TYPE_X86_64 && subtype == CPU_SUBTYPE_X86_64_ALL) {
-        return @"x86_64";
-    }
-    
-    if (cputype == CPU_TYPE_X86_64 && subtype == CPU_SUBTYPE_X86_64_H) {
+    if (cputype == CPU_TYPE_X86_64 && subtype == (CPU_SUBTYPE_LIB64|CPU_SUBTYPE_X86_64_H)) {
         return @"x86_64h";
     }
     
-    if (cputype == CPU_TYPE_X86 && subtype == CPU_SUBTYPE_X86_64_ALL) {
+    if (cputype == CPU_TYPE_X86_64 && subtype & CPU_SUBTYPE_X86_64_ALL) {
+        return @"x86_64";
+    }
+    
+    if (cputype == CPU_TYPE_X86 && subtype & CPU_SUBTYPE_X86_64_ALL) {
         return @"i386";
     }
     
-    if (cputype == CPU_TYPE_ARM && subtype == CPU_SUBTYPE_ARM_V7) {
+    if (cputype & CPU_TYPE_ARM && subtype & CPU_SUBTYPE_ARM_V7) {
         return @"armv7";
     }
     
-    if (cputype == CPU_TYPE_ARM64 && subtype == CPU_SUBTYPE_ARM64_ALL) {
+    if (cputype & CPU_TYPE_ARM64 && subtype & CPU_SUBTYPE_ARM64_ALL) {
         return @"arm64";
     }
     
-    if (cputype == CPU_TYPE_ARM64 && subtype == CPU_SUBTYPE_ARM64E) {
+    if (cputype & CPU_TYPE_ARM64 && subtype & CPU_SUBTYPE_ARM64E) {
         return @"arm64e";
     }
     
@@ -54,7 +54,7 @@
     
     // big endian
     struct fat_header *fat  = (void*)self.data;
-    if (*(uint32_t *)self.data == MH_CIGAM || *(uint32_t *)self.data == MH_MAGIC) {
+    if (*(uint32_t *)self.data == MH_CIGAM_64 || *(uint32_t *)self.data == MH_MAGIC_64) {
         
         cpu_subtype_t cpu_subytpe =  (*(cpu_subtype_t *)&self.data[8]);
         cpu_subytpe = FIX_ENDIAN(cpu_subytpe);
@@ -86,7 +86,9 @@
 }
 
 -(void)printFatSymbolsIfPresent {
-    if (!(*(uint32_t *)self.data == FAT_MAGIC || *(uint32_t *)self.data == FAT_CIGAM)) {
+    if (!(*(uint32_t *)self.data == MH_CIGAM_64 || *(uint32_t *)self.data == MH_MAGIC_64)) {
+        NSString *name = [self nameForCPU:*(uint32_t *)&self.data[4] subtype:*(uint32_t *)&self.data[8]];
+        dprintf(STDERR_FILENO, "Arch %s%s%s\n", dcolor(DSCOLOR_RED), name.UTF8String, color_end());
         return;
     }
     
@@ -107,8 +109,8 @@
 }
 
 - (NSString *)defaultArchitectureName {
-    static uint32_t cputype;
-    static uint32_t cpusubtype;
+    static cpu_type_t cputype;
+    static cpu_subtype_t cpusubtype;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
         size_t len;
@@ -123,7 +125,7 @@
     // Let's try the closest to the cpu type first...
     for (int i = 0; i < FIX_ENDIAN(fat->nfat_arch); i++) {
         struct fat_arch *arch = (void*)&self.data[sizeof(struct fat_header) + sizeof(struct fat_arch) * i];
-        if (FIX_ENDIAN(arch->cpusubtype) == cpusubtype && (FIX_ENDIAN(arch->cputype) & cputype)) {
+        if (FIX_ENDIAN(arch->cpusubtype) & cpusubtype && (FIX_ENDIAN(arch->cputype) & cputype)) {
             return [self nameForCPU:FIX_ENDIAN(arch->cputype) subtype:FIX_ENDIAN(arch->cpusubtype)];
         }
     }
@@ -131,7 +133,7 @@
     // If they don't have the right type, try x86_64
     for (int i = 0; i < FIX_ENDIAN(fat->nfat_arch); i++) {
         struct fat_arch *arch = (void*)&self.data[sizeof(struct fat_header) + sizeof(struct fat_arch) * i];
-        if (FIX_ENDIAN(arch->cpusubtype) == CPU_TYPE_X86_64) {
+        if (FIX_ENDIAN(arch->cpusubtype) & CPU_TYPE_X86_64) {
             return [self nameForCPU:FIX_ENDIAN(arch->cputype) subtype:FIX_ENDIAN(arch->cpusubtype)];
         }
     }

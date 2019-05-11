@@ -104,7 +104,7 @@ static void handle_args(int argc, const char * argv[]) {
         };
         
         xref_options.debug = getenv("DEBUG") ? 1 : 0;
-        c = getopt_long(argc, (char * const *)argv, "AuUxcvSs:o:la:bd:012",
+        c = getopt_long(argc, (char * const *)argv, "A:uUxcvSs:o:la:bd:012",
                         long_options, &option_index);
         if (c == -1) { break; }
         struct host_basic_info;
@@ -155,8 +155,7 @@ static void handle_args(int argc, const char * argv[]) {
                 xref_options.symbol = optarg;
                 break;
             case 'A':
-//                xref_options.analyze = 1;
-//                Disabled for now, till I can find something I am happy with
+                xref_options.arch = optarg;
                 break;
             case 'a':
                 xref_options.address = strtol(optarg, 0, 0);
