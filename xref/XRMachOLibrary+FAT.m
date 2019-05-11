@@ -15,7 +15,6 @@
 
 
 -(NSString *)nameForCPU:(cpu_type_t)cputype subtype:(cpu_subtype_t)subtype {
-    
     if (cputype == CPU_TYPE_X86_64 && subtype == (CPU_SUBTYPE_LIB64|CPU_SUBTYPE_X86_64_H)) {
         return @"x86_64h";
     }
@@ -59,7 +58,7 @@
         cpu_subtype_t cpu_subytpe =  (*(cpu_subtype_t *)&self.data[8]);
         cpu_subytpe = FIX_ENDIAN(cpu_subytpe);
         
-        cpu_type_t cputype = htonl(*(cpu_type_t *)&self.data[4]);
+        cpu_type_t cputype = (*(cpu_type_t *)&self.data[4]);
         cputype = FIX_ENDIAN(cputype);
         
         if ([[self nameForCPU:cputype subtype:cpu_subytpe] isEqualToString:architecture]) {
