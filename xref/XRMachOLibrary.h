@@ -89,7 +89,7 @@ typedef struct {
 
 @property (nonatomic, assign) struct linkedit_data_command *function_starts_cmd;
 
-/// __DATA.__la_symbol_ptr
+
 @property (nonatomic, assign) struct section_64 *lazy_ptr_section;
 
 @property (nonatomic, assign) struct dyld_info_command *dyldInfo;
@@ -109,7 +109,6 @@ typedef struct {
 - (void)dumpReferencesForSymbol:(NSString *)symbol;
 
 - (void)dumpReferencesForFileOffset:(uintptr_t)file_offset;
-//- (uintptr_t)translateLoadAddressToFileOffset:(uintptr_t)loadAddress;
 - (uintptr_t)translateLoadAddressToFileOffset:(uintptr_t)loadAddress useFatOffset:(BOOL)useFatOffset;
 - (uintptr_t)translateOffsetToLoadAddress:(uintptr_t)offset;
 

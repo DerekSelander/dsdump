@@ -110,7 +110,6 @@ static void handle_args(int argc, const char * argv[]) {
         struct host_basic_info;
         switch (c) {
             case 0:
-//                const char * opt_name = long_options[option_index].name;
                 if (strcmp(long_options[option_index].name, "symbol") == 0) {
                     xref_options.symbol = optarg;
                 } else if (strcmp(long_options[option_index].name, "address") == 0) {
