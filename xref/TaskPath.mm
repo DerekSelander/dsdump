@@ -62,7 +62,6 @@ void DumpProcessesContainingLibrary(const char *lib_name) {
 
 BOOL FindLibraryInTask(pid_t task, const char *search_string, uint64_t *loadAddr, kern_return_t* err) {
     
-    
     kern_return_t kr = KERN_SUCCESS;
     if (loadAddr) { *loadAddr = 0; }
 

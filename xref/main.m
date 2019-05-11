@@ -19,19 +19,21 @@
 #import "TaskPath.h"
 
 @import MachO;
+
+/*******************************************************************************
+ 
+ *******************************************************************************/
 static NSArray <NSString *>* exc_rpaths = nil;
-
-
 static void handle_args(int argc, const char * argv[]);
 
+
+
 int main(int argc, const char * argv[], const char*envp[]) {
-    
     handle_args(argc, argv);
     if (argc < 2) {
         print_usage();
         exit(1);
     }
-    
     
     const char *_path = argv[optind++];
     if (!_path) {
@@ -47,9 +49,7 @@ int main(int argc, const char * argv[], const char*envp[]) {
     }
     
     XRMachOLibrary *image = [[XRMachOLibrary alloc] initWithPath:path];
-    
-    
-    if (! (xref_options.address || xref_options.symbol || xref_options.file_offset  || xref_options.analyze || xref_options.library)) {
+    if (! (xref_options.address || xref_options.symbol || xref_options.file_offset  || xref_options.analyze || xref_options.library || xref_options.dump)) {
         [image dumpSymbols];
         return 0;
     }
@@ -190,5 +190,9 @@ static void handle_args(int argc, const char * argv[]) {
     if (xref_options.swift_mode) { xref_options.objectiveC_mode = 1; }
     xref_options.debug |= getenv("DSDEBUG") ? 1 : 0;
     xref_options.color |= getenv("DSCOLOR") ? 1 : 0;
+    
+    if (!xref_options.arch && getenv("ARCH")) {
+        xref_options.arch = getenv("ARCH");
+    }
     
 }

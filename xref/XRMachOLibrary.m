@@ -12,6 +12,7 @@
 #import "XRMachOLibrary+SymbolDumper.h"
 #import "capstone/capstone.h"
 #import "XRMachOLibrary+Opcode.h"
+#import "XRMachOLibrary+FAT.h"
 
 
 
@@ -63,14 +64,23 @@
             perror("File too small"); return nil;
         }
         
-        uint32 magic = *(uint32_t *)_data;
+        if (xref_options.arch) {
+            intptr_t offset = [self offsetForArchitecture:[NSString stringWithUTF8String:xref_options.arch]];
+            if (offset == FAT_OFFSET_BAD_NAME) {
+                dprintf(STDERR_FILENO, "%sUnknown architecture: %s%s\n", dcolor(DSCOLOR_RED), xref_options.arch, color_end());
+                exit(1);
+            }
+            _file_offset += offset;
+        }
+        uint32 magic = *(uint32_t *)&_data[_file_offset];
+        
         
     // If this is a fat executable, it'll go back here and try again
     LOL:
         
         if (magic == MH_MAGIC || magic == MH_MAGIC) {
-            printf("da fuck %s, %s", [self.realizedPath UTF8String], [path UTF8String]);
-            assert(0);
+            dprintf(STDERR_FILENO, "%sxref doesn't support 32 bit architectures :[%s\n", dcolor(DSCOLOR_RED), color_end());
+            exit(1);
         } else if (magic == MH_MAGIC_64 || magic == MH_CIGAM_64) {
 
             _header = *(struct mach_header_64 *)&_data[_file_offset];
@@ -183,46 +193,13 @@
             }
             
         } else if (magic == FAT_MAGIC || magic == FAT_CIGAM) {
-            if (!xref_options.arch) {
-                dprintf(STDERR_FILENO, "Multiple architectures, defaulting to first 64 bit slice, use --arch to specify a specific arch\n");
-            }
-            struct fat_header fatHeader;
-            fatHeader = *(struct fat_header *)_data;
-            uint32_t numArchs = htonl(fatHeader.nfat_arch);
-            
-            struct fat_arch *arches = (struct fat_arch *)&_data[sizeof(struct fat_header)];
-            
-            // TODO put this in a function for itself...
-            cpu_subtype_t cpu_subtype = 0;
-            cpu_type_t cpu_type = 0;
-            if (xref_options.arch) {
-                if (strcmp("x86_64", xref_options.arch) == 0) {
-                    cpu_type = CPU_TYPE_X86_64;
-                    cpu_subtype = CPU_SUBTYPE_X86_64_ALL;
-                } else if (strcmp("x86_64h", xref_options.arch) == 0) {
-                    cpu_type = CPU_TYPE_X86_64;
-                    cpu_subtype = CPU_SUBTYPE_X86_64_H;
-                    
-                } else if (strcmp("ARM", xref_options.arch) == 0) {
-                    // TODO
-                    assert(0);
-                }
-            }
-            for (int j = 0; j < numArchs; j++) {
-                // Default to anything 64 bit, else select the appropriate ARCH
-                if (xref_options.arch) {
-                    if (ntohl(arches[j].cputype) == cpu_type &&  ntohl(arches[j].cpusubtype) == cpu_subtype) {
-                        _file_offset = htonl(arches[j].offset);
-                        magic = *(uint32_t *)&_data[_file_offset];
-                        goto LOL;
-                    }
-                } else if (ntohl(arches[j].cputype) & CPU_ARCH_ABI64 ) {
-                    _file_offset = htonl(arches[j].offset);
-                    magic = *(uint32_t *)&_data[_file_offset];
-                    goto LOL;
-                }
-            }
-            printf("Shouldn't have gotten here...\n");
+            // Could only have gotten here if --arch is not specified
+            [self printFatSymbolsIfPresent];
+            intptr_t off = [self offsetForDefaultArchitecture];
+            assert(off >= 0);
+            _file_offset += off;
+            magic = *(uint32_t *)&_data[_file_offset];
+            goto LOL;
             assert(0);
             
         } else if (magic == FAT_MAGIC_64 || magic == FAT_CIGAM_64) {

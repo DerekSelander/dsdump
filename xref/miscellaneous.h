@@ -10,12 +10,8 @@
 #ifndef MISCELLANEOUS_H
 #define MISCELLANEOUS_H
 
-//@import Foundation;
-//#import "capstone/capstone.h"
 #import <Foundation/Foundation.h>
 #import <stdlib.h>
-//NS_ASSUME_NONNULL_BEGIN
-
 
 /// Usage deets
 void print_usage(void);
@@ -73,6 +69,7 @@ typedef struct {
     char * showSymbolReferences;
     int debug;
     int help;
+    char *dump;
 } xref_options_t;
 
 extern xref_options_t xref_options;
@@ -84,13 +81,11 @@ const uint8_t *r_uleb128_decode(uint8_t *data, int *datalen, uint64_t *v);
 const uintptr_t r_sleb128_decode(uint8_t *byte, uintptr_t* shift, uint64_t *v);
 
 
-/// sizeof pointer
+/// sizeof pointer, 64 bit only
 #define PTR_SIZE sizeof(void*)
 
 /// Only print if DEBUG flag is set
 #define DEBUG_PRINT(fmt, args...)    if (xref_options.debug) printf(fmt, ## args)
-
-//NS_ASSUME_NONNULL_END
 
 #endif // MISCELLANEOUS_H
 

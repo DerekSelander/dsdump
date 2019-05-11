@@ -26,14 +26,15 @@ __attribute__((constructor)) static void InitializeStuff() {
  ********************************************************************************/
 
 static const char *_options[] = {
-    "--objc         Switch to Objective-C mode\n",
-    "--swift        Switch to Swift mode\n",
-    "--all          Search in all functions, even ones that are stripped out\n",
-    "--arch         <arch> Display info for specified arch (defaults to your CPU)\n",
-    "--verbose (-v) <level>  verbose modes, there are 4 levels\n",
-    "--symbol  (-s) <symbol> Find references to a symbol, use --objc for non-C\n",
+    "--objc           Dumps Objective-C classes\n",
+    "--swift          Dumps Swift classes\n",
+    "--all            Search in all functions, even ones that are stripped out\n",
+    "--arch      (-A) <arch> Display info for specified arch (defaults to your CPU)\n",
+    "--verbose   (-v) <level>  verbose modes, there are 4 levels\n",
+    "--symbol    (-s) <symbol> Find references to a symbol, use --objc for non-C\n",
     "--undefined (-u) Dump only undefined (externally referenced) symbols\n",
-    "--defined   (-U) Dump only defined (internally implemented) symbols\n"
+    "--defined   (-U) Dump only defined (internally implemented) symbols\n",
+    "--library   (-l) Dump only defined (internally implemented) symbols\n"
 };
 
 void print_usage() {
@@ -131,6 +132,7 @@ uint64_t read_uleb128 (const uint8_t ** offset, const uint8_t * end) {
     return result;
 }
 
+/// Unsigned Leb128
 const uint8_t *r_uleb128_decode(uint8_t *data, int *datalen, uint64_t *v) {
     uint8_t c = 0xff;
     uint64_t s = 0, sum = 0, l = 0;
@@ -147,6 +149,7 @@ const uint8_t *r_uleb128_decode(uint8_t *data, int *datalen, uint64_t *v) {
     return data;
 }
 
+/// Signed Leb128
 const uintptr_t r_sleb128_decode(uint8_t *byte, uintptr_t* datalen, uint64_t *v) {
     uintptr_t result = 0;
     uintptr_t shift = 0;
