@@ -85,27 +85,33 @@
     return FAT_OFFSET_BAD_NAME;
 }
 
--(void)printFatSymbolsIfPresent {
-    if (!(*(uint32_t *)self.data == MH_CIGAM_64 || *(uint32_t *)self.data == MH_MAGIC_64)) {
-        NSString *name = [self nameForCPU:*(uint32_t *)&self.data[4] subtype:*(uint32_t *)&self.data[8]];
-        dprintf(STDERR_FILENO, "Arch %s%s%s\n", dcolor(DSCOLOR_RED), name.UTF8String, color_end());
-        return;
+-(NSString *)printAllArchitectures {
+    if (*(uint32_t *)self.data == MH_CIGAM_64) {
+        NSString *name = [self nameForCPU:htonl(*(uint32_t *)&self.data[4]) subtype:htonl(*(uint32_t *)&self.data[8])];
+        return [NSString stringWithFormat:@"[ %@ ]", name];
     }
     
+    if (*(uint32_t *)self.data == MH_MAGIC_64) {
+        NSString *name = [self nameForCPU:*(uint32_t *)&self.data[4] subtype:*(uint32_t *)&self.data[8]];
+        return [NSString stringWithFormat:@"[ %@ ]", name];
+    }
+    
+    NSMutableString *retString = [NSMutableString string];
     struct fat_header *fat = (struct fat_header *)self.data;
-    dprintf(STDERR_FILENO, "%sMultiple arches found: ", dcolor(DSCOLOR_RED));
-    putc('[', stderr);
+
+    [retString appendString:@"["];
     for (int i = 0; i < FIX_ENDIAN(fat->nfat_arch); i++) {
         struct fat_arch *arch = (void*)&self.data[sizeof(struct fat_header) + sizeof(struct fat_arch) * i];
         NSString *ar = [self nameForCPU:FIX_ENDIAN(arch->cputype) subtype:FIX_ENDIAN(arch->cpusubtype)];
-        dprintf(STDERR_FILENO, " %s ", ar.UTF8String);
+        [retString appendFormat:@" %@ ", ar];
         if (i < FIX_ENDIAN(fat->nfat_arch) - 1) {
-            putc('|', stderr);
+            [retString appendFormat:@"|"];
         }
     }
-    putc(']', stderr);
-    putc('\n', stderr);
-    dprintf(STDERR_FILENO, "Use --arches (-A) (or ARCH env var) to specify arch, defaulting to: %s%s%s%s\n", color_end(), dcolor(DSCOLOR_CYAN), [[self defaultArchitectureName] UTF8String], color_end());
+    [retString appendString:@"]"];
+    
+    return retString;
+
 }
 
 - (NSString *)defaultArchitectureName {

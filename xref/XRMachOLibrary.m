@@ -14,8 +14,6 @@
 #import "XRMachOLibrary+Opcode.h"
 #import "XRMachOLibrary+FAT.h"
 
-
-
 @interface XRMachOLibrary ()
 
 @property (nonatomic, readonly) NSString *realizedPath;
@@ -67,7 +65,7 @@
         if (xref_options.arch) {
             intptr_t offset = [self offsetForArchitecture:[NSString stringWithUTF8String:xref_options.arch]];
             if (offset == FAT_OFFSET_BAD_NAME) {
-                dprintf(STDERR_FILENO, "%sunknown architecture: %s, exiting%s\n", dcolor(DSCOLOR_RED), xref_options.arch, color_end());
+                dprintf(STDERR_FILENO, "%sunknown architecture: \"%s\", available: %s, exiting...%s\n", dcolor(DSCOLOR_RED),xref_options.arch, [self printAllArchitectures].UTF8String, color_end());
                 exit(1);
             }
             _file_offset += offset;
@@ -194,7 +192,9 @@
             
         } else if (magic == FAT_MAGIC || magic == FAT_CIGAM) {
             // Could only have gotten here if --arch is not specified
-            [self printFatSymbolsIfPresent];
+            dprintf(STDERR_FILENO, "%sMultiple arches found: %s%s\n", dcolor(DSCOLOR_RED), [self printAllArchitectures].UTF8String, color_end());
+            dprintf(STDERR_FILENO, "%sUse --arches (-A) (or ARCH env var) to specify arch, defaulting to: %s%s\n",  dcolor(DSCOLOR_RED), [self defaultArchitectureName].UTF8String, color_end());
+            
             intptr_t off = [self offsetForDefaultArchitecture];
             assert(off >= 0);
             _file_offset += off;
