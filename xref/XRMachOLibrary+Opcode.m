@@ -37,8 +37,8 @@ static NSMutableArray <XRBindSymbol *>* threadedHolder = nil;
     uint8_t dylib_ord = 0;
     uint64_t threaded_count = 0;
     uint8_t special = 0;
-    
-    while (i < self.dyldInfo->bind_size) {
+    BOOL done = NO;
+    while (!done && i < self.dyldInfo->bind_size) {
         uint8_t opcode = BIND_OPCODE_MASK & bind_buffer[i];
         uint8_t imm = BIND_IMMEDIATE_MASK & bind_buffer[i];
         DEBUG_PRINT("0x%04X ", i);
@@ -83,6 +83,7 @@ static NSMutableArray <XRBindSymbol *>* threadedHolder = nil;
                 bind_address = seg->vmaddr + seg_off;
                 segment = imm;
                 DEBUG_PRINT("BIND_OPCODE_SET_SEGMENT_AND_OFFSET_ULEB (%d, 0x%08llx) (%p)\n", imm, seg_off, (void*)(bind_address));
+                
                 break;
             } case BIND_OPCODE_ADD_ADDR_ULEB: {
                 int datalen = 0;
@@ -176,6 +177,11 @@ static NSMutableArray <XRBindSymbol *>* threadedHolder = nil;
                 break;
             case BIND_OPCODE_DONE:
                 DEBUG_PRINT("BIND_OPCODE_DONE\n");
+                
+                // This is not correct logic, but works-ish
+                if (threaded_count == 0) {
+                    done = YES;
+                }
                 break;
            
             default:

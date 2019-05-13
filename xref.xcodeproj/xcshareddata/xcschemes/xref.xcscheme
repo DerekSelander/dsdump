@@ -80,8 +80,8 @@
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = "/Users/lolgrep/Desktop/BofA.app/BofA --objc"
-            isEnabled = "NO">
+            argument = "--objc /tmp/a.out  -vvvvv"
+            isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
             argument = " /System/Library/Kernels/kernel -s csproc_hardened_runtime"
@@ -121,7 +121,7 @@
          </CommandLineArgument>
          <CommandLineArgument
             argument = "  $(TARGET_BUILD_DIR)/xref  -vvv --objc"
-            isEnabled = "YES">
+            isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
             argument = "/Users/lolgrep/Desktop/Payload/Twitter.app/Frameworks/TwitterVectorGraphics.framework/TwitterVectorGraphics --objc "
@@ -176,7 +176,7 @@
          <EnvironmentVariable
             key = "DSDEBUG=1"
             value = ""
-            isEnabled = "NO">
+            isEnabled = "YES">
          </EnvironmentVariable>
          <EnvironmentVariable
             key = "DSCOLOR=1"

@@ -39,11 +39,12 @@ typedef struct  {
     for (int j = 0; j < methodsCount; j++) {
         
         
-        uintptr_t methodName = *(uintptr_t *)(DATABUF(methodsStart + PTR_SIZE + (sizeof(method_t) * j)));
-        uintptr_t methodAddress = *(uintptr_t *)(DATABUF(methodsStart + PTR_SIZE * 3 + (sizeof(method_t) * j)));
-        uintptr_t methodOffset = [self translateLoadAddressToFileOffset:ARM64e_PTRMASK(methodName) useFatOffset:YES];
+        uintptr_t methodName = ARM64e_PTRMASK(*(uintptr_t *)(DATABUF(methodsStart + PTR_SIZE + (sizeof(method_t) * j))));
+        uintptr_t methodOffset = [self translateLoadAddressToFileOffset:methodName useFatOffset:YES];
         putchar('\t');
 
+        
+        uintptr_t methodAddress = (*(uintptr_t *)(DATABUF(methodsStart + PTR_SIZE * 3 + (sizeof(method_t) * j))));
         printf("%s0x%011lx%s %c[%s %s]\n", dcolor(DSCOLOR_GRAY), methodAddress, color_end(), "-+"[isMeta], name, DATABUF(methodOffset));
     }
 }

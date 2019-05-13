@@ -40,6 +40,19 @@ typedef struct {
 
 }
 
+// An authenticated pointer is:
+typedef struct {
+// {
+     int32_t addend;
+     uint16_t diversityData;
+     uint16_t hasAddressDiversity : 1;
+     uint16_t key : 2;
+     uint16_t zeroes : 11;
+     uint16_t zero : 1;
+     uint16_t authenticated : 1;
+} PACPointer;
+
+
 /// Library dependencies
 @property (nonatomic, strong) NSMutableArray <NSString *>*depdencies;
 @property (nonatomic, copy) NSString *path;
@@ -125,36 +138,6 @@ typedef struct {
 
 NS_ASSUME_NONNULL_END
 
-
-/*
- * The following are used to encode binding information
- */
-#define BIND_TYPE_POINTER                    1
-#define BIND_TYPE_TEXT_ABSOLUTE32                2
-#define BIND_TYPE_TEXT_PCREL32                    3
-
-#define BIND_SPECIAL_DYLIB_SELF                     0
-#define BIND_SPECIAL_DYLIB_MAIN_EXECUTABLE            -1
-#define BIND_SPECIAL_DYLIB_FLAT_LOOKUP                -2
-
-#define BIND_SYMBOL_FLAGS_WEAK_IMPORT                0x1
-#define BIND_SYMBOL_FLAGS_NON_WEAK_DEFINITION            0x8
-
-#define BIND_OPCODE_MASK                    0xF0
-#define BIND_IMMEDIATE_MASK                    0x0F
-#define BIND_OPCODE_DONE                    0x00
-#define BIND_OPCODE_SET_DYLIB_ORDINAL_IMM            0x10
-#define BIND_OPCODE_SET_DYLIB_ORDINAL_ULEB            0x20
-#define BIND_OPCODE_SET_DYLIB_SPECIAL_IMM            0x30
-#define BIND_OPCODE_SET_SYMBOL_TRAILING_FLAGS_IMM        0x40
-#define BIND_OPCODE_SET_TYPE_IMM                0x50
-#define BIND_OPCODE_SET_ADDEND_SLEB                0x60
-#define BIND_OPCODE_SET_SEGMENT_AND_OFFSET_ULEB            0x70
-#define BIND_OPCODE_ADD_ADDR_ULEB                0x80
-#define BIND_OPCODE_DO_BIND                    0x90
-#define BIND_OPCODE_DO_BIND_ADD_ADDR_ULEB            0xA0
-#define BIND_OPCODE_DO_BIND_ADD_ADDR_IMM_SCALED            0xB0
-#define BIND_OPCODE_DO_BIND_ULEB_TIMES_SKIPPING_ULEB        0xC0
 
 
 /*
