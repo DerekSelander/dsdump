@@ -14,33 +14,6 @@
 #define RO_META               (1<<0)
 
 typedef struct {
-    uintptr_t isa_cls;
-    uintptr_t superclass;
-    void *_buckets;
-    uint32_t _mask;
-    uintptr_t _occupied;
-    uintptr_t bits; // class_rw_t * after a &= FAST_DATA_MASK
-} objc_class;
-
-typedef struct {
-    // Be warned that Symbolication knows the layout of this structure.
-    uint32_t flags;
-    uint32_t version;
-    
-    const void* ro; // class_ro_t*
-    
-    void* methods; // method_array_t
-    void* properties; // property_array_t
-    void* protocols; // protocol_array_t
-    
-    void* firstSubclass; // Class
-    void* nextSiblingClass; // Class
-    
-    char *demangledName;
-    
-} class_rw_t;
-
-typedef struct {
     char* name;
     const char *types;
     void* imp;
@@ -51,6 +24,15 @@ typedef struct {
     uint32_t count;
     method_t *methods;
 } method_list_t;
+
+typedef struct {
+    uintptr_t isa_cls;
+    uintptr_t superclass;
+    void *_buckets;
+    uint32_t _mask;
+    uintptr_t _occupied;
+    uintptr_t bits; // class_rw_t * after a &= FAST_DATA_MASK
+} objc_class;
 
 typedef struct {
     uint32_t flags;
@@ -70,10 +52,31 @@ typedef struct {
     const uint8_t * weakIvarLayout;
     void *baseProperties; // protocol_list_t
     
-
+    
 } class_ro_t;
 
-#define OBJCClassGetRW(cls)  ((cls)->bits & FAST_DATA_MASK)
+typedef struct {
+    uint32_t flags;
+    uint32_t version;
+    
+    const class_ro_t* ro; // class_ro_t*
+    
+    void* methods; // method_array_t
+    void* properties; // property_array_t
+    void* protocols; // protocol_array_t
+    
+    void* firstSubclass; // Class
+    void* nextSiblingClass; // Class
+    
+    char *demangledName;
+    
+} class_rw_t;
+
+
+
+
+
+//#define OBJCClassGetRW(cls)  ((cls)->bits & FAST_DATA_MASK)
 
 
 #endif /* objc__h */
