@@ -26,6 +26,7 @@ typedef struct  {
 @implementation XRMachOLibrary (ObjectiveC)
 
 - (void)dumpObjCClassInfo:(const char *)name resolvedAddress:(uintptr_t)resolvedAddress {
+    resolvedAddress = ARM64e_PTRMASK(resolvedAddress);
     intptr_t methodsStart = [self methodsOffsetAddressForObjCClass:resolvedAddress];
     if (methodsStart == METHODS_OFFSET_NONE) {
         return;
@@ -40,7 +41,7 @@ typedef struct  {
         
         uintptr_t methodName = *(uintptr_t *)(DATABUF(methodsStart + PTR_SIZE + (sizeof(method_t) * j)));
         uintptr_t methodAddress = *(uintptr_t *)(DATABUF(methodsStart + PTR_SIZE * 3 + (sizeof(method_t) * j)));
-        uintptr_t methodOffset = [self translateLoadAddressToFileOffset:methodName useFatOffset:YES];
+        uintptr_t methodOffset = [self translateLoadAddressToFileOffset:ARM64e_PTRMASK(methodName) useFatOffset:YES];
         putchar('\t');
 
         printf("%s0x%011lx%s %c[%s %s]\n", dcolor(DSCOLOR_GRAY), methodAddress, color_end(), "-+"[isMeta], name, DATABUF(methodOffset));
