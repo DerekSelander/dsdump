@@ -78,10 +78,10 @@ int main(int argc, const char * argv[], const char*envp[]) {
 
 static void handle_args(int argc, const char * argv[]) {
     int c;
-    int digit_optind = 0;
+//    int digit_optind = 0;
     
     while (1) {
-        int this_option_optind = optind ? optind : 1;
+//        int this_option_optind = optind ? optind : 1;method_array_t
         int option_index = 0;
         static struct option long_options[] = {
             {"library", no_argument, &xref_options.library,  1 },
@@ -121,18 +121,6 @@ static void handle_args(int argc, const char * argv[]) {
                 }  else if (strcmp(long_options[option_index].name, "arch") == 0) {
                     xref_options.arch = optarg;
                 }
-//                if (optarg)
-//                    printf(" with arg %s", optarg);
-//                printf("\n");
-                break;
-                
-            case '0':
-            case '1':
-            case '2':
-                if (digit_optind != 0 && digit_optind != this_option_optind)
-                    printf("digits occur in two different argv-elements.\n");
-                digit_optind = this_option_optind;
-                printf("option %c\n", c);
                 break;
             case 'v':
                 xref_options.verbose++;
@@ -148,7 +136,6 @@ static void handle_args(int argc, const char * argv[]) {
                 break;
             case 'l':
                 xref_options.library = 1;
-                //xref_options.library = optarg;
                 break;
             case 's':
                 xref_options.symbol = optarg;

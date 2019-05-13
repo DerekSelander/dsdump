@@ -12,12 +12,12 @@
 
 - (void)dumpFileOffset:(off_t)offset count:(uint8_t)count grouping:(uint8_t)grouping format:(char)format {
     
-//    uintptr_t cur = offset;
-//
-//    for (int i = 0; i < count; i++) {
-//        printf("%0x ", &self.data[cur + i * count]);
-//        if (i % 2 == 0) { putchar('\n'); }
-//    }
+    uintptr_t cur = offset;
+
+    for (int i = 0; i < count; i++) {
+        printf("0x%012llx ", (unsigned long long)&self.data[cur + i * count]);
+        if (i % 2 == 0) { putchar('\n'); }
+    }
 
     if (format == 's') {
         

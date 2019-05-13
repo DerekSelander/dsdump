@@ -54,6 +54,7 @@
 		3F29124922820A99003C2BD7 /* TaskPath.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = TaskPath.h; sourceTree = "<group>"; };
 		3F29126122877648003C2BD7 /* XRMachOLibrary+Dump.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "XRMachOLibrary+Dump.h"; sourceTree = "<group>"; };
 		3F29126222877648003C2BD7 /* XRMachOLibrary+Dump.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = "XRMachOLibrary+Dump.m"; sourceTree = "<group>"; };
+		3F2912782289B476003C2BD7 /* objc_.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = objc_.h; sourceTree = "<group>"; };
 		3F480804227A322E0078AE76 /* XRMachOLibrary+FAT.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "XRMachOLibrary+FAT.h"; sourceTree = "<group>"; };
 		3F480805227A322E0078AE76 /* XRMachOLibrary+FAT.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = "XRMachOLibrary+FAT.m"; sourceTree = "<group>"; };
 		3F5F41A9226EA3A800D3DCB1 /* XRMachOLibrary+SymbolDumper.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "XRMachOLibrary+SymbolDumper.h"; sourceTree = "<group>"; };
@@ -135,6 +136,7 @@
 				A66A9CCB22316EA5006602AB /* XRMachOLibrary.m */,
 				3FF9AE0622777A9500F71FA5 /* XRMachOLibrary+ObjectiveC.h */,
 				3FF9AE0722777A9500F71FA5 /* XRMachOLibrary+ObjectiveC.m */,
+				3F2912782289B476003C2BD7 /* objc_.h */,
 				3F98C3B2225F06E900606F97 /* XRMachOLibrary+FileManagement.m */,
 				3F29126122877648003C2BD7 /* XRMachOLibrary+Dump.h */,
 				3F29126222877648003C2BD7 /* XRMachOLibrary+Dump.m */,

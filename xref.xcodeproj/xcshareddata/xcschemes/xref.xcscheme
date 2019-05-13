@@ -68,8 +68,8 @@
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = "/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation --objc -v"
-            isEnabled = "YES">
+            argument = "/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation  -v --objc"
+            isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
             argument = "/Users/lolgrep/Desktop/SwiftTest.app/SwiftTest --swift -v"
@@ -80,7 +80,7 @@
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = "/tmp/a.out --objc -v"
+            argument = "/Users/lolgrep/Desktop/BofA.app/BofA --objc"
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
@@ -120,8 +120,8 @@
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = "  $(TARGET_BUILD_DIR)/xref  -v --objc"
-            isEnabled = "NO">
+            argument = "  $(TARGET_BUILD_DIR)/xref  -vvv --objc"
+            isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
             argument = "/Users/lolgrep/Desktop/Payload/Twitter.app/Frameworks/TwitterVectorGraphics.framework/TwitterVectorGraphics --objc "

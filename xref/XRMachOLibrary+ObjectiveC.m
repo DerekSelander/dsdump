@@ -8,11 +8,11 @@
 
 #import "XRMachOLibrary+ObjectiveC.h"
 #import "XRMachOLibrary+SymbolDumper.h"
-#include <libgen.h>
+#import <libgen.h>
+#import "objc_.h"
+#import <stddef.h>
 
 
-#define FAST_DATA_MASK          0x00007ffffffffff8UL
-#define ARM64e_MASK             0x000007FFFFFFFFFFUL
 
 typedef struct  {
     uint16_t mod_off : 16;
@@ -22,15 +22,38 @@ typedef struct  {
     BOOL success : 1;
 } d_offsets;
 
+
 @implementation XRMachOLibrary (ObjectiveC)
+
+- (void)dumpObjCClassInfo:(const char *)name resolvedAddress:(uintptr_t)resolvedAddress {
+    intptr_t methodsStart = [self methodsOffsetAddressForObjCClass:resolvedAddress];
+    if (methodsStart == METHODS_OFFSET_NONE) {
+        return;
+    }
+    method_list_t *methods = (method_list_t *)DATABUF(methodsStart);
+    int methodsCount = methods->count;
+    
+    class_ro_t *ro_info = (class_ro_t *)DATABUF([self ROOffsetAddressForObjCClass:resolvedAddress]);
+    uint8_t isMeta = ro_info->flags & RO_META;
+    for (int j = 0; j < methodsCount; j++) {
+        
+        
+        uintptr_t methodName = *(uintptr_t *)(DATABUF(methodsStart + PTR_SIZE + (sizeof(method_t) * j)));
+        uintptr_t methodAddress = *(uintptr_t *)(DATABUF(methodsStart + PTR_SIZE * 3 + (sizeof(method_t) * j)));
+        uintptr_t methodOffset = [self translateLoadAddressToFileOffset:methodName useFatOffset:YES];
+        putchar('\t');
+
+        printf("%s0x%011lx%s %c[%s %s]\n", dcolor(DSCOLOR_GRAY), methodAddress, color_end(), "-+"[isMeta], name, DATABUF(methodOffset));
+    }
+}
 
 - (void)dumpObjectiveCClasses {
     // Defined symbols, will go after the __DATA.__objc_classlist pointers
     if (xref_options.defined || !(xref_options.undefined || xref_options.defined)) {
         
-        struct section_64* class_list = [self.sectionCommandsDictionary[@"__DATA.__objc_classlist"]
+        struct section_64* class_list = (struct section_64* )[self.sectionCommandsDictionary[@"__DATA.__objc_classlist"]
                                          pointerValue];
-
+        
         if (class_list) {
             uintptr_t offset = [self translateLoadAddressToFileOffset:class_list->addr useFatOffset:NO] + self.file_offset;
             uintptr_t *buff = (uintptr_t *)&self.data[offset];
@@ -40,49 +63,50 @@ typedef struct  {
                     continue;
                 }
                 
-                uintptr_t resolvedAddress = self.isARM64e ? (buff[i] & ARM64e_MASK) : buff[i];
+                uintptr_t resolvedAddress = ARM64e_PTRMASK(buff[i]);
                 const char *name = [self nameForObjCClass:buff[i]];
+                
                 d_offsets off;
                 if (xref_options.swift_mode && [self demangleSwiftName:name offset:&off]) {
                     strncpy(modname, &name[off.mod_off], off.mod_len);
                     modname[off.mod_len] = '\00';
                     printf("0x%011lx %s%s.%s%s", resolvedAddress,  dcolor(DSCOLOR_CYAN), modname, &name[off.cls_off], color_end());
-
+                    
                 } else {
-          
                     printf("0x%011lx %s%s%s", resolvedAddress,  dcolor(DSCOLOR_CYAN), name, color_end());
                 }
-
+                
                 XRBindSymbol *objcReference;
+                
                 if (xref_options.verbose > VERBOSE_NONE) {
                     // Check if it's a local symbol first via the dylds binding opcodes....
                     objcReference = self.addressObjCDictionary[@((resolvedAddress + PTR_SIZE))];
-                    const char *name = objcReference.shortName.UTF8String;
+                    const char *supercls_name = objcReference.shortName.UTF8String;
                     
                     char *color = dcolor(DSCOLOR_GREEN);
-                                        
-                    if (!name) {
+                    
+                    if (!supercls_name) {
                         uintptr_t superClassAddress = ARM64e_PTRMASK(resolvedAddress + PTR_SIZE);
                         
                         offset = [self translateLoadAddressToFileOffset:superClassAddress useFatOffset:YES];
                         uintptr_t supercls = ARM64e_PTRMASK(*(uintptr_t *)&self.data[offset]);
                         
                         if (supercls) {
-                            name = [self nameForObjCClass:supercls];
+                            supercls_name = [self nameForObjCClass:supercls];
                             color = dcolor(DSCOLOR_MAGENTA);
                         }
                     }
-                    color = name ? color : dcolor(DSCOLOR_RED);
-                    if (xref_options.swift_mode && [self demangleSwiftName:name offset:&off]) {
-                        strncpy(modname, &name[off.mod_off], off.mod_len);
+                    color = supercls_name ? color : dcolor(DSCOLOR_RED);
+                    if (xref_options.swift_mode && [self demangleSwiftName:supercls_name offset:&off]) {
+                        strncpy(modname, &supercls_name[off.mod_off], off.mod_len);
                         modname[off.mod_len] = '\00';
-                        printf(" : %s%s%s%s", color, modname, &name[off.cls_off], color_end());
+                        printf(" : %s%s%s%s", color, modname, &supercls_name[off.cls_off], color_end());
                     } else {
-                        printf(" : %s%s%s", color, name ? name : "<ROOT>", color_end());
+                        printf(" : %s%s%s", color, supercls_name ? supercls_name : "<ROOT>", color_end());
                     }
                 }
                 
-                if (xref_options.verbose > VERBOSE_2) {
+                if (xref_options.verbose > VERBOSE_3) {
                     char *libName = objcReference && objcReference.libOrdinal ? (char*)self.depdencies[objcReference.libOrdinal].UTF8String : NULL;
                     if (libName) {
                         printf(" %s%s%s", dcolor(DSCOLOR_YELLOW), libName, color_end());
@@ -90,9 +114,19 @@ typedef struct  {
                 }
                 
                 putchar('\n');
+                if (xref_options.verbose > VERBOSE_2) {
+                    
+                    intptr_t metacls_offset = [self translateLoadAddressToFileOffset:resolvedAddress useFatOffset:YES];
+                    intptr_t resolvedMeta = *(intptr_t *)DATABUF(metacls_offset);
+                    [self dumpObjCClassInfo:name resolvedAddress:resolvedMeta];
+                    
+                    [self dumpObjCClassInfo:name resolvedAddress:resolvedAddress];
+                    
+                }
             }
             
-       
+            
+            
         }
     }
     
@@ -106,8 +140,8 @@ typedef struct  {
             if (!strnstr(chr, "_OBJC_CLASS_$_", OBJC_CLASS_LENGTH)) {
                 continue;
             }
-//            NSString *name = [NSString stringWithUTF8String:chr];
-//            uintptr_t addr = self.stringObjCDictionary[name].address.unsignedLongValue;
+            //            NSString *name = [NSString stringWithUTF8String:chr];
+            //            uintptr_t addr = self.stringObjCDictionary[name].address.unsignedLongValue;
             print_symbol(self, &sym, NULL);
         }
     }
@@ -121,9 +155,7 @@ typedef struct  {
     
     address = ARM64e_PTRMASK(address);
 
-    
-    
-    uintptr_t offset = [self translateLoadAddressToFileOffset:address useFatOffset:NO ] + self.file_offset;
+    uintptr_t offset = [self translateLoadAddressToFileOffset:address useFatOffset:YES ];
     // Starts at __DATA.__objc_data, translate to file offset, going after class_rw_t 8
     if (!(offset )) {
         return NULL;
@@ -131,34 +163,63 @@ typedef struct  {
     
     // Grab the  the class_rw_t data found in __DATA__objc_const, need to apply the FAST_DATA_MASK on the
     // class_data_bits_t since it can be not pointer aligned
-//    uintptr_t buff = *(uintptr_t *)DATABUF(offset);
-    
-    
-    
-//    if (*(uintptr_t *)((uintptr_t)DATABUF(offset + (4 * PTR_SIZE)))
     uintptr_t buff = ARM64e_PTRMASK(*(uintptr_t *)((uintptr_t)DATABUF(offset + (4 * PTR_SIZE)) & FAST_DATA_MASK));
 
-
-    if (!(offset = [self translateLoadAddressToFileOffset:(buff & FAST_DATA_MASK) useFatOffset:NO])) {
+    if (!(offset = [self translateLoadAddressToFileOffset:(buff & FAST_DATA_MASK) useFatOffset:YES])) {
         return NULL;
     }
-    
 
-    buff = ARM64e_PTRMASK(*(uintptr_t *)DATABUF(offset + self.file_offset + (3 * PTR_SIZE)));
+    buff = ARM64e_PTRMASK(*(uintptr_t *)DATABUF(offset + (3 * PTR_SIZE)));
     if (!buff) {
         return NULL;
     }
     
     // transform it into file offset and deref...
-    if (!(offset = [self translateLoadAddressToFileOffset:buff useFatOffset:NO])) {
+    if (!(offset = [self translateLoadAddressToFileOffset:buff useFatOffset:YES])) {
         return NULL;
     }
     
-    char *s = (void*)&self.data[offset + self.file_offset];
+    char *s = (char*)&self.data[offset];
     if (strlen(s)) {
         return s;
     }
     return NULL;
+}
+
+-(intptr_t)ROOffsetAddressForObjCClass:(uintptr_t)address {
+    address = ARM64e_PTRMASK(address);
+    intptr_t offset = [self translateLoadAddressToFileOffset:address useFatOffset:YES];
+    // Starts at __DATA.__objc_data, translate to file offset, going after class_rw_t 8
+    if (!(offset )) {
+        return METHODS_OFFSET_NONE;
+    }
+    // Seems to be stored differently on disk than in memory, where the class_rw_t should reside...
+    // Instead of the class_rw_t, the class_ro_t will be in the in memory spot, but here it's on disk
+    int fake_rw_offset = offsetof(objc_class, bits);
+    uintptr_t buff = ARM64e_PTRMASK(*(uintptr_t *)DATABUF(offset + fake_rw_offset - PTR_SIZE));
+    // buff now has the class_ro_t instance, translate to disk....
+    if (!(offset = [self translateLoadAddressToFileOffset:(buff & FAST_DATA_MASK) useFatOffset:YES])) {
+        return METHODS_OFFSET_NONE;
+    }
+    return offset;
+}
+
+-(intptr_t)methodsOffsetAddressForObjCClass:(uintptr_t)address {
+
+    intptr_t offset = [self ROOffsetAddressForObjCClass:address];
+    if (offset == METHODS_OFFSET_NONE) { return METHODS_OFFSET_NONE; }
+    
+    uintptr_t buff = ARM64e_PTRMASK(*(uintptr_t *)DATABUF(offset + (4 * PTR_SIZE)));
+    if (!buff) {
+        return METHODS_OFFSET_NONE;
+    }
+    
+    // transform it into file offset and deref...
+    if (!(offset = [self translateLoadAddressToFileOffset:buff useFatOffset:YES])) {
+        return METHODS_OFFSET_NONE;
+    }
+    
+    return offset;
 }
 
 

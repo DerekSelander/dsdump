@@ -13,13 +13,12 @@
 
 @implementation XRMachOLibrary (FAT)
 
-
 -(NSString *)nameForCPU:(cpu_type_t)cputype subtype:(cpu_subtype_t)subtype {
-    if (cputype == CPU_TYPE_X86_64 && subtype == (CPU_SUBTYPE_LIB64|CPU_SUBTYPE_X86_64_H)) {
+    if (cputype == CPU_TYPE_X86_64 && subtype & (CPU_SUBTYPE_X86_64_H)) {
         return @"x86_64h";
     }
     
-    if (cputype == CPU_TYPE_X86_64 && subtype & CPU_SUBTYPE_X86_64_ALL) {
+    if (cputype == CPU_TYPE_X86_64 && subtype & (CPU_SUBTYPE_X86_64_ALL)) {
         return @"x86_64";
     }
     
@@ -27,15 +26,15 @@
         return @"i386";
     }
     
-    if (cputype & CPU_TYPE_ARM && subtype & CPU_SUBTYPE_ARM_V7) {
-        return @"armv7";
-    }
-    
-    if (cputype & CPU_TYPE_ARM64 && subtype & CPU_SUBTYPE_ARM64_ALL) {
+    if (cputype == CPU_TYPE_ARM64 && subtype == CPU_SUBTYPE_ARM64_ALL) {
         return @"arm64";
     }
     
-    if (cputype & CPU_TYPE_ARM64 && subtype & CPU_SUBTYPE_ARM64E) {
+    if (cputype == CPU_TYPE_ARM && subtype & CPU_SUBTYPE_ARM_V7) {
+        return @"armv7";
+    }
+    
+    if (cputype == CPU_TYPE_ARM64 && subtype & CPU_SUBTYPE_ARM64E) {
         return @"arm64e";
     }
     
@@ -114,23 +113,25 @@
 }
 
 - (NSString *)defaultArchitectureName {
-    static cpu_type_t cputype;
-    static cpu_subtype_t cpusubtype;
+    static cpu_type_t this_cputype;
+    static cpu_subtype_t this_cpusubtype;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
         size_t len;
-        sysctlbyname("hw.cputype", &cputype, &len, NULL, 0);
+        sysctlbyname("hw.cputype", &this_cputype, &len, NULL, 0);
         assert(len == sizeof(uint32_t));
-        sysctlbyname("hw.cpusubtype", &cpusubtype, &len, NULL, 0);
+        sysctlbyname("hw.cpusubtype", &this_cpusubtype, &len, NULL, 0);
         assert(len == sizeof(uint32_t));
     });
+    
+    this_cputype |= CPU_ARCH_ABI64;
     
     struct fat_header *fat = (struct fat_header *)self.data;
 
     // Let's try the closest to the cpu type first...
     for (int i = 0; i < FIX_ENDIAN(fat->nfat_arch); i++) {
         struct fat_arch *arch = (void*)&self.data[sizeof(struct fat_header) + sizeof(struct fat_arch) * i];
-        if (FIX_ENDIAN(arch->cpusubtype) & cpusubtype && (FIX_ENDIAN(arch->cputype) & cputype)) {
+        if (FIX_ENDIAN(arch->cpusubtype) == this_cpusubtype && (FIX_ENDIAN(arch->cputype) == this_cputype)) {
             return [self nameForCPU:FIX_ENDIAN(arch->cputype) subtype:FIX_ENDIAN(arch->cpusubtype)];
         }
     }
@@ -138,7 +139,7 @@
     // If they don't have the right type, try x86_64
     for (int i = 0; i < FIX_ENDIAN(fat->nfat_arch); i++) {
         struct fat_arch *arch = (void*)&self.data[sizeof(struct fat_header) + sizeof(struct fat_arch) * i];
-        if (FIX_ENDIAN(arch->cpusubtype) & CPU_TYPE_X86_64) {
+        if (FIX_ENDIAN(arch->cputype) == CPU_TYPE_X86_64) {
             return [self nameForCPU:FIX_ENDIAN(arch->cputype) subtype:FIX_ENDIAN(arch->cpusubtype)];
         }
     }
@@ -146,7 +147,7 @@
     // Really!? OK, first 64 arch now...
     for (int i = 0; i < FIX_ENDIAN(fat->nfat_arch); i++) {
         struct fat_arch *arch = (void*)&self.data[sizeof(struct fat_header) + sizeof(struct fat_arch) * i];
-        if (FIX_ENDIAN(arch->cpusubtype) & CPU_ARCH_ABI64) {
+        if (FIX_ENDIAN(arch->cputype) & CPU_ARCH_ABI64) {
             return [self nameForCPU:FIX_ENDIAN(arch->cputype) subtype:FIX_ENDIAN(arch->cpusubtype)];
         }
     }

@@ -44,7 +44,7 @@ typedef struct {
 @property (nonatomic, strong) NSMutableArray <NSString *>*depdencies;
 @property (nonatomic, copy) NSString *path;
 
-#define ARM64e_PTRMASK(data)  self.isARM64e ? ((data)&0x000007FFFFFFFFFFUL) : (data)
+#define ARM64e_PTRMASK(data)  (self.isARM64e ? ((data)&0x000007FFFFFFFFFFUL) : (data))
 //#define ARM64e_PTRMASK(data)  (data)
 @property (nonatomic, readonly) BOOL isARM64e;
 

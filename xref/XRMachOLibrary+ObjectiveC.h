@@ -13,6 +13,9 @@ NS_ASSUME_NONNULL_BEGIN
 @interface XRMachOLibrary (ObjectiveC)
 - (void)dumpObjectiveCClasses;
 -(const char*)nameForObjCClass:(uintptr_t)address;
+
+#define METHODS_OFFSET_NONE ((intptr_t)-1)
+-(intptr_t)methodsOffsetAddressForObjCClass:(uintptr_t)address;
 @end
 
 NS_ASSUME_NONNULL_END
