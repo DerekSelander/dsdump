@@ -1,6 +1,12 @@
 # xref
 
 Some ugly mix between `class-dump`, `nm`, and `vmmap`. This tool is great for an initial first passes at inspecting executables to see what's in them before jumping to your favorite jtool/hopper/Ghidra/IDA/whatevs
+
+## Installing 
+
+Upon building the repo, xref will install itself in `/usr/local/bin`. Make sure you have write access to that directory and it's already created else the Xcode project will fail to build. 
+
+## Usage
 ```
  Usage: xref <options> macho_file
  A cross between nm and vmmap for finding references to symbols (C, ObjC, Swift), both statically and in programs in memory
