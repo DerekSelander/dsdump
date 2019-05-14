@@ -1,6 +1,6 @@
 # xref
 
-Some ugly mix between `class-dump`, `nm`, and `vmmap`. This tool is great for an initial first passes at inspecting executables to see what's in them before jumping to your favorite jtool/hopper/Ghidra/IDA/whatevs
+Some ugly mix between `class-dump`, `nm`, and `vmmap`. This tool is great for an initial pass at inspecting executables to see what's in them before jumping to your favorite, jtool/hopper/Ghidra/IDA/whatevs
 
 ## Installing 
 
