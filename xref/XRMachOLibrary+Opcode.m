@@ -107,8 +107,8 @@ static int64_t read_sleb128(const uint8_t** p, const uint8_t* end)
             ++p;
             switch (opcode) {
                 case BIND_OPCODE_DONE:
-                    DEBUG_PRINT("BIND_OPCODE_DONE\n");
                     done = true;
+                    DEBUG_PRINT("BIND_OPCODE_DONE\n");
                     break;
                 case BIND_OPCODE_SET_DYLIB_ORDINAL_IMM:
                     libraryOrdinal = immediate;
@@ -116,7 +116,7 @@ static int64_t read_sleb128(const uint8_t** p, const uint8_t* end)
                     break;
                 case BIND_OPCODE_SET_DYLIB_ORDINAL_ULEB:
                     libraryOrdinal = read_uleb128(&p, end);
-                    DEBUG_PRINT("BIND_OPCODE_SET_DYLIB_ORDINAL_ULEB (0x%llx)\n", libraryOrdinal);
+                    DEBUG_PRINT("BIND_OPCODE_SET_DYLIB_ORDINAL_ULEB (0x%llX)\n", libraryOrdinal);
                     break;
                 case BIND_OPCODE_SET_DYLIB_SPECIAL_IMM:
                     // the special ordinals are negative numbers
@@ -140,49 +140,50 @@ static int64_t read_sleb128(const uint8_t** p, const uint8_t* end)
                     break;
                 case BIND_OPCODE_SET_ADDEND_SLEB:
                     addend = read_sleb128(&p, end);
-                    DEBUG_PRINT("BIND_OPCODE_SET_ADDEND_SLEB (0x%llx)\n", addend);
+                    DEBUG_PRINT("BIND_OPCODE_SET_ADDEND_SLEB (0x%llX)\n", addend);
                     break;
                 case BIND_OPCODE_SET_SEGMENT_AND_OFFSET_ULEB:
                     segIndex = immediate;
                     struct segment_command_64 *seg = (struct segment_command_64 *)self.segmentCommandsArray[immediate].longValue;
                     segStartAddr = seg->vmaddr; // segStartAddress(segIndex);
                     segOffset = read_uleb128(&p, end);
-                    DEBUG_PRINT("BIND_OPCODE_SET_SEGMENT_AND_OFFSET_ULEB (%d, 0x%08llx) (%p)\n", immediate, segOffset, (void*)(segOffset + segStartAddr));
+                    DEBUG_PRINT("BIND_OPCODE_SET_SEGMENT_AND_OFFSET_ULEB (%d, 0x%08llX) (0x%08llX)\n", immediate, segOffset, (segOffset + segStartAddr));
                     break;
                 case BIND_OPCODE_ADD_ADDR_ULEB: {
                     uint64_t off = read_uleb128(&p, end);
                     segOffset += off;
-                    DEBUG_PRINT("BIND_OPCODE_ADD_ADDR_ULEB (0x%llx) (%p)\n", off, (void*)(segOffset));
+                    DEBUG_PRINT("BIND_OPCODE_ADD_ADDR_ULEB (0x%llX) (0x%08llX)\n", off, (segOffset + segStartAddr));
                     break;
                 } case BIND_OPCODE_DO_BIND:
-                    segOffset += sizeof(uintptr_t);
-                    DEBUG_PRINT("BIND_OPCODE_DO_BIND (%p)\n", (void*)(segOffset + segStartAddr));
                     if (threaded_count > 0) {
+                        threaded_count--;
                         [self addToThreaded:segOffset + segStartAddr symbol:symbolName libord:libraryOrdinal addend:addend];
                     } else {
+                        DEBUG_PRINT("BIND_OPCODE_DO_BIND (0x%08llX, %s)\n", (segOffset + segStartAddr), symbolName);
                         BIND_THAT_BAD_BOY;
                     }
+                    segOffset += sizeof(uintptr_t);
                     break;
                 case BIND_OPCODE_DO_BIND_ADD_ADDR_ULEB: {
                     uint64_t off = read_uleb128(&p, end) + sizeof(uintptr_t);
-                    segOffset += off;
-                    DEBUG_PRINT("BIND_OPCODE_DO_BIND_ADD_ADDR_ULEB (%08llx) (%p)\n", off, (void*)(segOffset));
+                    DEBUG_PRINT("BIND_OPCODE_DO_BIND_ADD_ADDR_ULEB (%08llx) (0x%08llX, %s)\n", off, (segOffset + segStartAddr), symbolName);
                     BIND_THAT_BAD_BOY;
+                    segOffset += off;
                     break;
                 } case BIND_OPCODE_DO_BIND_ADD_ADDR_IMM_SCALED: {
                     uint64_t off = immediate*sizeof(uintptr_t) + sizeof(uintptr_t);
-                    segOffset += off;
-                    DEBUG_PRINT("BIND_OPCODE_DO_BIND_ADD_ADDR_IMM_SCALED (0x%llx) (%p)\n", off, (void*)segOffset);
+                    DEBUG_PRINT("BIND_OPCODE_DO_BIND_ADD_ADDR_IMM_SCALED (0x%llx) (0x%08llX)\n", off, (segOffset + segStartAddr));
                     BIND_THAT_BAD_BOY;
+                    segOffset += off;
                     break;
                 } case BIND_OPCODE_DO_BIND_ULEB_TIMES_SKIPPING_ULEB:
                     count = read_uleb128(&p, end);
                     skip = read_uleb128(&p, end);
-                    DEBUG_PRINT("BIND_OPCODE_DO_BIND_ULEB_TIMES_SKIPPING_ULEB (%llu, 0x%08llx)\n", count, skip);
+                    DEBUG_PRINT("BIND_OPCODE_DO_BIND_ULEB_TIMES_SKIPPING_ULEB (%llu, 0x%08llX)\n", count, skip);
                     for (uint32_t i = 0; i < count; ++i) {
-                        segOffset += skip + sizeof(uintptr_t);
-                        DEBUG_PRINT("\tDO_BIND (%p, %s)\n", (void*)(segStartAddr + segOffset), symbolName);
+                        DEBUG_PRINT("\tDO_BIND (0x%08llX, %s)\n",(segStartAddr + segOffset), symbolName);
                         BIND_THAT_BAD_BOY;
+                        segOffset += skip + sizeof(uintptr_t);
                     }
                     break;
                 case BIND_OPCODE_THREADED:
@@ -235,7 +236,7 @@ static int64_t read_sleb128(const uint8_t** p, const uint8_t* end)
                                     // the ordinal is bits [0..15]
                                     uint16_t threadOrdinal = value & 0xFFFF;
                                     if (threadOrdinal >= ordinalTableSize) { assert(0); }
-                                    uint16_t ordinal = value & 0xFFFF;
+//                                    uint16_t ordinal = value & 0xFFFF;
                                     XRBindSymbol *obj = threadedHolder[threadOrdinal];
                                     [self addToDictionaries:segStartAddr + segOffset  symbol:(char*)obj.name.UTF8String libord:obj.libOrdinal addend:obj.addend];
                                     DEBUG_PRINT("\tTHREADED_APPLY (%p, %s)\n", (void*)resolvedAddress, obj.name.UTF8String);

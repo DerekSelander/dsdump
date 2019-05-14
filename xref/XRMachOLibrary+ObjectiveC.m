@@ -104,6 +104,12 @@ typedef struct  {
                         modname[off.mod_len] = '\00';
                         printf(" : %s%s%s%s", color, modname, &supercls_name[off.cls_off], color_end());
                     } else {
+                        class_ro_t *ro = (class_ro_t *)DATABUF([self ROOffsetAddressForObjCClass:buff[i]]);
+                        if (!supercls_name && (ro->flags & RO_ROOT) == 0) {
+                            printf(" %sbug! \"%s\" shouldn't be ROOT (0x%lu) %s", dcolor(DSCOLOR_RED), name,  resolvedAddress, color_end());
+//                            assert(ro->flags & RO_ROOT);
+                        }
+                        
                         printf(" : %s%s%s", color, supercls_name ? supercls_name : "<ROOT>", color_end());
                     }
                 }

@@ -12,6 +12,7 @@
 #define FAST_DATA_MASK          0x00007ffffffffff8UL
 #define ARM64e_MASK             0x000007FFFFFFFFFFUL
 #define RO_META               (1<<0)
+#define RO_ROOT               (1<<1)
 
 typedef struct {
     char* name;
