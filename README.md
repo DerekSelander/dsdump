@@ -28,6 +28,8 @@ Upon building the repo, xref will install itself in `/usr/local/bin`. Make sure 
 
   --library   (-l) Dump only defined (internally implemented) symbols
 
+  --color     (-c) Everything is so much better in cOLoR!
+
  Examples
     # dump all Objective-C classes (implemented/referenced) by launchd with color, display super class
     xref --objc /sbin/launchd -vc
@@ -40,6 +42,13 @@ Upon building the repo, xref will install itself in `/usr/local/bin`. Make sure 
 
     # dump programs that link to MobileDevice in their process address space
     sudo xref -l /System/Library/PrivateFrameworks/MobileDevice.framework/MobileDevice
+
+Environment variables
+    DSCOLOR	Same as -c
+
+    DEBUG	Used for testing... those damn dyld opcodes
+
+    ARCH	Same as -A to specify the architecture
  ```
 
 [![img](media/vmmap.png)](https://store.raywenderlich.com/products/advanced-apple-debugging-and-reverse-engineering)
