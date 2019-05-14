@@ -15,6 +15,7 @@
 
 /// Usage deets
 void print_usage(void);
+void print_options(void);
 
 
 /********************************************************************************

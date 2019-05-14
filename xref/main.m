@@ -26,7 +26,7 @@
 static NSArray <NSString *>* exc_rpaths = nil;
 static void handle_args(int argc, const char * argv[]);
 
-
+#import <dlfcn.h>
 
 int main(int argc, const char * argv[], const char*envp[]) {
     handle_args(argc, argv);
@@ -34,6 +34,8 @@ int main(int argc, const char * argv[], const char*envp[]) {
         print_usage();
         exit(1);
     }
+    
+    dlopen("/System/Library/PrivateFrameworks/MobileDevice.framework/MobileDevice", RTLD_NOW);
     
     const char *_path = argv[optind++];
     if (!_path) {
@@ -78,10 +80,8 @@ int main(int argc, const char * argv[], const char*envp[]) {
 
 static void handle_args(int argc, const char * argv[]) {
     int c;
-//    int digit_optind = 0;
     
     while (1) {
-//        int this_option_optind = optind ? optind : 1;method_array_t
         int option_index = 0;
         static struct option long_options[] = {
             {"library", no_argument, &xref_options.library,  1 },
@@ -103,8 +103,8 @@ static void handle_args(int argc, const char * argv[]) {
             {0,         0,                 0,  0 }
         };
         
-        xref_options.debug = getenv("DEBUG") ? 1 : 0;
-        c = getopt_long(argc, (char * const *)argv, "A:uUxcvSs:o:la:bd:012",
+
+        c = getopt_long(argc, (char * const *)argv, "hA:uUxcvSs:o:la:bd:012",
                         long_options, &option_index);
         if (c == -1) { break; }
         struct host_basic_info;
@@ -120,6 +120,9 @@ static void handle_args(int argc, const char * argv[]) {
                     xref_options.verbose = (int)strtol(optarg, 0, 0);
                 }  else if (strcmp(long_options[option_index].name, "arch") == 0) {
                     xref_options.arch = optarg;
+                } else if (strcmp(long_options[option_index].name, "help") == 0) {
+                    print_options();
+                    exit(0);
                 }
                 break;
             case 'v':
@@ -151,17 +154,11 @@ static void handle_args(int argc, const char * argv[]) {
                 break;
             case 'S':
                 xref_options.all_sections = 1;
-                break; 
-//            case 'x':
-//                xref_options.external = 1;
-////                printf("option b\n");
-//                break;
-                
-         
-                
-//            case 'd':
-////                printf("option d with value '%s'\n", optarg);
-//                break;
+                break;
+            case 'h':
+                print_options();
+                exit(0);
+                break;
                 
             case '?':
                 break;
@@ -173,8 +170,8 @@ static void handle_args(int argc, const char * argv[]) {
     
     // Handle some post argument shuffling...
     if (xref_options.swift_mode) { xref_options.objectiveC_mode = 1; }
-    xref_options.debug |= getenv("DSDEBUG") ? 1 : 0;
     xref_options.color |= getenv("DSCOLOR") ? 1 : 0;
+    xref_options.debug |= getenv("DEBUG") ? 1 : 0;
     
     if (!xref_options.arch && getenv("ARCH")) {
         xref_options.arch = getenv("ARCH");
