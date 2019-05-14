@@ -1,7 +1,6 @@
 # xref
 
-Some ugly mix between `class-dump`, `nm`, and `vmmap`
-
+Some ugly mix between `class-dump`, `nm`, and `vmmap`. This tool is great for an initial first passes at inspecting executables to see what's in them before jumping to your favorite jtool/hopper/Ghidra/IDA/whatevs
 ```
  Usage: xref <options> macho_file
  A cross between nm and vmmap for finding references to symbols (C, ObjC, Swift), both statically and in programs in memory
