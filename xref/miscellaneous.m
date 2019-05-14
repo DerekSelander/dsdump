@@ -34,7 +34,8 @@ static const char *_options[] = {
     "--symbol    (-s) <symbol> Find references to a symbol, use --objc for non-C\n",
     "--undefined (-u) Dump only undefined (externally referenced) symbols\n",
     "--defined   (-U) Dump only defined (internally implemented) symbols\n",
-    "--library   (-l) Dump only defined (internally implemented) symbols\n"
+    "--library   (-l) Dump only defined (internally implemented) symbols\n",
+    "--color     (-c) Everything is so much better in cOLoR!\n"
 };
 
 static const char *_examples[] = {
@@ -69,6 +70,12 @@ void print_options() {
         printf("    %s%s%s\n", dcolor(DSCOLOR_BOLD), _examples[i], color_end());
         printf("    %s\n\n", _examples[i + 1]);
     }
+    
+    printf("\
+Environment variables\n\
+    DSCOLOR\tSame as -c\n\n\
+    DEBUG\tUsed for testing... those damn dyld opcodes\n\n\
+    ARCH\tSame as -A to specify the architecture\n");
 }
 
 /********************************************************************************
