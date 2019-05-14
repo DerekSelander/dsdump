@@ -11,7 +11,7 @@
 
 @implementation XRBindSymbol
 
-- (instancetype)initWithAddress:(NSNumber *)address symbol:(NSString *)symbol libord:(int)ordinal addend:(uint64_t)addend {
+- (instancetype)initWithAddress:(NSNumber *)address symbol:(NSString *)symbol libord:(uint64_t)ordinal addend:(uint64_t)addend {
 
     if (self = [super init]) {
         self.name = symbol;

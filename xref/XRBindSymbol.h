@@ -18,9 +18,9 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, copy) NSString *name;
 @property (nonatomic, readonly) NSString *shortName;
 @property (nonatomic, assign) uint64_t addend;
-@property (nonatomic, assign) int libOrdinal;
+@property (nonatomic, assign) uint64_t libOrdinal;
 
-- (instancetype)initWithAddress:(NSNumber *)address symbol:(NSString *)symbol libord:(int)ordinal addend:(uint64_t)addend;
+- (instancetype)initWithAddress:(NSNumber *)address symbol:(NSString *)symbol libord:(uint64_t)ordinal addend:(uint64_t)addend;
 
 @end
 
