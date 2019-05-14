@@ -199,44 +199,19 @@ static int64_t read_sleb128(const uint8_t** p, const uint8_t* end)
                             if ( !useThreadedRebaseBind ) { assert(0); }
                             DEBUG_PRINT("BIND_SUBOPCODE_THREADED_APPLY\n");
                             uint64_t delta = 0;
-                            /*
-                             do {
-                             uintptr_t resolvedAddress = bind_address + seg_off;
-                             uintptr_t offset = [self translateLoadAddressToFileOffset:resolvedAddress useFatOffset:NO] + self.file_offset;
-                             
-                             uint64_t value = *(uintptr_t *)((uintptr_t)DATABUF(offset));
-                             
-                             bool isRebase = (value & (1ULL << 62)) == 0;
-                             if (isRebase) { do nothing}
-                            else {
-                                uint16_t ordinal = value & 0xFFFF;
-                                XRBindSymbol *obj = threadedHolder[ordinal];
-                                [self addToDictionaries:resolvedAddress  symbol:(char*)obj.name.UTF8String libord:obj.libOrdinal addend:obj.addend];
-                                DEBUG_PRINT("\tTHREADED_APPLY (%p, %s)\n", (void*)resolvedAddress, obj.name.UTF8String);
-                                
-                            }
-                            value &= ~(1ULL << 62);
-                            delta = (value & 0x3FF8000000000000) >> 51;
-                            seg_off += (delta * PTR_SIZE);
-                            
-                    } while (delta != 0);
-                    
-                             */
+                           
                             do {
                                 uintptr_t resolvedAddress = segStartAddr + segOffset;
                                 uintptr_t offset = [self translateLoadAddressToFileOffset:resolvedAddress useFatOffset:YES];
                                 uint64_t value = *(uintptr_t *)((uintptr_t)DATABUF(offset));
-//                                const uint8_t* pointerLocation = (uint8_t*)fHeader + fSegments[segIndex]->fileoff() + segOffset;
-//                                uint64_t value = P::getP(*(uint64_t*)pointerLocation);
                                 bool isRebase = (value & (1ULL << 62)) == 0;
                                 
                                 if (isRebase) {
-                                    //printf("(rebase): %-7s %-16s 0x%08llX  %s\n", segName, sectionName(segIndex, segStartAddr+segOffset), segStartAddr+segOffset, typeName);
+                                    // Do nothing
                                 } else {
                                     // the ordinal is bits [0..15]
                                     uint16_t threadOrdinal = value & 0xFFFF;
                                     if (threadOrdinal >= ordinalTableSize) { assert(0); }
-//                                    uint16_t ordinal = value & 0xFFFF;
                                     XRBindSymbol *obj = threadedHolder[threadOrdinal];
                                     [self addToDictionaries:segStartAddr + segOffset  symbol:(char*)obj.name.UTF8String libord:obj.libOrdinal addend:obj.addend];
                                     DEBUG_PRINT("\tTHREADED_APPLY (%p, %s)\n", (void*)resolvedAddress, obj.name.UTF8String);
@@ -249,10 +224,7 @@ static int64_t read_sleb128(const uint8_t** p, const uint8_t* end)
                                 // And bit 62 is to tell us if we are a rebase (0) or bind (1)
                                 segOffset += delta * sizeof(uintptr_t);
                         
-                                
-                                
-                                
-                       
+
                             } while ( delta != 0);
                             break;
                         }

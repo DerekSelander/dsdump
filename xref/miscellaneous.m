@@ -26,15 +26,29 @@ __attribute__((constructor)) static void InitializeStuff() {
  ********************************************************************************/
 
 static const char *_options[] = {
-    "--objc           Dumps Objective-C classes\n",
-    "--swift          Dumps Swift classes\n",
-    "--all            Search in all functions, even ones that are stripped out\n",
+    "--objc      Dumps Objective-C classes\n",
+    "--swift     Dumps Swift classes\n",
+    "--all       Search in all functions, even ones that are stripped out\n",
     "--arch      (-A) <arch> Display info for specified arch (defaults to your CPU)\n",
     "--verbose   (-v) <level>  verbose modes, there are 4 levels\n",
     "--symbol    (-s) <symbol> Find references to a symbol, use --objc for non-C\n",
     "--undefined (-u) Dump only undefined (externally referenced) symbols\n",
     "--defined   (-U) Dump only defined (internally implemented) symbols\n",
     "--library   (-l) Dump only defined (internally implemented) symbols\n"
+};
+
+static const char *_examples[] = {
+    "# dump all Objective-C classes (implemented/referenced) by launchd with color, display super class",
+    "xref --objc /sbin/launchd -vc",
+    
+    "# dump implemented Objective-C classes and methods",
+    "xref --objc /sbin/launchd -vvvcU",
+    
+    "# dump externally referenced symbols",
+    "xref /sbin/launchd -vcu",
+    
+    "# dump programs that link to MobileDevice in their process address space",
+    "sudo xref -l /System/Library/PrivateFrameworks/MobileDevice.framework/MobileDevice",
 };
 
 void print_usage() {
@@ -44,11 +58,16 @@ void print_usage() {
 }
 
 void print_options() {
-    static char* desc =
-    " Usage: xref <options> macho_file\n A cross between nm and vmmap for finding references to symbols (C, ObjC, Swift), both statically and in programs in memory\n";
-    printf("%s\n", desc);
+
+    printf(" %sUsage: xref <options> macho_file%s\n A cross between nm and vmmap for finding references to symbols (C, ObjC, Swift), both statically and in programs in memory\n", dcolor(DSCOLOR_BOLD), color_end());
     for (int i = 0; i < sizeof(_options)/sizeof(_options[0]); i++) {
         printf("  %s\n", _options[i]);
+    }
+    
+    printf(" %sExamples%s\n", dcolor(DSCOLOR_BOLD), color_end());
+    for (int i = 0; i < sizeof(_examples) / (sizeof(_examples[0])); i+=2) {
+        printf("    %s%s%s\n", dcolor(DSCOLOR_BOLD), _examples[i], color_end());
+        printf("    %s\n\n", _examples[i + 1]);
     }
 }
 

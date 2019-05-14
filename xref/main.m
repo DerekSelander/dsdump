@@ -35,8 +35,6 @@ int main(int argc, const char * argv[], const char*envp[]) {
         exit(1);
     }
     
-    dlopen("/System/Library/PrivateFrameworks/MobileDevice.framework/MobileDevice", RTLD_NOW);
-    
     const char *_path = argv[optind++];
     if (!_path) {
         print_usage();
