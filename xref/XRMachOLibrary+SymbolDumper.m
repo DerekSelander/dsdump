@@ -9,7 +9,8 @@
 #import "XRMachOLibrary+SymbolDumper.h"
 #import "XRMachOLibrary+Opcode.h"
 #import "XRMachOLibrary+ObjectiveC.h"
-
+//#import "XRMachOLibrary_cplus.h"
+#import "XRSymbolEntry.h"
 @implementation XRMachOLibrary (SymbolDumper)
 
 /********************************************************************************
@@ -23,7 +24,7 @@
         return;
     }
     
-    if (xref_options.verbose >= VERBOSE_4) {
+    if (xref_options.debug) {
         struct dysymtab_command * d = self.dysymtab;
         printf("\
                ilocalsym: %d, nlocalsym: %d\n\
@@ -37,13 +38,7 @@
     }
     
     
-    NSMutableOrderedSet * funcStartsSet;
-    if (xref_options.all_symbols) {
-        funcStartsSet  = [self.function_starts mutableCopy];
-    }
-    
     for (int i = 0; i < self.symtab->nsyms; i++) {
-        
         struct nlist_64 symbol = self.symbols[i];
 
         // If a debugging symbol only print if really verbose
@@ -59,24 +54,23 @@
             print_symbol(self, &self.symbols[i], NULL);
         }
         
-        
-    
-        // Remove the stripped function since it's referenced by a symbol
-        if (xref_options.all_symbols) {            
-            NSNumber *val = @(symbol.n_value);
-            [funcStartsSet removeObject:val];
+        // For stripped functions
+        if (xref_options.all_symbols && symbol.n_value && self.symbolEntry[@(symbol.n_value)]) {
+            XRSymbolEntry *entry = self.symbolEntry[@(symbol.n_value)];
+            entry.visited = true;
         }
     }
     
     // Enumerate the stripped symbols if all_symbols is set
     if (xref_options.all_symbols) {
-        for (NSNumber *address in funcStartsSet) {
-            printf("0x%011llx %s<stripped>%s\n", address.unsignedLongLongValue, dcolor(DSCOLOR_RED), color_end());
+        for (NSNumber *key in self.symbolEntry) {
+//        for (auto it = self.exports.begin(); it != self.exports.end(); ++it) {
+            XRSymbolEntry *entry = self.symbolEntry[key];
+            if (entry.visited) { continue; }
+            printf("0x%011llx %s<stripped>%s\n", entry.address, dcolor(DSCOLOR_RED), color_end());
         }
     }
 }
-
-
 
 - (void)dumpExternalSymbols {
     uintptr_t base = self.lazy_ptr_section->addr;

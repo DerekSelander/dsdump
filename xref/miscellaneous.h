@@ -13,6 +13,10 @@
 #import <Foundation/Foundation.h>
 #import <stdlib.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /// Usage deets
 void print_usage(void);
 void print_options(void);
@@ -81,6 +85,9 @@ extern xref_options_t xref_options;
 const uint8_t *r_uleb128_decode(uint8_t *data, int *datalen, uint64_t *v);
 const uintptr_t r_sleb128_decode(uint8_t *byte, uintptr_t* shift, uint64_t *v);
 
+#ifdef __cplusplus
+}
+#endif
 
 /// sizeof pointer, 64 bit only
 #define PTR_SIZE sizeof(void*)

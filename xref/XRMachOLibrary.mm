@@ -13,12 +13,15 @@
 #import "capstone/capstone.h"
 #import "XRMachOLibrary+Opcode.h"
 #import "XRMachOLibrary+FAT.h"
+#import "XRSymbolEntry.h"
+#include <unordered_map>
 
+using namespace std;
 @interface XRMachOLibrary ()
 
 @property (nonatomic, readonly) NSString *realizedPath;
 @property (nonatomic, assign) int maxlibNameLength;
-
+@property (nonatomic, assign) std::unordered_map<uint64_t, XRSymbolEntry*> exports;
 @end
 
 @implementation XRMachOLibrary
@@ -36,7 +39,6 @@
         self.sectionCommandsDictionary = [NSMutableDictionary dictionary];
         self.segmentCommandsDictionary = [NSMutableDictionary dictionary];
         
-        self.function_starts = [NSMutableArray array];
         self.file_offset = 0;
         
 
@@ -55,7 +57,7 @@
         fseek(f, 0, SEEK_END);
         long fsize = ftell(f);
         fseek(f, 0, SEEK_SET);  /* same as rewind(f); */
-        self.data = malloc(fsize + 1);
+        self.data = (uint8_t *)malloc(fsize + 1);
         fread(self.data, 1, fsize, f);
         fclose(f);
         if (fsize < 4) {
@@ -116,8 +118,8 @@
                     void * functions = &_data[_file_offset + self.function_starts_cmd->dataoff];
                     
                     const uint8_t* infoStart = (uint8_t*)functions;
-                    const uint8_t* infoEnd = functions + self.function_starts_cmd->dataoff;
-                    struct segment_command_64* code_segment = [self.segmentCommandsDictionary[@"__TEXT"] pointerValue];
+                    const uint8_t* infoEnd = ((const uint8_t* )functions) + self.function_starts_cmd->dataoff;
+                    struct segment_command_64* code_segment = (struct segment_command_64*)[self.segmentCommandsDictionary[@"__TEXT"] pointerValue];
                     assert(code_segment);
                     
                     uint64_t address = code_segment->vmaddr;
@@ -131,7 +133,13 @@
                             shift += 7;
                             if ( byte < 0x80 ) {
                                 address += delta;
-                                [self.function_starts addObject:@(address)];
+                                if (!self.symbolEntry[@(address)]) {
+                                    XRSymbolEntry *entry = [XRSymbolEntry new];
+                                    entry.address = address;
+                                    _symbolEntry[@(address)] = entry;
+                                }
+
+                         
                                 more = false;
                             }
                         } while (more);
@@ -140,15 +148,21 @@
                 } else if (load_cmd->cmd == LC_SYMTAB) {
                     
                     self.symtab = (struct symtab_command *)load_cmd;
-                    self.symbols = DATABUF(_file_offset + self.symtab->symoff); //(struct nlist_64 *)&_data[_file_offset + self.symtab->symoff];
-                    self.str_symbols = DATABUF(_file_offset + self.symtab->stroff); // (char *)&_data[_file_offset + self.symtab->stroff];
+                    self.symbolEntry = [NSMutableDictionary dictionaryWithCapacity:self.symtab->nsyms];
+                    self.symbols = static_cast<struct nlist_64 *>(DATABUF(_file_offset + self.symtab->symoff)); //(struct nlist_64 *)&_data[_file_offset + self.symtab->symoff];
+                    self.str_symbols = static_cast<char *>(DATABUF(_file_offset + self.symtab->stroff)); // (char *)&_data[_file_offset + self.symtab->stroff];
+     
 
                 } else if (load_cmd->cmd == LC_DYLD_INFO || load_cmd->cmd == LC_DYLD_INFO_ONLY) {
                     
                     self.dyldInfo = (struct dyld_info_command *)load_cmd;
-                    if (xref_options.objectiveC_mode) {
-                        [self parseOpcodes];
-                    }
+//#warning fix this
+                    
+                    self.exports.reserve(self.dyldInfo->export_size);
+//                    if (xref_options.objectiveC_mode) {
+                        [self parseDYLDOpcodes];
+                        [self parseDYLDExports];                                
+//                    }
                     
                 } else if (load_cmd->cmd == LC_DYSYMTAB) {
                     
@@ -183,7 +197,7 @@
                     
                 } else if (load_cmd->cmd == LC_UUID) {
                     
-                    self.uuid_cmd = calloc(1, sizeof(struct uuid_command));
+                    self.uuid_cmd = (struct uuid_command *)calloc(1, sizeof(struct uuid_command));
                     memcpy(self->_uuid_cmd, load_cmd, sizeof(struct uuid_command));
                     
                 }
@@ -212,7 +226,7 @@
         if (self.lazy_ptr_section && self.dysymtab) {
             uintptr_t syms = (_file_offset + self.dysymtab->indirectsymoff);
             _indirect_symbols.count = self.dysymtab->nindirectsyms;
-            _indirect_symbols.indirect_sym = calloc(self.indirect_symbols.count, sizeof(uint32_t));
+            _indirect_symbols.indirect_sym = (uint32_t *)calloc(self.indirect_symbols.count, sizeof(uint32_t));
              pread(_fd, _indirect_symbols.indirect_sym, _indirect_symbols.count * sizeof(uint32_t), syms);
         }
     }
@@ -227,6 +241,9 @@
     
     if (xref_options.objectiveC_mode) {
         [self preparseExternalObjectiveCSymbols];
+    }
+    if (xref_options.swift_mode) {
+        [self parseLocalSymbolsInSymbolTable];
     }
     
     return self;
@@ -336,7 +353,7 @@
         if (!section->offset) { continue; }
         if (section->flags & S_LITERAL_POINTERS || section->flags == S_REGULAR) {
             
-            uintptr_t *base = calloc(1, section->size);
+            uintptr_t *base = (uintptr_t*)calloc(1, section->size);
             size_t count = (uintptr_t)section->size / sizeof(uintptr_t);
             pread(self.fd, base, section->size, section->offset + self.file_offset);
             for (int z = 0; z < count; z++) {
@@ -457,7 +474,7 @@
     
     
     printf("Searching for: ");
-    print_symbol(self, foundSymbol, NULL);
+    ::print_symbol(self, foundSymbol, NULL);
   
     if (xref_options.objectiveC_mode) {
         
@@ -586,38 +603,38 @@
 
 
 - (uintptr_t)findStub_x86_64:(uintptr_t)stubAddress {
-    struct section_64* stubs_section = [self.sectionCommandsDictionary[@"__TEXT.__stubs"] pointerValue];
-    if (!stubs_section) { return 0; }
-    
-    void* buf = calloc(sizeof(char), stubs_section->size);
-    pread(self.fd, buf, stubs_section->size, stubs_section->offset + self.file_offset);
-    
-    
-    cs_insn *instructions = NULL;
-    csh handle = 0;
-    int err = cs_open(CS_ARCH_X86, CS_MODE_64, &handle);
-    if (err != CS_ERR_OK) {
-        assert(NO);
-    }
-    
-    //    struct platform platforms;
-    cs_option(handle, CS_OPT_DETAIL, CS_OPT_ON);
-    cs_option(handle, CS_OPT_SKIPDATA, CS_OPT_ON);
-    
-    size_t count = cs_disasm(handle, buf, stubs_section->size, stubs_section->addr, 0, &instructions);
-    
-    if (count == 0) {
-        printf("error!! %d\n", cs_errno(handle));
-        
-    }
-    for (int i = 0; i < count; i++) {
-        cs_insn insn =  instructions[i];
-        if (!insn.detail || insn.id  != X86_INS_JMP || insn.detail->x86.operands[0].type != X86_OP_MEM) { continue; }
-        
-        if (insn.detail->x86.operands[0].mem.disp + insn.address + insn.size == stubAddress) {
-            return insn.address;
-        }
-    }
+//    struct section_64* stubs_section = (struct section_64*)[self.sectionCommandsDictionary[@"__TEXT.__stubs"] pointerValue];
+//    if (!stubs_section) { return 0; }
+//
+//    void* buf = calloc(sizeof(char), stubs_section->size);
+//    pread(self.fd, buf, stubs_section->size, stubs_section->offset + self.file_offset);
+//
+//
+//    cs_insn *instructions = NULL;
+//    csh handle = 0;
+//    int err = cs_open(CS_ARCH_X86, CS_MODE_64, &handle);
+//    if (err != CS_ERR_OK) {
+//        assert(NO);
+//    }
+//
+//    //    struct platform platforms;
+//    cs_option(handle, CS_OPT_DETAIL, CS_OPT_ON);
+//    cs_option(handle, CS_OPT_SKIPDATA, CS_OPT_ON);
+//
+//    size_t count = cs_disasm(handle, buf, stubs_section->size, stubs_section->addr, 0, &instructions);
+//
+//    if (count == 0) {
+//        printf("error!! %d\n", cs_errno(handle));
+//
+//    }
+//    for (int i = 0; i < count; i++) {
+//        cs_insn insn =  instructions[i];
+//        if (!insn.detail || insn.id  != X86_INS_JMP || insn.detail->x86.operands[0].type != X86_OP_MEM) { continue; }
+//
+//        if (insn.detail->x86.operands[0].mem.disp + insn.address + insn.size == stubAddress) {
+//            return insn.address;
+//        }
+//    }
 
     return 0;
     
@@ -625,7 +642,7 @@
 
 - (uintptr_t)findStub_ARM64:(uintptr_t)stubAddress {
     
-    struct section_64* stubs_section = [self.sectionCommandsDictionary[@"__TEXT.__stubs"] pointerValue];
+    struct section_64* stubs_section = reinterpret_cast<struct section_64*>([self.sectionCommandsDictionary[@"__TEXT.__stubs"] pointerValue]);
     if (!stubs_section) { return 0; }
     
     void* buf = calloc(sizeof(char), stubs_section->size);
@@ -648,7 +665,7 @@
     //    uint64_t out_address = self.code_section->addr;
     
 
-    size_t count = cs_disasm(handle, buf, stubs_section->size, stubs_section->addr, 0, &instructions);
+    size_t count = 0;//cs_disasm(handle, buf, stubs_section->size, stubs_section->addr, 0, &instructions);
     
     if (count == 0) {
         printf("error!! %d\n", cs_errno(handle));
@@ -680,10 +697,11 @@
         
         uintptr_t cur = addresses[i].longValue;
         
-        uintptr_t func_count = self.function_starts.count;
+        uintptr_t func_count = self.exports.size(); // self.function_starts.count;
+        assert(0); // not implemented for now...
         for (int j = 0; j < func_count; j++) {
-            uintptr_t start =  self.function_starts[j].longValue;
-            uintptr_t stop =  j >= func_count - 1 ? UINTPTR_MAX :  self.function_starts[j + 1].longValue;
+            uintptr_t start =  0; // self.function_starts[j].longValue;
+            uintptr_t stop = 0; // j >= func_count - 1 ? UINTPTR_MAX :  self.function_starts[j + 1].longValue;
             
             if (start <= cur && cur <= stop && stop != -1) {
                 BOOL found_symbol_name = NO;
@@ -769,7 +787,7 @@
    __unused  uintptr_t f = useFatOffset ? self.file_offset : 0;
     for (int i = 1; i < self.sectionCommandsArray.count; i++) {
         NSNumber *sectionNumber = self.sectionCommandsArray[i];
-        struct section_64 *sec = sectionNumber.pointerValue;
+        struct section_64 *sec = reinterpret_cast<struct section_64 *>(sectionNumber.pointerValue);
         if (sec->addr <= loadAddress && loadAddress < sec->addr + sec->size) {
             return loadAddress - sec->addr  + sec->offset + f;
         }
@@ -783,7 +801,7 @@
     uintptr_t f = -self.file_offset;
     for (int i = 1; i < self.sectionCommandsArray.count; i++) {
         NSNumber *sectionNumber = self.sectionCommandsArray[i];
-        struct section_64 *sec = sectionNumber.pointerValue;
+        struct section_64 *sec = (struct section_64 *)sectionNumber.pointerValue;
         
         if (sec->offset <= (offset + f) && (offset + f) < sec->offset + sec->size) {
             return offset - sec->offset + sec->addr + f;
@@ -805,6 +823,37 @@
         isARM64e = ((CPU_ARCH_ABI64|CPU_TYPE_ARM) == type && CPU_SUBTYPE_ARM64E == subtype) ? YES : NO;
     });
     return isARM64e;
+}
+
+- (XRSymbolEntry*)symbolEntryForAddress:(uintptr_t)address {
+    return _exports[address];
+}
+
+- (void)setSymbolEntry:(XRSymbolEntry*)entry forAddress:(uintptr_t)address  {
+    _exports[address] = entry;
+}
+
+- (void)setSymbol:(const char *)symbol forAddress:(uintptr_t)address {
+    _exports[address];
+}
+
+- (void)parseLocalSymbolsInSymbolTable {
+    for (int i = self.dysymtab->ilocalsym; i < self.dysymtab->ilocalsym + self.dysymtab->nlocalsym; i++) {
+        struct nlist_64 *symbol = &self.symbols[i];
+        if (symbol->n_value) {
+            XRSymbolEntry *entry = [[XRSymbolEntry alloc] initWithSymbol:symbol machoLibrary:self];
+            self.symbolEntry[@(symbol->n_value)] = entry;
+        }
+    }
+    
+    for (int i = self.dysymtab->iextdefsym; i < self.dysymtab->iextdefsym + self.dysymtab->nextdefsym; i++) {
+        struct nlist_64 *symbol = &self.symbols[i];
+        if (symbol->n_value) {
+            XRSymbolEntry *entry = [[XRSymbolEntry alloc] initWithSymbol:symbol machoLibrary:self];
+            self.symbolEntry[@(symbol->n_value)] = entry;
+        }
+    }
+    
 }
 
 @end

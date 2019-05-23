@@ -12,8 +12,10 @@
 #import "XRBindSymbol.h"
 #import "capstone/capstone.h"
 
-@import Foundation;
-@import MachO;
+#import <Foundation/Foundation.h>
+#import <mach-o/loader.h>
+#import <mach-o/nlist.h>
+#import <mach-o/fat.h>
 
 #define DATABUF(offset) (void*)&self.data[(offset)]
 
@@ -22,6 +24,8 @@ NS_ASSUME_NONNULL_BEGIN
 extern NSMutableSet <NSString*> *pathsSet;
 extern NSMutableSet <NSString*> *exploredSet;
 extern NSMutableSet <NSString*> *rpathSet;
+
+@class XRSymbolEntry;
 
 /// Deal with 32/64 in one value
 typedef union {
@@ -35,22 +39,31 @@ typedef struct {
     uint32_t *indirect_sym;
 } indirect_symbols_t;
 
-@interface XRMachOLibrary : NSObject {
-    size_t _instructions_count;
-
-}
-
 // An authenticated pointer is:
 typedef struct {
-// {
-     int32_t addend;
-     uint16_t diversityData;
-     uint16_t hasAddressDiversity : 1;
-     uint16_t key : 2;
-     uint16_t zeroes : 11;
-     uint16_t zero : 1;
-     uint16_t authenticated : 1;
+    // {
+    int32_t addend;
+    uint16_t diversityData;
+    uint16_t hasAddressDiversity : 1;
+    uint16_t key : 2;
+    uint16_t zeroes : 11;
+    uint16_t zero : 1;
+    uint16_t authenticated : 1;
 } PACPointer;
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
+#ifdef __cplusplus
+}
+#endif
+    
+
+@interface XRMachOLibrary : NSObject {
+    size_t _instructions_count;
+}
 
 
 /// Library dependencies
@@ -84,7 +97,7 @@ typedef struct {
 @property (nonatomic, strong) NSMutableDictionary <NSString *, NSNumber *>* sectionCommandsDictionary;
 @property (nonatomic, strong) NSMutableDictionary <NSString *, NSNumber *>* segmentCommandsDictionary;
 
-@property (nonatomic, strong) NSMutableArray <NSNumber *>* function_starts;
+//@property (nonatomic, strong) NSMutableArray <NSNumber *>* function_starts;
 @property (nonatomic, assign) struct build_version_command *build_cmd;
 @property (nonatomic, assign) struct version_min_command *version_cmd;
 @property (nonatomic, assign) struct uuid_command *uuid_cmd; 
@@ -95,7 +108,7 @@ typedef struct {
 @property (nonatomic, assign) char *str_symbols;
 
 @property (nonatomic, assign) uint8_t *data;
-
+@property (nonatomic, strong) NSMutableDictionary<NSNumber *, XRSymbolEntry *>*symbolEntry;
 
 
 
@@ -125,6 +138,10 @@ typedef struct {
 - (uintptr_t)translateLoadAddressToFileOffset:(uintptr_t)loadAddress useFatOffset:(BOOL)useFatOffset;
 - (uintptr_t)translateOffsetToLoadAddress:(uintptr_t)offset;
 
+
+- (XRSymbolEntry *)symbolEntryForAddress:(uintptr_t)address;
+- (void)setSymbolEntry:(XRSymbolEntry *)entry forAddress:(uintptr_t)address;
+- (void)setSymbol:(const char *)symbol forAddress:(uintptr_t)address;
 @end
 
 
@@ -137,16 +154,3 @@ typedef struct {
 @end
 
 NS_ASSUME_NONNULL_END
-
-
-
-/*
- * The following are used on the flags byte of a terminal node
- * in the export information.
- */
-#define EXPORT_SYMBOL_FLAGS_KIND_MASK                0x03
-#define EXPORT_SYMBOL_FLAGS_KIND_REGULAR            0x00
-#define EXPORT_SYMBOL_FLAGS_KIND_THREAD_LOCAL            0x01
-#define EXPORT_SYMBOL_FLAGS_WEAK_DEFINITION            0x04
-#define EXPORT_SYMBOL_FLAGS_REEXPORT                0x08
-#define EXPORT_SYMBOL_FLAGS_STUB_AND_RESOLVER            0x10

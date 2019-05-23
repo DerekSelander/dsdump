@@ -6,7 +6,7 @@
 //  Copyright © 2019 Selander. All rights reserved.
 //
 
-@import Foundation;
+#import <Foundation/Foundation.h>
 #import "uthash.h"
 
 NS_ASSUME_NONNULL_BEGIN

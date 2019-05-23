@@ -31,7 +31,7 @@ typedef struct {
     uintptr_t superclass;
     void *_buckets;
     uint32_t _mask;
-    uintptr_t _occupied;
+    uint32_t _occupied;
     uintptr_t bits; // class_rw_t * after a &= FAST_DATA_MASK
 } objc_class;
 
@@ -74,7 +74,26 @@ typedef struct {
 } class_rw_t;
 
 
-
+typedef struct swift_class_t {
+    uintptr_t isa_cls;
+    uintptr_t superclass;
+    void *_buckets;
+    uint32_t _mask;
+    uint32_t _occupied;
+    uintptr_t bits; // class_rw_t * after a &= FAST_DATA_MASK
+    uint32_t flags;
+    uint32_t instanceAddressOffset;
+    uint32_t instanceSize;
+    uint16_t instanceAlignMask;
+    uint16_t reserved;
+    
+    uint32_t classSize;
+    uint32_t classAddressOffset;
+    void *description;
+    uintptr_t *swiftMethods;
+    // ...
+    
+} swift_class;
 
 
 //#define OBJCClassGetRW(cls)  ((cls)->bits & FAST_DATA_MASK)

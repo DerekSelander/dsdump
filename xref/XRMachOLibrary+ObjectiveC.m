@@ -10,8 +10,9 @@
 #import "XRMachOLibrary+SymbolDumper.h"
 #import <libgen.h>
 #import "objc_.h"
+#import "XRMachOLibrary+Swift.h"
 #import <stddef.h>
-
+#import "XRSymbolEntry.h"
 
 
 typedef struct  {
@@ -28,15 +29,15 @@ typedef struct  {
 - (void)dumpObjCClassInfo:(const char *)name resolvedAddress:(uintptr_t)resolvedAddress {
     resolvedAddress = ARM64e_PTRMASK(resolvedAddress);
     intptr_t methodsStart = [self methodsOffsetAddressForObjCClass:resolvedAddress];
-    if (methodsStart == METHODS_OFFSET_NONE) {
-        return;
-    }
+//    if (methodsStart == METHODS_OFFSET_NONE) {
+//        return;
+//    }
     method_list_t *methods = (method_list_t *)DATABUF(methodsStart);
     int methodsCount = methods->count;
     
     class_ro_t *ro_info = (class_ro_t *)DATABUF([self ROOffsetAddressForObjCClass:resolvedAddress]);
     uint8_t isMeta = ro_info->flags & RO_META;
-    for (int j = 0; j < methodsCount; j++) {
+    for (int j = 0; methodsStart != METHODS_OFFSET_NONE && j < methodsCount; j++) {
         
         
         uintptr_t methodName = ARM64e_PTRMASK(*(uintptr_t *)(DATABUF(methodsStart + PTR_SIZE + (sizeof(method_t) * j))));
@@ -44,8 +45,26 @@ typedef struct  {
         putchar('\t');
 
         
-        uintptr_t methodAddress = (*(uintptr_t *)(DATABUF(methodsStart + PTR_SIZE * 3 + (sizeof(method_t) * j))));
-        printf("%s0x%011lx%s %c[%s %s]\n", dcolor(DSCOLOR_GRAY), methodAddress, color_end(), "-+"[isMeta], name, DATABUF(methodOffset));
+        uintptr_t methodAddress = ARM64e_PTRMASK(*(uintptr_t *)(DATABUF(methodsStart + PTR_SIZE * 3 + (sizeof(method_t) * j))));
+        printf("%s0x%011lx%s %c[%s %s]\n", dcolor(DSCOLOR_GRAY), methodAddress, color_end(), "-+"[isMeta], name, (char*)DATABUF(methodOffset));
+    }
+    
+    if (xref_options.swift_mode && [self isSwiftClass:resolvedAddress]) {
+        uintptr_t classSizeOffset_FO = [self translateLoadAddressToFileOffset:resolvedAddress + offsetof(swift_class, classSize) useFatOffset:YES];
+        uint32_t classSize = *(uint32_t *)DATABUF(classSizeOffset_FO);
+        uintptr_t classAddressOffset_FO = [self translateLoadAddressToFileOffset:(resolvedAddress + offsetof(struct swift_class_t, classAddressOffset)) useFatOffset:YES];
+        uint32_t classAddressOffset = *(uint32_t *)DATABUF(classAddressOffset_FO);
+    
+        
+        uintptr_t description_FO = [self translateLoadAddressToFileOffset:(resolvedAddress + offsetof(struct swift_class_t, swiftMethods)) useFatOffset:YES];
+        uintptr_t *curSwiftMethod = (uintptr_t *)DATABUF(description_FO);
+        
+        int swiftMethodCount = (classSize - classAddressOffset - offsetof(struct swift_class_t, swiftMethods)) / PTR_SIZE;
+        for (int i = 0; i < swiftMethodCount; i++) {
+            if (!curSwiftMethod[i]) { continue; }
+            XRSymbolEntry *entry = self.symbolEntry[@(curSwiftMethod[i])];
+            printf("\t%s0x%011lx%s %s\n", dcolor(DSCOLOR_GRAY), (long)curSwiftMethod[i], color_end(), entry.name);
+        }
     }
 }
 
@@ -80,15 +99,15 @@ typedef struct  {
                 
                 XRBindSymbol *objcReference;
                 
+                // Print out the superclass if any verbose level
                 if (xref_options.verbose > VERBOSE_NONE) {
                     // Check if it's a local symbol first via the dylds binding opcodes....
-                    objcReference = self.addressObjCDictionary[@((resolvedAddress + PTR_SIZE))];
+                    objcReference = self.addressObjCDictionary[@((resolvedAddress + offsetof(objc_class, superclass)))];
                     const char *supercls_name = objcReference.shortName.UTF8String;
                     
                     char *color = dcolor(DSCOLOR_GREEN);
-                    
                     if (!supercls_name) {
-                        uintptr_t superClassAddress = ARM64e_PTRMASK(resolvedAddress + PTR_SIZE);
+                        uintptr_t superClassAddress = ARM64e_PTRMASK(resolvedAddress + offsetof(objc_class, superclass));
                         
                         offset = [self translateLoadAddressToFileOffset:superClassAddress useFatOffset:YES];
                         uintptr_t supercls = ARM64e_PTRMASK(*(uintptr_t *)&self.data[offset]);
@@ -106,14 +125,14 @@ typedef struct  {
                     } else {
                         class_ro_t *ro = (class_ro_t *)DATABUF([self ROOffsetAddressForObjCClass:buff[i]]);
                         if (!supercls_name && (ro->flags & RO_ROOT) == 0) {
-                            printf(" %sbug! \"%s\" shouldn't be ROOT (0x%lu) %s", dcolor(DSCOLOR_RED), name,  resolvedAddress, color_end());
-//                            assert(ro->flags & RO_ROOT);
+                            printf(" %sbug! \"%s\" shouldn't be ROOT (report this to Derek) (0x%lu) %s", dcolor(DSCOLOR_RED), name,  resolvedAddress, color_end());
                         }
                         
                         printf(" : %s%s%s", color, supercls_name ? supercls_name : "<ROOT>", color_end());
                     }
                 }
                 
+                // Print the libraries if verbose 4
                 if (xref_options.verbose > VERBOSE_3) {
                     char *libName = objcReference && objcReference.libOrdinal ? (char*)self.depdencies[objcReference.libOrdinal].UTF8String : NULL;
                     if (libName) {
@@ -122,19 +141,23 @@ typedef struct  {
                 }
                 
                 putchar('\n');
+                // method dumping logic dumbing logic
                 if (xref_options.verbose > VERBOSE_2) {
                     
                     intptr_t metacls_offset = [self translateLoadAddressToFileOffset:resolvedAddress useFatOffset:YES];
-                    intptr_t resolvedMeta = *(intptr_t *)DATABUF(metacls_offset);
-                    [self dumpObjCClassInfo:name resolvedAddress:resolvedMeta];
+                    intptr_t resolvedMetaAddress = *(intptr_t *)DATABUF(metacls_offset);
                     
+                    // Dumps class methods first...
+                    [self dumpObjCClassInfo:name resolvedAddress:resolvedMetaAddress];
+                    
+                    // Then instance methods
                     [self dumpObjCClassInfo:name resolvedAddress:resolvedAddress];
                     
+                    swift_class *s = (swift_class *)resolvedAddress;
+                    swift_class *meta = (swift_class *)resolvedMetaAddress;
+                    printf("hmmm");
                 }
             }
-            
-            
-            
         }
     }
     
@@ -203,8 +226,8 @@ typedef struct  {
     }
     // Seems to be stored differently on disk than in memory, where the class_rw_t should reside...
     // Instead of the class_rw_t, the class_ro_t will be in the in memory spot, but here it's on disk
-    int fake_rw_offset = offsetof(objc_class, bits);
-    uintptr_t buff = ARM64e_PTRMASK(*(uintptr_t *)DATABUF(offset + fake_rw_offset - PTR_SIZE));
+    int disk_rw_offset = offsetof(objc_class, bits);
+    uintptr_t buff = ARM64e_PTRMASK(*(uintptr_t *)DATABUF(offset + disk_rw_offset));
     // buff now has the class_ro_t instance, translate to disk....
     if (!(offset = [self translateLoadAddressToFileOffset:(buff & FAST_DATA_MASK) useFatOffset:YES])) {
         return METHODS_OFFSET_NONE;
@@ -232,7 +255,6 @@ typedef struct  {
 
 
 -(BOOL)isSwiftClass:(uintptr_t)address {
-
     uintptr_t offset = [self translateLoadAddressToFileOffset:address useFatOffset:NO ] + self.file_offset;
     if (!(offset)) {
         return NO;
@@ -240,14 +262,15 @@ typedef struct  {
     
 #define FAST_IS_SWIFT_LEGACY 1 // f'ing swift devs changing their minds every 3 seconds...
 #define FAST_IS_SWIFT_STABLE 2
-    
-    uintptr_t buff = (*(uintptr_t *)DATABUF(offset + (4 * PTR_SIZE)));
-    
+    uintptr_t buff = (*(uintptr_t *)DATABUF(offset +  offsetof(objc_class, bits)));
     return buff & (FAST_IS_SWIFT_LEGACY|FAST_IS_SWIFT_STABLE) ? YES : NO;
 }
 
 - (BOOL)demangleSwiftName:(const char *)name offset:(d_offsets *)f {
 
+    return NO;
+    [self loadSwiftDemangle];
+//    const char * ff = [self demangledSwiftName:name];
 //    "_TtC9SwiftTest14ViewController"
     if (!name || strlen(name) == 0) {
         f->success = NO;

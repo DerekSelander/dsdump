@@ -10,9 +10,12 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface XRMachOLibrary (Opcode)
 
-- (void)parseOpcodes;
+@interface XRMachOLibrary (Opcode)
+- (void)parseDYLDExports;
+- (void)parseDYLDOpcodes;
+
 @end
+
 
 NS_ASSUME_NONNULL_END
