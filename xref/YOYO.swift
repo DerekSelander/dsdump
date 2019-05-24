@@ -9,7 +9,9 @@
 import Cocoa
 
 class YOYO: NSViewController {
-    let someproperty : NSString? = nil 
+    let someproperty = "https://www.google.com"
+    let someotherproperty = "https://www.google.com"
+    var avar = "https://www.google.com"
     func testyay() {
         print("yay")
     }

@@ -14,7 +14,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)dumpObjectiveCClasses;
 -(const char*)nameForObjCClass:(uintptr_t)address;
 
-#define METHODS_OFFSET_NONE ((intptr_t)-1)
+#define OFFSET_UNKNOWN ((intptr_t)-1)
 -(intptr_t)methodsOffsetAddressForObjCClass:(uintptr_t)address;
 @end
 

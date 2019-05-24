@@ -29,7 +29,7 @@ typedef struct  {
 - (void)dumpObjCClassInfo:(const char *)name resolvedAddress:(uintptr_t)resolvedAddress {
     resolvedAddress = ARM64e_PTRMASK(resolvedAddress);
     intptr_t methodsStart = [self methodsOffsetAddressForObjCClass:resolvedAddress];
-//    if (methodsStart == METHODS_OFFSET_NONE) {
+//    if (methodsStart == OFFSET_UNKNOWN) {
 //        return;
 //    }
     method_list_t *methods = (method_list_t *)DATABUF(methodsStart);
@@ -37,7 +37,7 @@ typedef struct  {
     
     class_ro_t *ro_info = (class_ro_t *)DATABUF([self ROOffsetAddressForObjCClass:resolvedAddress]);
     uint8_t isMeta = ro_info->flags & RO_META;
-    for (int j = 0; methodsStart != METHODS_OFFSET_NONE && j < methodsCount; j++) {
+    for (int j = 0; methodsStart != OFFSET_UNKNOWN && j < methodsCount; j++) {
         
         
         uintptr_t methodName = ARM64e_PTRMASK(*(uintptr_t *)(DATABUF(methodsStart + PTR_SIZE + (sizeof(method_t) * j))));
@@ -60,12 +60,57 @@ typedef struct  {
         uintptr_t *curSwiftMethod = (uintptr_t *)DATABUF(description_FO);
         
         int swiftMethodCount = (classSize - classAddressOffset - offsetof(struct swift_class_t, swiftMethods)) / PTR_SIZE;
-        for (int i = 0; i < swiftMethodCount; i++) {
+        for (int i = 1; i < swiftMethodCount; i++) {
             if (!curSwiftMethod[i]) { continue; }
             XRSymbolEntry *entry = self.symbolEntry[@(curSwiftMethod[i])];
             printf("\t%s0x%011lx%s %s\n", dcolor(DSCOLOR_GRAY), (long)curSwiftMethod[i], color_end(), entry.name);
         }
     }
+}
+
+- (void)dumpObjCInstanceVariablesWithResolvedAddress:(uintptr_t)resolvedAddress {
+    resolvedAddress = ARM64e_PTRMASK(resolvedAddress);
+    intptr_t ivarList_OF = [self ivarOffsetAddressForObjCClass:resolvedAddress];
+
+    ivar_list_t *ivarList = (ivar_list_t *)DATABUF(ivarList_OF);
+    ivarList = (ivar_list_t *)ARM64e_PTRMASK((uintptr_t)ivarList);
+    
+    
+    uint32_t ivarCount = *(uint32_t *)DATABUF(ivarList_OF + offsetof(ivar_list_t, count));
+    ivar_t *ivars = (ivar_t *)DATABUF(ivarList_OF + offsetof(ivar_list_t, ivars));
+    
+//    uintptr_t properties_FO = [self translateLoadAddressToFileOffset:(uintptr_t)ivars useFatOffset:YES];
+    
+
+    for (int i = 0; ivarList_OF != OFFSET_UNKNOWN && i < ivarCount; i++) {
+        ivar_t ivar = ivars[i];
+        uintptr_t ivarOffset_FO = [self translateLoadAddressToFileOffset:(uintptr_t)ivar.offset useFatOffset:YES];
+        uint32_t ivarOffset = *(uint32_t*)DATABUF(ivarOffset_FO);
+        
+        uintptr_t ivarName_FO = [self translateLoadAddressToFileOffset:(uintptr_t)ivar.name useFatOffset:YES];
+        char* ivarName = (char *)DATABUF(ivarName_FO);
+
+        printf("\t0x%05x @property %s (0x%x)\n", ivarOffset, ivarName, ivar.size);
+    }
+    /*
+    if (xref_options.swift_mode && [self isSwiftClass:resolvedAddress]) {
+        uintptr_t classSizeOffset_FO = [self translateLoadAddressToFileOffset:resolvedAddress + offsetof(swift_class, classSize) useFatOffset:YES];
+        uint32_t classSize = *(uint32_t *)DATABUF(classSizeOffset_FO);
+        uintptr_t classAddressOffset_FO = [self translateLoadAddressToFileOffset:(resolvedAddress + offsetof(struct swift_class_t, classAddressOffset)) useFatOffset:YES];
+        uint32_t classAddressOffset = *(uint32_t *)DATABUF(classAddressOffset_FO);
+        
+        
+        uintptr_t description_FO = [self translateLoadAddressToFileOffset:(resolvedAddress + offsetof(struct swift_class_t, swiftMethods)) useFatOffset:YES];
+        uintptr_t *curSwiftMethod = (uintptr_t *)DATABUF(description_FO);
+        
+        int swiftMethodCount = (classSize - classAddressOffset - offsetof(struct swift_class_t, swiftMethods)) / PTR_SIZE;
+        for (int i = 1; i < swiftMethodCount; i++) {
+            if (!curSwiftMethod[i]) { continue; }
+            XRSymbolEntry *entry = self.symbolEntry[@(curSwiftMethod[i])];
+            printf("\t%s0x%011lx%s %s\n", dcolor(DSCOLOR_GRAY), (long)curSwiftMethod[i], color_end(), entry.name);
+        }
+    }
+     */
 }
 
 - (void)dumpObjectiveCClasses {
@@ -141,11 +186,15 @@ typedef struct  {
                 }
                 
                 putchar('\n');
-                // method dumping logic dumbing logic
+                // property then method dumping logic dumbing logic
                 if (xref_options.verbose > VERBOSE_2) {
                     
                     intptr_t metacls_offset = [self translateLoadAddressToFileOffset:resolvedAddress useFatOffset:YES];
                     intptr_t resolvedMetaAddress = *(intptr_t *)DATABUF(metacls_offset);
+                    
+                    
+                    // Dump properties...
+                    [self dumpObjCInstanceVariablesWithResolvedAddress:resolvedAddress];
                     
                     // Dumps class methods first...
                     [self dumpObjCClassInfo:name resolvedAddress:resolvedMetaAddress];
@@ -221,33 +270,45 @@ typedef struct  {
     address = ARM64e_PTRMASK(address);
     intptr_t offset = [self translateLoadAddressToFileOffset:address useFatOffset:YES];
     // Starts at __DATA.__objc_data, translate to file offset, going after class_rw_t 8
-    if (!(offset )) {
-        return METHODS_OFFSET_NONE;
-    }
-    // Seems to be stored differently on disk than in memory, where the class_rw_t should reside...
-    // Instead of the class_rw_t, the class_ro_t will be in the in memory spot, but here it's on disk
-    int disk_rw_offset = offsetof(objc_class, bits);
-    uintptr_t buff = ARM64e_PTRMASK(*(uintptr_t *)DATABUF(offset + disk_rw_offset));
+    if (!(offset )) { return OFFSET_UNKNOWN; }
+    
+    // On disk, the bits value is gonna hold class_ro_t*  + other bit packing
+    int disk_ro_offset = offsetof(objc_class, bits);
+    uintptr_t buff = ARM64e_PTRMASK(*(uintptr_t *)DATABUF(offset + disk_ro_offset));
+    
     // buff now has the class_ro_t instance, translate to disk....
     if (!(offset = [self translateLoadAddressToFileOffset:(buff & FAST_DATA_MASK) useFatOffset:YES])) {
-        return METHODS_OFFSET_NONE;
+        return OFFSET_UNKNOWN;
     }
     return offset;
 }
 
 -(intptr_t)methodsOffsetAddressForObjCClass:(uintptr_t)address {
-
     intptr_t offset = [self ROOffsetAddressForObjCClass:address];
-    if (offset == METHODS_OFFSET_NONE) { return METHODS_OFFSET_NONE; }
+    if (offset == OFFSET_UNKNOWN) { return OFFSET_UNKNOWN; }
     
-    uintptr_t buff = ARM64e_PTRMASK(*(uintptr_t *)DATABUF(offset + (4 * PTR_SIZE)));
+    uintptr_t buff = ARM64e_PTRMASK(*(uintptr_t *)DATABUF(offset + offsetof(class_ro_t, baseMethodList)));
+    if (!buff) { return OFFSET_UNKNOWN; }
+    
+    // transform it into file offset and deref...
+    if (!(offset = [self translateLoadAddressToFileOffset:buff useFatOffset:YES])){ return OFFSET_UNKNOWN; }
+    
+    return offset;
+}
+
+-(intptr_t)ivarOffsetAddressForObjCClass:(uintptr_t)address {
+    
+    intptr_t offset = [self ROOffsetAddressForObjCClass:address];
+    if (offset == OFFSET_UNKNOWN) { return OFFSET_UNKNOWN; }
+    
+    uintptr_t buff = ARM64e_PTRMASK(*(uintptr_t *)DATABUF(offset + offsetof(class_ro_t, ivars)));
     if (!buff) {
-        return METHODS_OFFSET_NONE;
+        return OFFSET_UNKNOWN;
     }
     
     // transform it into file offset and deref...
     if (!(offset = [self translateLoadAddressToFileOffset:buff useFatOffset:YES])) {
-        return METHODS_OFFSET_NONE;
+        return OFFSET_UNKNOWN;
     }
     
     return offset;
