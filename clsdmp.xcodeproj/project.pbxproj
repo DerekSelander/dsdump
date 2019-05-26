@@ -102,7 +102,7 @@
 			isa = PBXGroup;
 			children = (
 				3F7C9AAE2294B6490070F2B1 /* XRMachOLibrary_cplus.h */,
-				A66A9CBD22316CF3006602AB /* xref */,
+				A66A9CBD22316CF3006602AB /* clsdmp */,
 				A66A9CBC22316CF3006602AB /* Products */,
 			);
 			sourceTree = "<group>";
@@ -115,7 +115,7 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
-		A66A9CBD22316CF3006602AB /* xref */ = {
+		A66A9CBD22316CF3006602AB /* clsdmp */ = {
 			isa = PBXGroup;
 			children = (
 				3F5F41AF226EC1FC00D3DCB1 /* XRBindSymbol.h */,
@@ -151,7 +151,7 @@
 				3FF9AE0A2277A0E100F71FA5 /* TestClass.m */,
 				3FC3405F228FC77E00B03813 /* YOYO.swift */,
 			);
-			path = xref;
+			path = clsdmp;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */

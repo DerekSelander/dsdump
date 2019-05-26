@@ -77,14 +77,13 @@ extern "C" {
 /// File descriptor
 @property (nonatomic, assign) int fd;
 
-@property (nonatomic, assign) size_t instructions_count;
 
 @property (nonatomic, assign) struct mach_header_64 header;
 
-@property (nonatomic, strong) NSMutableDictionary <NSString *, XRBindSymbol *>*stringObjCDictionary;
-@property (nonatomic, strong) NSMutableDictionary <NSNumber *, XRBindSymbol *>*addressObjCDictionary;
-@property (nonatomic, strong) NSMutableDictionary <NSNumber *, NSNumber *>*addressSymbolDictionary;
-@property (nonatomic, strong) NSMutableDictionary <NSString *, NSNumber *>* externalObjectiveClassesDict;
+@property (nonatomic, strong) NSMutableDictionary <NSString*, XRBindSymbol*> *stringObjCDictionary;
+@property (nonatomic, strong) NSMutableDictionary <NSNumber*, XRBindSymbol*> *addressObjCDictionary;
+@property (nonatomic, strong) NSMutableDictionary <NSNumber*, NSNumber*> *addressSymbolDictionary;
+@property (nonatomic, strong) NSMutableDictionary <NSString*, NSNumber*> *externalObjectiveClassesDict;
 
 /// The initial MachO command to dictate the file, other ivars will reference offsets of this
 @property (nonatomic, assign) void *load_cmd_buffer;
@@ -96,7 +95,7 @@ extern "C" {
 @property (nonatomic, strong) NSMutableDictionary <NSString *, NSNumber *>* sectionCommandsDictionary;
 @property (nonatomic, strong) NSMutableDictionary <NSString *, NSNumber *>* segmentCommandsDictionary;
 
-//@property (nonatomic, strong) NSMutableArray <NSNumber *>* function_starts;
+
 @property (nonatomic, assign) struct build_version_command *build_cmd;
 @property (nonatomic, assign) struct version_min_command *version_cmd;
 @property (nonatomic, assign) struct uuid_command *uuid_cmd; 
@@ -131,9 +130,7 @@ extern "C" {
 
 - (NSString *)realizedPath;
 
-- (void)dumpReferencesForSymbol:(NSString *)symbol;
 
-- (void)dumpReferencesForFileOffset:(uintptr_t)file_offset;
 - (uintptr_t)translateLoadAddressToFileOffset:(uintptr_t)loadAddress useFatOffset:(BOOL)useFatOffset;
 - (uintptr_t)translateOffsetToLoadAddress:(uintptr_t)offset;
 
