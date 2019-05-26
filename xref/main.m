@@ -13,8 +13,6 @@
 
 #import "miscellaneous.h"
 #import "XRMachOLibrary.h"
-#import "capstone/capstone.h"
-#import "capstone/platform.h"
 #import "XRMachOLibrary+SymbolDumper.h"
 #import "TaskPath.h"
 
@@ -49,15 +47,14 @@ int main(int argc, const char * argv[], const char*envp[]) {
     }
     
     XRMachOLibrary *image = [[XRMachOLibrary alloc] initWithPath:path];
-    if (! (xref_options.address || xref_options.symbol || xref_options.file_offset  || xref_options.analyze || xref_options.library || xref_options.dump)) {
+    
+    
+    // Go through the options
+    if (! ( xref_options.file_offset  || xref_options.analyze || xref_options.library || xref_options.dump)) {
         [image dumpSymbols];
         return 0;
     }
     
-    // Go through the options
-    if (xref_options.address) {
-        [image dumpReferencesForAddress:xref_options.address];
-    }
     if (xref_options.library) {
         if (geteuid() != 0) {
             dprintf(STDERR_FILENO, "Needs root privledges for this operation\n");
@@ -65,12 +62,7 @@ int main(int argc, const char * argv[], const char*envp[]) {
         }
         DumpProcessesContainingLibrary(basename(resolved_path));
     }
-    if (xref_options.symbol) {
-        [image dumpReferencesForSymbol:[NSString stringWithUTF8String:xref_options.symbol]];
-    }
-    if (xref_options.file_offset) {
-        [image dumpReferencesForFileOffset:xref_options.file_offset];
-    }
+
     
     return 0;
 }
@@ -83,13 +75,9 @@ static void handle_args(int argc, const char * argv[]) {
         int option_index = 0;
         static struct option long_options[] = {
             {"library", no_argument, &xref_options.library,  1 },
-            {"symbol",  required_argument, 0,  0 },
             {"arch",  required_argument, 0,  0 },
-            {"file_offset",  required_argument, 0,  0 },
             {"regex",   no_argument,       &xref_options.use_regex,  1},
             {"verbose", optional_argument,     &xref_options.verbose,  1 },
-            {"analyze", no_argument,       &xref_options.analyze,  1 },
-            {"address",  required_argument, 0, 'c'},
             {"color",    no_argument, &xref_options.color,  1 },
             {"defined",    no_argument, &xref_options.defined,  1 },
             {"undefined",    no_argument, &xref_options.undefined,  1 },
@@ -102,17 +90,13 @@ static void handle_args(int argc, const char * argv[]) {
         };
         
 
-        c = getopt_long(argc, (char * const *)argv, "hA:uUxcvSs:o:la:bd:012",
+        c = getopt_long(argc, (char * const *)argv, "hA:uUxcvSl",
                         long_options, &option_index);
         if (c == -1) { break; }
         struct host_basic_info;
         switch (c) {
             case 0:
-                if (strcmp(long_options[option_index].name, "symbol") == 0) {
-                    xref_options.symbol = optarg;
-                } else if (strcmp(long_options[option_index].name, "address") == 0) {
-                    xref_options.address = strtol(optarg, 0, 0);
-                } else if (strcmp(long_options[option_index].name, "file_offset") == 0) {
+                if (strcmp(long_options[option_index].name, "file_offset") == 0) {
                     xref_options.file_offset = strtol(optarg, 0, 0);
                 } else if (strcmp(long_options[option_index].name, "verbose") == 0) {
                     xref_options.verbose = (int)strtol(optarg, 0, 0);
@@ -138,20 +122,8 @@ static void handle_args(int argc, const char * argv[]) {
             case 'l':
                 xref_options.library = 1;
                 break;
-            case 's':
-                xref_options.symbol = optarg;
-                break;
             case 'A':
                 xref_options.arch = optarg;
-                break;
-            case 'a':
-                xref_options.address = strtol(optarg, 0, 0);
-                break;
-            case 'o':
-                xref_options.file_offset = strtol(optarg, 0, 0);
-                break;
-            case 'S':
-                xref_options.all_sections = 1;
                 break;
             case 'h':
                 print_options();

@@ -66,10 +66,10 @@ typedef struct {
     int use_regex;
     int external;
     int analyze;
-    int all_sections;
-    uintptr_t address;
+//    int all_sections;
+//    uintptr_t address;
     uintptr_t file_offset;
-    char * symbol;
+//    char * symbol;
     int library;
     char * arch;
     char * showSymbolReferences;

@@ -10,7 +10,6 @@
 #import "miscellaneous.h"
 #import "XRMachOLibrary.h"
 #import "XRBindSymbol.h"
-#import "capstone/capstone.h"
 
 #import <Foundation/Foundation.h>
 #import <mach-o/loader.h>
@@ -78,7 +77,6 @@ extern "C" {
 /// File descriptor
 @property (nonatomic, assign) int fd;
 
-@property (nonatomic, assign) cs_insn *instructions;
 @property (nonatomic, assign) size_t instructions_count;
 
 @property (nonatomic, assign) struct mach_header_64 header;
@@ -132,7 +130,7 @@ extern "C" {
 - (instancetype)initWithPath:(NSString*)path;
 
 - (NSString *)realizedPath;
-- (void)dumpReferencesForAddress:(uintptr_t)address;
+
 - (void)dumpReferencesForSymbol:(NSString *)symbol;
 
 - (void)dumpReferencesForFileOffset:(uintptr_t)file_offset;
@@ -140,17 +138,12 @@ extern "C" {
 - (uintptr_t)translateOffsetToLoadAddress:(uintptr_t)offset;
 
 
-- (XRSymbolEntry *)symbolEntryForAddress:(uintptr_t)address;
-- (void)setSymbolEntry:(XRSymbolEntry *)entry forAddress:(uintptr_t)address;
-- (void)setSymbol:(const char *)symbol forAddress:(uintptr_t)address;
 @end
 
 
 /// File handling logic
 @interface XRMachOLibrary (FileManagement)
 
-- (BOOL)saveInstructions:(cs_insn *)instructions count:(NSUInteger)count;
-- (BOOL)parseData;
 
 @end
 
