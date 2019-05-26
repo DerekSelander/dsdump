@@ -69,6 +69,7 @@ extern "C" {
 /// Library dependencies
 @property (nonatomic, strong) NSMutableArray <NSString *>*depdencies;
 @property (nonatomic, copy) NSString *path;
+@property NSString *testFUCK;
 
 #define ARM64e_PTRMASK(data)  (self.isARM64e ? ((data)&0x000007FFFFFFFFFFUL) : (data))
 //#define ARM64e_PTRMASK(data)  (data)

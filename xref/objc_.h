@@ -43,27 +43,30 @@ typedef struct {
     uint32_t size;
 } ivar_t;
 
-//typedef struct  {
-////    const char *name;
-////    const char *attributes;
-//    uintptr_t offset;
-//    const char* name;
-//} property_t;
-
 typedef struct {
     uint32_t entsizeAndFlags;
     uint32_t count;
     ivar_t *ivars;
 } ivar_list_t;
 
+/*****************************************************************
+ properties
+ *****************************************************************/
+
+typedef struct  {
+    const char *name;
+    const char *attributes;
+} property_t;
+
 typedef struct {
-    uintptr_t isa_cls;
-    uintptr_t superclass;
-    void *_buckets;
-    uint32_t _mask;
-    uint32_t _occupied;
-    uintptr_t bits; //(class_ro_t* before access (and on disk), class_rw_t * after access) &= FAST_DATA_MASK
-} objc_class;
+    uint32_t entsizeAndFlags;
+    uint32_t count;
+    property_t *properties;
+} property_list_t;
+
+/*****************************************************************
+ class stuff, ro/rw
+ *****************************************************************/
 
 typedef struct {
     uint32_t flags;
@@ -79,10 +82,9 @@ typedef struct {
     const ivar_list_t * ivars; // ivar_list_t
     
     const uint8_t * weakIvarLayout;
-    void *baseProperties; // protocol_list_t
+    void *baseProperties; // property_list_t
     
-    
-} class_ro_t;
+} class_ro_t; // The structure when on disk or before first call
 
 typedef struct {
     uint32_t flags;
@@ -99,7 +101,8 @@ typedef struct {
     
     char *demangledName;
     
-} class_rw_t;
+} class_rw_t; // The structure when loaded into memory
+
 
 /*
  class TargetClassDescriptor final
@@ -107,35 +110,47 @@ typedef struct {
  public TrailingGenericContextObjects<TargetClassDescriptor<Runtime>,
  TargetTypeGenericContextDescriptorHeader,
  // additional trailing objects:
-TargetResilientSuperclass<Runtime>,
-TargetForeignMetadataInitialization<Runtime>,
-TargetSingletonMetadataInitialization<Runtime>,
-TargetVTableDescriptorHeader<Runtime>,
-TargetMethodDescriptor<Runtime>,
-TargetOverrideTableHeader<Runtime>,
-TargetMethodOverrideDescriptor<Runtime>,
-TargetObjCResilientClassStubInfo<Runtime>> {
-private:
-    using TrailingGenericContextObjects =
-    TrailingGenericContextObjects<TargetClassDescriptor<Runtime>,
-    TargetTypeGenericContextDescriptorHeader,
-    TargetResilientSuperclass<Runtime>,
-    TargetForeignMetadataInitialization<Runtime>,
-    TargetSingletonMetadataInitialization<Runtime>,
-    TargetVTableDescriptorHeader<Runtime>,
-    TargetMethodDescriptor<Runtime>,
-    TargetOverrideTableHeader<Runtime>,
-    TargetMethodOverrideDescriptor<Runtime>,
-    TargetObjCResilientClassStubInfo<Runtime>>;
-    */
+ TargetResilientSuperclass<Runtime>,
+ TargetForeignMetadataInitialization<Runtime>,
+ TargetSingletonMetadataInitialization<Runtime>,
+ TargetVTableDescriptorHeader<Runtime>,
+ TargetMethodDescriptor<Runtime>,
+ TargetOverrideTableHeader<Runtime>,
+ TargetMethodOverrideDescriptor<Runtime>,
+ TargetObjCResilientClassStubInfo<Runtime>> {
+ private:
+ using TrailingGenericContextObjects =
+ TrailingGenericContextObjects<TargetClassDescriptor<Runtime>,
+ TargetTypeGenericContextDescriptorHeader,
+ TargetResilientSuperclass<Runtime>,
+ TargetForeignMetadataInitialization<Runtime>,
+ TargetSingletonMetadataInitialization<Runtime>,
+ TargetVTableDescriptorHeader<Runtime>,
+ TargetMethodDescriptor<Runtime>,
+ TargetOverrideTableHeader<Runtime>,
+ TargetMethodOverrideDescriptor<Runtime>,
+ TargetObjCResilientClassStubInfo<Runtime>>;
+ */
 
 typedef struct __attribute__ ((packed))  swift_descriptor {
     // class TargetTypeContextDescriptor, struct TargetContextDescriptor,
     uint32_t flags; // ContextDescriptorFlags Flags;
-      void *parent; // RelativeContextPointer<Runtime> Parent;
+    void *parent; // RelativeContextPointer<Runtime> Parent;
 } swift_descriptor;
 
 
+
+// ObjC class heeeeeeeeeeeeeeeereeeeeeeee
+typedef struct {
+    uintptr_t isa_cls;
+    uintptr_t superclass;
+    void *_buckets;
+    uint32_t _mask;
+    uint32_t _occupied;
+    uintptr_t bits; //(class_ro_t* before access (and on disk), class_rw_t * after access) &= FAST_DATA_MASK
+} objc_class;
+
+// Swift class heeeeeeeeeeeeeeeereeeeeeeee
 typedef struct swift_class_t {
     uintptr_t isa_cls;
     uintptr_t superclass;
@@ -157,9 +172,5 @@ typedef struct swift_class_t {
     // ...
     
 } swift_class;
-
-
-//#define OBJCClassGetRW(cls)  ((cls)->bits & FAST_DATA_MASK)
-
 
 #endif /* objc__h */

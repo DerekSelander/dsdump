@@ -148,7 +148,7 @@ using namespace std;
                 } else if (load_cmd->cmd == LC_SYMTAB) {
                     
                     self.symtab = (struct symtab_command *)load_cmd;
-                    self.symbolEntry = [NSMutableDictionary dictionaryWithCapacity:self.symtab->nsyms];
+                    
                     self.symbols = static_cast<struct nlist_64 *>(DATABUF(_file_offset + self.symtab->symoff)); //(struct nlist_64 *)&_data[_file_offset + self.symtab->symoff];
                     self.str_symbols = static_cast<char *>(DATABUF(_file_offset + self.symtab->stroff)); // (char *)&_data[_file_offset + self.symtab->stroff];
      
@@ -159,10 +159,10 @@ using namespace std;
 //#warning fix this
                     
                     self.exports.reserve(self.dyldInfo->export_size);
-//                    if (xref_options.objectiveC_mode) {
+                    if (xref_options.objectiveC_mode) {
                         [self parseDYLDOpcodes];
-                        [self parseDYLDExports];                                
-//                    }
+                        
+                    }
                     
                 } else if (load_cmd->cmd == LC_DYSYMTAB) {
                     
@@ -238,9 +238,10 @@ using namespace std;
         perror("Warning: no symbol table\n");
         return nil;
     }
-    
+    self.symbolEntry = [NSMutableDictionary dictionaryWithCapacity:self.symtab->nsyms];
     if (xref_options.objectiveC_mode) {
         [self preparseExternalObjectiveCSymbols];
+        [self parseDYLDExports];
     }
     if (xref_options.swift_mode) {
         [self parseLocalSymbolsInSymbolTable];

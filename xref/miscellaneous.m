@@ -103,6 +103,8 @@ char* dcolor(DSCOLOR c) {
              return "\e[33m";
         case DSCOLOR_MAGENTA:
             return "\e[95m";
+        case DSCOLOR_PURPLE:
+            return "\e[35m";
         case DSCOLOR_RED:
             return "\e[91m";
         case DSCOLOR_BLUE:
@@ -128,6 +130,16 @@ char *color_end() {
         return "\e[0m";
     }
     return "";
+}
+
+void warn_debug(const char *format, ...) {
+    if (!xref_options.debug) {
+        return;
+    }
+    va_list args;
+    va_start( args, format );
+    dprintf(STDERR_FILENO, format, args );
+    va_end( args );
 }
 
 /********************************************************************************

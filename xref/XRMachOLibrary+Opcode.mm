@@ -126,13 +126,7 @@ struct EntryWithOffset
         XRSymbolEntry *symbolEntry = self.symbolEntry[@(e.entry.address)];
         if (!symbolEntry || !symbolEntry.name) {
             self.symbolEntry[@(e.entry.address)] = e.entry;
-        } else {
-            printf("hmmmmmmmmmmmmmmmmm\n");
         }
-//        if (self.exports.find(e.entry.address) == self.exports.end() ||
-//                                    !self.exports[e.entry.address].name) {
-//            self.exports[e.entry.address] = e.entry;
-//        }
     }
     if ( children > end )
         throw "malformed trie, terminalSize extends beyond trie data";
@@ -149,7 +143,6 @@ struct EntryWithOffset
         if (childNodeOffset == 0)
             throw "malformed trie, childNodeOffset==0";
         [self processExportNode:start p:start+childNodeOffset end:end cumulativeString:cummulativeString curStrOffset:curStrOffset +edgeStrLen output:output baseAddr:baseAddr];
-
     }
 }
 

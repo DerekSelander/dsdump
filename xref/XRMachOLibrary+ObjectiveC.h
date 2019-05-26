@@ -10,12 +10,18 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+typedef enum {
+    OffSetTypeIvar,
+    OffSetTypeMethods,
+    OffSetTypeProperties
+} OffSetType;
+
 @interface XRMachOLibrary (ObjectiveC)
 - (void)dumpObjectiveCClasses;
 -(const char*)nameForObjCClass:(uintptr_t)address;
 
-#define OFFSET_UNKNOWN ((intptr_t)-1)
--(intptr_t)methodsOffsetAddressForObjCClass:(uintptr_t)address;
+#define FILE_OFFSET_UNKNOWN ((intptr_t)-1)
+
 @end
 
 NS_ASSUME_NONNULL_END

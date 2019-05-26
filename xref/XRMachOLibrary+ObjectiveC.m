@@ -28,27 +28,35 @@ typedef struct  {
 
 - (void)dumpObjCClassInfo:(const char *)name resolvedAddress:(uintptr_t)resolvedAddress {
     resolvedAddress = ARM64e_PTRMASK(resolvedAddress);
-    intptr_t methodsStart = [self methodsOffsetAddressForObjCClass:resolvedAddress];
-//    if (methodsStart == OFFSET_UNKNOWN) {
-//        return;
-//    }
-    method_list_t *methods = (method_list_t *)DATABUF(methodsStart);
-    int methodsCount = methods->count;
+    uintptr_t methodsList_FO = [self offsetAddressForObjCClass:resolvedAddress forType:OffSetTypeMethods];  //[self methodsOffsetAddressForObjCClass:resolvedAddress];
+    if (methodsList_FO == FILE_OFFSET_UNKNOWN) {
+        if (xref_options.debug) {
+            dprintf(STDERR_FILENO, "%sCouldn't find method list! (%p)%s\n", dcolor(DSCOLOR_RED), (void*)resolvedAddress, color_end());
+        }
+        goto SWIFT_PART;
+    }
     
+    method_list_t *methodsList = (method_list_t *)DATABUF(methodsList_FO);
+    int methodsCount = methodsList->count;
+    
+    // Meta Needed to determine ObjC output class/instance type (-/+)
     class_ro_t *ro_info = (class_ro_t *)DATABUF([self ROOffsetAddressForObjCClass:resolvedAddress]);
     uint8_t isMeta = ro_info->flags & RO_META;
-    for (int j = 0; methodsStart != OFFSET_UNKNOWN && j < methodsCount; j++) {
+    
+    
+    for (int j = 0; j < methodsCount; j++) {
         
         
-        uintptr_t methodName = ARM64e_PTRMASK(*(uintptr_t *)(DATABUF(methodsStart + PTR_SIZE + (sizeof(method_t) * j))));
-        uintptr_t methodOffset = [self translateLoadAddressToFileOffset:methodName useFatOffset:YES];
+        uintptr_t methodOffset_FO = ARM64e_PTRMASK(*(uintptr_t *)(DATABUF(methodsList_FO + PTR_SIZE + (sizeof(method_t) * j))));
+        uintptr_t methodOffset = [self translateLoadAddressToFileOffset:methodOffset_FO useFatOffset:YES];
         putchar('\t');
 
         
-        uintptr_t methodAddress = ARM64e_PTRMASK(*(uintptr_t *)(DATABUF(methodsStart + PTR_SIZE * 3 + (sizeof(method_t) * j))));
-        printf("%s0x%011lx%s %c[%s %s]\n", dcolor(DSCOLOR_GRAY), methodAddress, color_end(), "-+"[isMeta], name, (char*)DATABUF(methodOffset));
+        uintptr_t methodAddress = ARM64e_PTRMASK(*(uintptr_t *)(DATABUF(methodsList_FO + PTR_SIZE * 3 + (sizeof(method_t) * j))));
+        printf("%s0x%011lx%s %s%c[%s %s]%s\n", dcolor(DSCOLOR_GRAY), methodAddress, color_end(), dcolor(DSCOLOR_BOLD), "-+"[isMeta], name, (char*)DATABUF(methodOffset), color_end());
     }
     
+SWIFT_PART:
     if (xref_options.swift_mode && [self isSwiftClass:resolvedAddress]) {
         uintptr_t classSizeOffset_FO = [self translateLoadAddressToFileOffset:resolvedAddress + offsetof(swift_class, classSize) useFatOffset:YES];
         uint32_t classSize = *(uint32_t *)DATABUF(classSizeOffset_FO);
@@ -68,21 +76,49 @@ typedef struct  {
     }
 }
 
+- (void)dumpObjCPropertiesWithResolvedAddress:(uintptr_t)resolvedAddress {
+    resolvedAddress = ARM64e_PTRMASK(resolvedAddress);
+    intptr_t propertiesList_FO = [self offsetAddressForObjCClass:resolvedAddress forType:OffSetTypeProperties];
+    
+    if (propertiesList_FO == FILE_OFFSET_UNKNOWN) { return; }
+    
+    property_list_t *propertiesList = (property_list_t *)DATABUF(propertiesList_FO);
+    propertiesList = (property_list_t *)ARM64e_PTRMASK((uintptr_t)propertiesList);
+    
+    uint32_t propertyCount = *(uint32_t *)DATABUF(propertiesList_FO + offsetof(property_list_t, count));
+    property_t *properties = (property_t *)DATABUF(propertiesList_FO + offsetof(ivar_list_t, ivars));
+    if (propertiesList_FO == FILE_OFFSET_UNKNOWN) {
+        warn_debug("%sProperties not found! (%p)%s\n", dcolor(DSCOLOR_RED), resolvedAddress, color_end());
+    }
+    
+    for (int i = 0; i < propertyCount; i++) {
+        property_t property = properties[i];
+        
+        uintptr_t propertyName_FO = [self translateLoadAddressToFileOffset:(uintptr_t)property.name useFatOffset:YES];
+        const char* propertyName = (const char *)DATABUF(propertyName_FO);
+        
+        uintptr_t propertyAttributes_FO = [self translateLoadAddressToFileOffset:(uintptr_t)property.attributes useFatOffset:YES];
+        const char* propertyAttributes = (const char *)DATABUF(propertyAttributes_FO);
+        
+        printf("\t%s@property %s%s %s%s%s\n", dcolor(DSCOLOR_GREEN), propertyAttributes, color_end(), dcolor(DSCOLOR_BOLD), propertyName, color_end());
+    }
+}
+
 - (void)dumpObjCInstanceVariablesWithResolvedAddress:(uintptr_t)resolvedAddress {
     resolvedAddress = ARM64e_PTRMASK(resolvedAddress);
-    intptr_t ivarList_OF = [self ivarOffsetAddressForObjCClass:resolvedAddress];
+    intptr_t ivarList_FO = [self offsetAddressForObjCClass:resolvedAddress forType:OffSetTypeIvar];
 
-    ivar_list_t *ivarList = (ivar_list_t *)DATABUF(ivarList_OF);
+    ivar_list_t *ivarList = (ivar_list_t *)DATABUF(ivarList_FO);
     ivarList = (ivar_list_t *)ARM64e_PTRMASK((uintptr_t)ivarList);
     
     
-    uint32_t ivarCount = *(uint32_t *)DATABUF(ivarList_OF + offsetof(ivar_list_t, count));
-    ivar_t *ivars = (ivar_t *)DATABUF(ivarList_OF + offsetof(ivar_list_t, ivars));
-    
-//    uintptr_t properties_FO = [self translateLoadAddressToFileOffset:(uintptr_t)ivars useFatOffset:YES];
-    
-
-    for (int i = 0; ivarList_OF != OFFSET_UNKNOWN && i < ivarCount; i++) {
+    uint32_t ivarCount = *(uint32_t *)DATABUF(ivarList_FO + offsetof(ivar_list_t, count));
+    ivar_t *ivars = (ivar_t *)DATABUF(ivarList_FO + offsetof(ivar_list_t, ivars));
+    if (ivarCount && ivarList_FO != FILE_OFFSET_UNKNOWN) {
+        putchar('{');
+        putchar('\n');
+    }
+    for (int i = 0; ivarList_FO != FILE_OFFSET_UNKNOWN && i < ivarCount; i++) {
         ivar_t ivar = ivars[i];
         uintptr_t ivarOffset_FO = [self translateLoadAddressToFileOffset:(uintptr_t)ivar.offset useFatOffset:YES];
         uint32_t ivarOffset = *(uint32_t*)DATABUF(ivarOffset_FO);
@@ -90,27 +126,13 @@ typedef struct  {
         uintptr_t ivarName_FO = [self translateLoadAddressToFileOffset:(uintptr_t)ivar.name useFatOffset:YES];
         char* ivarName = (char *)DATABUF(ivarName_FO);
 
-        printf("\t0x%05x @property %s (0x%x)\n", ivarOffset, ivarName, ivar.size);
+        printf("\t+0x%04x %s (0x%x)\n", ivarOffset, ivarName, ivar.size);
     }
-    /*
-    if (xref_options.swift_mode && [self isSwiftClass:resolvedAddress]) {
-        uintptr_t classSizeOffset_FO = [self translateLoadAddressToFileOffset:resolvedAddress + offsetof(swift_class, classSize) useFatOffset:YES];
-        uint32_t classSize = *(uint32_t *)DATABUF(classSizeOffset_FO);
-        uintptr_t classAddressOffset_FO = [self translateLoadAddressToFileOffset:(resolvedAddress + offsetof(struct swift_class_t, classAddressOffset)) useFatOffset:YES];
-        uint32_t classAddressOffset = *(uint32_t *)DATABUF(classAddressOffset_FO);
-        
-        
-        uintptr_t description_FO = [self translateLoadAddressToFileOffset:(resolvedAddress + offsetof(struct swift_class_t, swiftMethods)) useFatOffset:YES];
-        uintptr_t *curSwiftMethod = (uintptr_t *)DATABUF(description_FO);
-        
-        int swiftMethodCount = (classSize - classAddressOffset - offsetof(struct swift_class_t, swiftMethods)) / PTR_SIZE;
-        for (int i = 1; i < swiftMethodCount; i++) {
-            if (!curSwiftMethod[i]) { continue; }
-            XRSymbolEntry *entry = self.symbolEntry[@(curSwiftMethod[i])];
-            printf("\t%s0x%011lx%s %s\n", dcolor(DSCOLOR_GRAY), (long)curSwiftMethod[i], color_end(), entry.name);
-        }
+    
+    if (ivarCount && ivarList_FO != FILE_OFFSET_UNKNOWN) {
+        putchar('}');
+        putchar('\n');
     }
-     */
 }
 
 - (void)dumpObjectiveCClasses {
@@ -192,9 +214,12 @@ typedef struct  {
                     intptr_t metacls_offset = [self translateLoadAddressToFileOffset:resolvedAddress useFatOffset:YES];
                     intptr_t resolvedMetaAddress = *(intptr_t *)DATABUF(metacls_offset);
                     
+                    if (xref_options.verbose > VERBOSE_3) {
+                        // Dump properties...
+                        [self dumpObjCInstanceVariablesWithResolvedAddress:resolvedAddress];
+                    }
                     
-                    // Dump properties...
-                    [self dumpObjCInstanceVariablesWithResolvedAddress:resolvedAddress];
+                    [self dumpObjCPropertiesWithResolvedAddress:resolvedAddress];
                     
                     // Dumps class methods first...
                     [self dumpObjCClassInfo:name resolvedAddress:resolvedMetaAddress];
@@ -202,9 +227,11 @@ typedef struct  {
                     // Then instance methods
                     [self dumpObjCClassInfo:name resolvedAddress:resolvedAddress];
                     
-                    swift_class *s = (swift_class *)resolvedAddress;
-                    swift_class *meta = (swift_class *)resolvedMetaAddress;
-                    printf("hmmm");
+                    putchar('\n');
+                    
+//                    swift_class *s = (swift_class *)resolvedAddress;
+//                    swift_class *meta = (swift_class *)resolvedMetaAddress;
+//                    printf("hmmm");
                 }
             }
         }
@@ -270,7 +297,7 @@ typedef struct  {
     address = ARM64e_PTRMASK(address);
     intptr_t offset = [self translateLoadAddressToFileOffset:address useFatOffset:YES];
     // Starts at __DATA.__objc_data, translate to file offset, going after class_rw_t 8
-    if (!(offset )) { return OFFSET_UNKNOWN; }
+    if (!(offset )) { return FILE_OFFSET_UNKNOWN; }
     
     // On disk, the bits value is gonna hold class_ro_t*  + other bit packing
     int disk_ro_offset = offsetof(objc_class, bits);
@@ -278,42 +305,44 @@ typedef struct  {
     
     // buff now has the class_ro_t instance, translate to disk....
     if (!(offset = [self translateLoadAddressToFileOffset:(buff & FAST_DATA_MASK) useFatOffset:YES])) {
-        return OFFSET_UNKNOWN;
+        return FILE_OFFSET_UNKNOWN;
     }
     return offset;
 }
 
--(intptr_t)methodsOffsetAddressForObjCClass:(uintptr_t)address {
-    intptr_t offset = [self ROOffsetAddressForObjCClass:address];
-    if (offset == OFFSET_UNKNOWN) { return OFFSET_UNKNOWN; }
+-(intptr_t)offsetAddressForObjCClass:(uintptr_t)address forType:(OffSetType)offsetType {
     
-    uintptr_t buff = ARM64e_PTRMASK(*(uintptr_t *)DATABUF(offset + offsetof(class_ro_t, baseMethodList)));
-    if (!buff) { return OFFSET_UNKNOWN; }
+    intptr_t ro_offset = [self ROOffsetAddressForObjCClass:address];
+    if (ro_offset == FILE_OFFSET_UNKNOWN) { return FILE_OFFSET_UNKNOWN; }
     
-    // transform it into file offset and deref...
-    if (!(offset = [self translateLoadAddressToFileOffset:buff useFatOffset:YES])){ return OFFSET_UNKNOWN; }
-    
-    return offset;
-}
-
--(intptr_t)ivarOffsetAddressForObjCClass:(uintptr_t)address {
-    
-    intptr_t offset = [self ROOffsetAddressForObjCClass:address];
-    if (offset == OFFSET_UNKNOWN) { return OFFSET_UNKNOWN; }
-    
-    uintptr_t buff = ARM64e_PTRMASK(*(uintptr_t *)DATABUF(offset + offsetof(class_ro_t, ivars)));
+    int32_t offset;
+    switch (offsetType) {
+        case OffSetTypeIvar:
+            offset = offsetof(class_ro_t, ivars);
+            break;
+        case OffSetTypeMethods:
+            offset = offsetof(class_ro_t, baseMethodList);
+            break;
+        case OffSetTypeProperties:
+            offset = offsetof(class_ro_t, baseProperties);
+            break;
+            
+        default:
+            assert(0);
+            break;
+    }
+    uintptr_t buff = ARM64e_PTRMASK(*(uintptr_t *)DATABUF(ro_offset + offset));
     if (!buff) {
-        return OFFSET_UNKNOWN;
+        return FILE_OFFSET_UNKNOWN;
     }
     
     // transform it into file offset and deref...
-    if (!(offset = [self translateLoadAddressToFileOffset:buff useFatOffset:YES])) {
-        return OFFSET_UNKNOWN;
+    if (!(ro_offset = [self translateLoadAddressToFileOffset:buff useFatOffset:YES])) {
+        return FILE_OFFSET_UNKNOWN;
     }
     
-    return offset;
+    return ro_offset;
 }
-
 
 -(BOOL)isSwiftClass:(uintptr_t)address {
     uintptr_t offset = [self translateLoadAddressToFileOffset:address useFatOffset:NO ] + self.file_offset;

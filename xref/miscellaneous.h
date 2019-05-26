@@ -36,6 +36,7 @@ typedef NS_OPTIONS(NSUInteger, DSCOLOR) {
     DSCOLOR_YELLOW,
     DSCOLOR_MAGENTA,
     DSCOLOR_RED,
+    DSCOLOR_PURPLE,
     DSCOLOR_BLUE,
     DSCOLOR_GRAY,
     DSCOLOR_GREEN,
@@ -84,6 +85,8 @@ extern xref_options_t xref_options;
 //uint64_t read_uleb128 (const uint8_t ** offset, const uint8_t * end);
 const uint8_t *r_uleb128_decode(uint8_t *data, int *datalen, uint64_t *v);
 const uintptr_t r_sleb128_decode(uint8_t *byte, uintptr_t* shift, uint64_t *v);
+    
+    void warn_debug(const char *format, ...);
 
 #ifdef __cplusplus
 }
