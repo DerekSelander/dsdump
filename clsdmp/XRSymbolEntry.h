@@ -12,6 +12,7 @@
 NS_ASSUME_NONNULL_BEGIN
 @class XRMachOLibrary;
 
+// Used to reference symbols by address, originates from the symbol table
 @interface XRSymbolEntry : NSObject { }
 
 @property (nonatomic, assign) const char* name;

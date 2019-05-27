@@ -120,7 +120,7 @@
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = "  $(TARGET_BUILD_DIR)/xref  -vvvv --swift"
+            argument = "  $(TARGET_BUILD_DIR)/clsdmp  -vvvv --swift"
             isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument

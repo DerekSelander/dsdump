@@ -16,8 +16,6 @@
 //#import <set>
 //#import <unordered_map>
 
-static NSMutableArray <XRBindSymbol *>* threadedHolder = nil;
-
 
 #define BIND_THAT_BAD_BOY [self addToDictionaries:segStartAddr+segOffset symbol:symbolName libord:libraryOrdinal addend:addend]
 
@@ -154,8 +152,9 @@ struct EntryWithOffset
     
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        threadedHolder = [NSMutableArray arrayWithCapacity:100];
+        self.threadedHolder = [NSMutableArray arrayWithCapacity:100];
         self.addressObjCDictionary = [NSMutableDictionary dictionaryWithCapacity:100];
+        self.stringObjCDictionary = [NSMutableDictionary dictionaryWithCapacity:100];
     });
     
 //    uint8_t *bind_buffer = &self.data[self.dyldInfo->bind_off + self.file_offset];
@@ -305,7 +304,7 @@ struct EntryWithOffset
                                     // the ordinal is bits [0..15]
                                     uint16_t threadOrdinal = value & 0xFFFF;
                                     if (threadOrdinal >= ordinalTableSize) { assert(0); }
-                                    XRBindSymbol *obj = threadedHolder[threadOrdinal];
+                                    XRBindSymbol *obj = self.threadedHolder[threadOrdinal];
                                     [self addToDictionaries:segStartAddr + segOffset  symbol:(char*)obj.name.UTF8String libord:obj.libOrdinal addend:obj.addend];
                                     DEBUG_PRINT("\tTHREADED_APPLY (%p, %s)\n", (void*)resolvedAddress, obj.name.UTF8String);
                                 }
@@ -352,7 +351,7 @@ struct EntryWithOffset
     NSString *s = [NSString stringWithUTF8String:symbol];
     NSNumber *a = @(address);
     XRBindSymbol * obj = [[XRBindSymbol alloc] initWithAddress:a symbol:s libord:ordinal addend:addend];
-    [threadedHolder addObject:obj];
+    [self.threadedHolder addObject:obj];
 }
 
 

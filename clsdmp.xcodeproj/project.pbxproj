@@ -65,14 +65,13 @@
 		3F5F41AA226EA3A800D3DCB1 /* XRMachOLibrary+SymbolDumper.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = "XRMachOLibrary+SymbolDumper.m"; sourceTree = "<group>"; };
 		3F5F41AF226EC1FC00D3DCB1 /* XRBindSymbol.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = XRBindSymbol.h; sourceTree = "<group>"; };
 		3F5F41B0226EC1FC00D3DCB1 /* XRBindSymbol.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = XRBindSymbol.m; sourceTree = "<group>"; };
-		3F7C9AAE2294B6490070F2B1 /* XRMachOLibrary_cplus.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = XRMachOLibrary_cplus.h; path = xref/XRMachOLibrary_cplus.h; sourceTree = "<group>"; };
+		3F7C9AAE2294B6490070F2B1 /* XRMachOLibrary_cplus.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = XRMachOLibrary_cplus.h; path = ../xref/XRMachOLibrary_cplus.h; sourceTree = "<group>"; };
 		3F7C9AAF2295BBD50070F2B1 /* XRSymbolEntry.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = XRSymbolEntry.h; sourceTree = "<group>"; };
 		3F7C9AB02295BBD50070F2B1 /* XRSymbolEntry.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = XRSymbolEntry.m; sourceTree = "<group>"; };
 		3F98C3B2225F06E900606F97 /* XRMachOLibrary+FileManagement.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = "XRMachOLibrary+FileManagement.m"; sourceTree = "<group>"; };
 		3FC3405F228FC77E00B03813 /* YOYO.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YOYO.swift; sourceTree = "<group>"; };
 		3FEAB9D6226D0C0E00ED706A /* XRMachOLibrary+Opcode.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "XRMachOLibrary+Opcode.h"; sourceTree = "<group>"; };
 		3FEAB9D7226D0C0E00ED706A /* XRMachOLibrary+Opcode.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = "XRMachOLibrary+Opcode.mm"; sourceTree = "<group>"; };
-		3FEAB9D9226DA7A900ED706A /* uthash.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = uthash.h; sourceTree = "<group>"; };
 		3FEBCB5E227C98D200D3AD07 /* XRMachOLibrary+PID_Info.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "XRMachOLibrary+PID_Info.h"; sourceTree = "<group>"; };
 		3FEBCB5F227C98D200D3AD07 /* DSXRLibrary+PID_Info.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = "DSXRLibrary+PID_Info.m"; sourceTree = "<group>"; };
 		3FF9AE0622777A9500F71FA5 /* XRMachOLibrary+ObjectiveC.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "XRMachOLibrary+ObjectiveC.h"; sourceTree = "<group>"; };
@@ -98,10 +97,29 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		3F3D70CD229B65F900307FD3 /* Bind Symbols */ = {
+			isa = PBXGroup;
+			children = (
+				3F5F41AF226EC1FC00D3DCB1 /* XRBindSymbol.h */,
+				3F5F41B0226EC1FC00D3DCB1 /* XRBindSymbol.m */,
+				3FEAB9D6226D0C0E00ED706A /* XRMachOLibrary+Opcode.h */,
+				3FEAB9D7226D0C0E00ED706A /* XRMachOLibrary+Opcode.mm */,
+			);
+			path = "Bind Symbols";
+			sourceTree = "<group>";
+		};
+		3F3D70CE229B666400307FD3 /* FAT */ = {
+			isa = PBXGroup;
+			children = (
+				3F480804227A322E0078AE76 /* XRMachOLibrary+FAT.h */,
+				3F480805227A322E0078AE76 /* XRMachOLibrary+FAT.m */,
+			);
+			path = FAT;
+			sourceTree = "<group>";
+		};
 		A66A9CB222316CF3006602AB = {
 			isa = PBXGroup;
 			children = (
-				3F7C9AAE2294B6490070F2B1 /* XRMachOLibrary_cplus.h */,
 				A66A9CBD22316CF3006602AB /* clsdmp */,
 				A66A9CBC22316CF3006602AB /* Products */,
 			);
@@ -118,13 +136,12 @@
 		A66A9CBD22316CF3006602AB /* clsdmp */ = {
 			isa = PBXGroup;
 			children = (
-				3F5F41AF226EC1FC00D3DCB1 /* XRBindSymbol.h */,
-				3F5F41B0226EC1FC00D3DCB1 /* XRBindSymbol.m */,
-				3FEAB9D9226DA7A900ED706A /* uthash.h */,
 				A66A9CBE22316CF3006602AB /* main.m */,
-				A66A9CCA22316EA5006602AB /* XRMachOLibrary.h */,
+				3F3D70CD229B65F900307FD3 /* Bind Symbols */,
+				3F3D70CE229B666400307FD3 /* FAT */,
 				3F7C9AAF2295BBD50070F2B1 /* XRSymbolEntry.h */,
 				3F7C9AB02295BBD50070F2B1 /* XRSymbolEntry.m */,
+				A66A9CCA22316EA5006602AB /* XRMachOLibrary.h */,
 				A66A9CCB22316EA5006602AB /* XRMachOLibrary.mm */,
 				3FF9AE0622777A9500F71FA5 /* XRMachOLibrary+ObjectiveC.h */,
 				3FF9AE0722777A9500F71FA5 /* XRMachOLibrary+ObjectiveC.m */,
@@ -134,8 +151,6 @@
 				3F98C3B2225F06E900606F97 /* XRMachOLibrary+FileManagement.m */,
 				3F29126122877648003C2BD7 /* XRMachOLibrary+Dump.h */,
 				3F29126222877648003C2BD7 /* XRMachOLibrary+Dump.m */,
-				3F480804227A322E0078AE76 /* XRMachOLibrary+FAT.h */,
-				3F480805227A322E0078AE76 /* XRMachOLibrary+FAT.m */,
 				3F5F41A9226EA3A800D3DCB1 /* XRMachOLibrary+SymbolDumper.h */,
 				3F5F41AA226EA3A800D3DCB1 /* XRMachOLibrary+SymbolDumper.m */,
 				3FEBCB5E227C98D200D3AD07 /* XRMachOLibrary+PID_Info.h */,
@@ -143,8 +158,7 @@
 				3FEBCB5F227C98D200D3AD07 /* DSXRLibrary+PID_Info.m */,
 				3F29124822820A99003C2BD7 /* TaskPath.mm */,
 				3F29124922820A99003C2BD7 /* TaskPath.h */,
-				3FEAB9D6226D0C0E00ED706A /* XRMachOLibrary+Opcode.h */,
-				3FEAB9D7226D0C0E00ED706A /* XRMachOLibrary+Opcode.mm */,
+				3F7C9AAE2294B6490070F2B1 /* XRMachOLibrary_cplus.h */,
 				A66A9CC722316D7F006602AB /* miscellaneous.h */,
 				A66A9CC822316D7F006602AB /* miscellaneous.m */,
 				3FF9AE092277A0E100F71FA5 /* TestClass.h */,
@@ -364,10 +378,6 @@
 					"@executable_path/../Frameworks",
 					"@loader_path/../Frameworks",
 				);
-				LIBRARY_SEARCH_PATHS = (
-					"$(inherited)",
-					"$(PROJECT_DIR)/xref",
-				);
 				ONLY_ACTIVE_ARCH = YES;
 				OTHER_LDFLAGS = "-lncurses";
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -388,10 +398,6 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 					"@loader_path/../Frameworks",
-				);
-				LIBRARY_SEARCH_PATHS = (
-					"$(inherited)",
-					"$(PROJECT_DIR)/xref",
 				);
 				OTHER_LDFLAGS = "-lncurses";
 				PRODUCT_NAME = "$(TARGET_NAME)";

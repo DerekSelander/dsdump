@@ -237,17 +237,26 @@ using namespace std;
         perror("Warning: no symbol table\n");
         return nil;
     }
-    self.symbolEntry = [NSMutableDictionary dictionaryWithCapacity:self.symtab->nsyms];
+    
+    self.symbolEntry = [NSMutableDictionary dictionaryWithCapacity:self.dysymtab->nlocalsym + self.dysymtab->nextdefsym];
+    
+    // DYLD opcodes contain information about ObjC classes, used for classdump
     if (xref_options.objectiveC_mode) {
         [self preparseExternalObjectiveCSymbols];
         [self parseDYLDExports];
     }
-    if (xref_options.swift_mode) {
+    
+    // Swift can contains methods stripped out, that are given by exported info
+    if (xref_options.objectiveC_mode) {
         [self parseLocalSymbolsInSymbolTable];
     }
     
     return self;
 }
+
+/********************************************************************************
+ // Symbol parsing
+ ********************************************************************************/
 
 /// Grab externally referenced ObjectiveC Swift classes, which are located in externals in symbol table
 - (void)preparseExternalObjectiveCSymbols {
@@ -259,6 +268,125 @@ using namespace std;
         self.externalObjectiveClassesDict[str] = @(i);
     }
 }
+
+- (void)parseLocalSymbolsInSymbolTable {
+    for (int i = self.dysymtab->ilocalsym; i < self.dysymtab->ilocalsym + self.dysymtab->nlocalsym; i++) {
+        struct nlist_64 *symbol = &self.symbols[i];
+        XRSymbolEntry *cur = self.symbolEntry[@(symbol->n_value)];
+        if (symbol->n_value && !cur.name) {
+            XRSymbolEntry *entry = [[XRSymbolEntry alloc] initWithSymbol:symbol machoLibrary:self];
+            self.symbolEntry[@(symbol->n_value)] = entry;
+        }
+    }
+    
+    for (int i = self.dysymtab->iextdefsym; i < self.dysymtab->iextdefsym + self.dysymtab->nextdefsym; i++) {
+        struct nlist_64 *symbol = &self.symbols[i];
+        XRSymbolEntry *cur = self.symbolEntry[@(symbol->n_value)];
+        if (symbol->n_value && !cur.name) {
+            XRSymbolEntry *entry = [[XRSymbolEntry alloc] initWithSymbol:symbol machoLibrary:self];
+            self.symbolEntry[@(symbol->n_value)] = entry;
+        }
+    }
+}
+
+/********************************************************************************
+//  Find internal methods
+********************************************************************************/
+
+- (uintptr_t)externalSymbolStubAddress:(NSString *)symbol {
+    
+    const char *searched_symbol = [symbol UTF8String];
+
+    size_t count  = (self.lazy_ptr_section->size / (1 << self.lazy_ptr_section->align));
+    
+    int start = self.lazy_ptr_section->reserved1;
+    for (int i = 0; i < count; i++) {
+        int offset = self.indirect_symbols.indirect_sym[i + start];
+        
+        // If stripped' local symbol, you're not gonna find it by name
+        if (INDIRECT_SYMBOL_LOCAL & offset) { continue; }
+        
+        struct nlist_64 sym = self.symbols[offset];
+        char * chr = &self.str_symbols[sym.n_un.n_strx];
+
+        if (strcmp(chr, searched_symbol) == 0 || strcmp(&chr[1], searched_symbol) == 0 ) {
+            uintptr_t buf_stub_helper;
+
+            pread(self.fd, &buf_stub_helper, sizeof(uintptr_t), self.file_offset + self.lazy_ptr_section->offset + (PTR_SIZE * i));
+            
+    
+            return self.lazy_ptr_section->addr + (PTR_SIZE * i);
+        }
+    }
+    
+    return 0;
+}
+
+/********************************************************************************
+// Helper debugging methods 
+********************************************************************************/
+
+- (NSString *)description {
+    return [NSString stringWithFormat:@"(%p) %@", self, self.realizedPath];
+}
+
+- (NSUInteger)hash {
+    return [self.path hash];
+}
+
+/********************************************************************************
+ // Translate load/file addresses
+ ********************************************************************************/
+
+- (uintptr_t)translateLoadAddressToFileOffset:(uintptr_t)loadAddress useFatOffset:(BOOL)useFatOffset {
+   __unused  uintptr_t f = useFatOffset ? self.file_offset : 0;
+    for (int i = 1; i < self.sectionCommandsArray.count; i++) {
+        NSNumber *sectionNumber = self.sectionCommandsArray[i];
+        struct section_64 *sec = reinterpret_cast<struct section_64 *>(sectionNumber.pointerValue);
+        if (sec->addr <= loadAddress && loadAddress < sec->addr + sec->size) {
+            return loadAddress - sec->addr  + sec->offset + f;
+        }
+    }
+    dprintf(STDERR_FILENO, "WARNING: couldn't find address 0x%lx in binary!\n", loadAddress);
+
+    return 0;
+}
+
+- (uintptr_t)translateOffsetToLoadAddress:(uintptr_t)offset {
+    uintptr_t f = -self.file_offset;
+    for (int i = 1; i < self.sectionCommandsArray.count; i++) {
+        NSNumber *sectionNumber = self.sectionCommandsArray[i];
+        struct section_64 *sec = (struct section_64 *)sectionNumber.pointerValue;
+        
+        if (sec->offset <= (offset + f) && (offset + f) < sec->offset + sec->size) {
+            return offset - sec->offset + sec->addr + f;
+        }
+    }
+    dprintf(STDERR_FILENO, "WARNING: couldn't find offset 0x%lx in binary!\n", offset);
+    return 0;
+}
+
+/********************************************************************************
+ // PAC crap
+ ********************************************************************************/
+
+- (BOOL)isARM64e {
+    static dispatch_once_t onceToken;
+    static BOOL isARM64e = NO;
+    __weak XRMachOLibrary * wself = self;
+    dispatch_once(&onceToken, ^{
+        XRMachOLibrary *sself = wself;
+        cpu_type_t type = *(cpu_type_t *)&sself->_data[sself->_file_offset + 4];
+        cpu_subtype_t subtype = *(cpu_subtype_t *)&sself->_data[sself->_file_offset + 8];
+        
+        isARM64e = ((CPU_ARCH_ABI64|CPU_TYPE_ARM) == type && CPU_SUBTYPE_ARM64E == subtype) ? YES : NO;
+    });
+    return isARM64e;
+}
+
+/********************************************************************************
+ // misc methods
+ ********************************************************************************/
 
 - (NSString *)resolvedPath {
     if (_realizedPath) {
@@ -295,183 +423,8 @@ using namespace std;
         }
         
         return [self.path stringByReplacingOccurrencesOfString:@"@rpath" withString:[self.path stringByDeletingLastPathComponent]];
-        
-        // Still can't find it... try simulator then try dyld shared cache
     }
-    
     return self.path;
-}
-
-- (NSString *)dyldSharedCachePath {
-    
-    NSString *cachePath;
-    switch (self.build_cmd->platform) {
-        case PLATFORM_MACOS:
-            cachePath = @"/private/var/db/dyld/dyld_shared_cache_x86_64h";
-            break;
-        case PLATFORM_IOS:
-            cachePath = @"/System/Library/Caches/com.apple.dyld/dyld_shared_cache_arm";
-            break;
-        case PLATFORM_TVOS:
-            
-            break;
-        case PLATFORM_WATCHOS:
-            
-            break;
-        case PLATFORM_BRIDGEOS:
-            
-            break;
-        case PLATFORM_IOSMAC:
-            
-            break;
-        case PLATFORM_IOSSIMULATOR:
-            cachePath = @"/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/Library/CoreSimulator/Profiles/Runtimes/iOS.simruntime/Contents/Resources/RuntimeRoot/";
-            break;
-        case PLATFORM_TVOSSIMULATOR:
-            
-            break;
-        case PLATFORM_WATCHOSSIMULATOR:
-            
-            break;
-            
-        default:
-            break;
-    }
-    //    if (self.build_cmd->platform == PLATFORM_MACOS) {
-    //
-    //    }
-    return nil;
-}
-
-- (NSArray *)searchNonTextAddresses:(uintptr_t)address {
-    NSMutableArray *foundAddresses = [NSMutableArray array];
-    
-    for (int i = 1; i < self.sectionCommandsArray.count; i++) {
-        
-        struct section_64 *section = (struct section_64 *)self.sectionCommandsArray[i].longValue;
-        if (!section->offset) { continue; }
-        if (section->flags & S_LITERAL_POINTERS || section->flags == S_REGULAR) {
-            
-            uintptr_t *base = (uintptr_t*)calloc(1, section->size);
-            size_t count = (uintptr_t)section->size / sizeof(uintptr_t);
-            pread(self.fd, base, section->size, section->offset + self.file_offset);
-            for (int z = 0; z < count; z++) {
-                if (address == base[z]) {
-                    [foundAddresses addObject:@((z * sizeof(uintptr_t)) + section->addr)];
-                }
-            }
-            free(base);
-        }
-    }
-
-    return foundAddresses;
-}
-
-/********************************************************************************
-//  Find internal methods
-********************************************************************************/
-
-- (uintptr_t)externalSymbolStubAddress:(NSString *)symbol {
-    
-    const char *searched_symbol = [symbol UTF8String];
-
-    size_t count  = (self.lazy_ptr_section->size / (1 << self.lazy_ptr_section->align));
-    
-    int start = self.lazy_ptr_section->reserved1;
-    for (int i = 0; i < count; i++) {
-        int offset = self.indirect_symbols.indirect_sym[i + start];
-        
-        // If stripped' local symbol, you're not gonna find it by name
-        if (INDIRECT_SYMBOL_LOCAL & offset) { continue; }
-        
-        struct nlist_64 sym = self.symbols[offset];
-        char * chr = &self.str_symbols[sym.n_un.n_strx];
-
-        if (strcmp(chr, searched_symbol) == 0 || strcmp(&chr[1], searched_symbol) == 0 ) {
-            uintptr_t buf_stub_helper;
-
-            pread(self.fd, &buf_stub_helper, sizeof(uintptr_t), self.file_offset + self.lazy_ptr_section->offset + (PTR_SIZE * i));
-            
-    
-            return self.lazy_ptr_section->addr + (PTR_SIZE * i);
-        }
-    }
-    
-    return 0;
-}
-
-
-/********************************************************************************
-// Helper debugging methods 
-********************************************************************************/
-
-- (NSString *)description {
-    return [NSString stringWithFormat:@"(%p) %@", self, self.realizedPath];
-}
-
-- (NSUInteger)hash {
-    return [self.path hash];
-}
-
-- (uintptr_t)translateLoadAddressToFileOffset:(uintptr_t)loadAddress useFatOffset:(BOOL)useFatOffset {
-   __unused  uintptr_t f = useFatOffset ? self.file_offset : 0;
-    for (int i = 1; i < self.sectionCommandsArray.count; i++) {
-        NSNumber *sectionNumber = self.sectionCommandsArray[i];
-        struct section_64 *sec = reinterpret_cast<struct section_64 *>(sectionNumber.pointerValue);
-        if (sec->addr <= loadAddress && loadAddress < sec->addr + sec->size) {
-            return loadAddress - sec->addr  + sec->offset + f;
-        }
-    }
-    dprintf(STDERR_FILENO, "WARNING: couldn't find address 0x%lx in binary!\n", loadAddress);
-
-    return 0;
-}
-
-- (uintptr_t)translateOffsetToLoadAddress:(uintptr_t)offset {
-    uintptr_t f = -self.file_offset;
-    for (int i = 1; i < self.sectionCommandsArray.count; i++) {
-        NSNumber *sectionNumber = self.sectionCommandsArray[i];
-        struct section_64 *sec = (struct section_64 *)sectionNumber.pointerValue;
-        
-        if (sec->offset <= (offset + f) && (offset + f) < sec->offset + sec->size) {
-            return offset - sec->offset + sec->addr + f;
-        }
-    }
-    dprintf(STDERR_FILENO, "WARNING: couldn't find offset 0x%lx in binary!\n", offset);
-    return 0;
-}
-
-- (BOOL)isARM64e {
-    static dispatch_once_t onceToken;
-    static BOOL isARM64e = NO;
-    __weak XRMachOLibrary * wself = self;
-    dispatch_once(&onceToken, ^{
-        XRMachOLibrary *sself = wself;
-        cpu_type_t type = *(cpu_type_t *)&sself->_data[sself->_file_offset + 4];
-        cpu_subtype_t subtype = *(cpu_subtype_t *)&sself->_data[sself->_file_offset + 8];
-        
-        isARM64e = ((CPU_ARCH_ABI64|CPU_TYPE_ARM) == type && CPU_SUBTYPE_ARM64E == subtype) ? YES : NO;
-    });
-    return isARM64e;
-}
-
-- (void)parseLocalSymbolsInSymbolTable {
-    for (int i = self.dysymtab->ilocalsym; i < self.dysymtab->ilocalsym + self.dysymtab->nlocalsym; i++) {
-        struct nlist_64 *symbol = &self.symbols[i];
-        if (symbol->n_value) {
-            XRSymbolEntry *entry = [[XRSymbolEntry alloc] initWithSymbol:symbol machoLibrary:self];
-            self.symbolEntry[@(symbol->n_value)] = entry;
-        }
-    }
-    
-    for (int i = self.dysymtab->iextdefsym; i < self.dysymtab->iextdefsym + self.dysymtab->nextdefsym; i++) {
-        struct nlist_64 *symbol = &self.symbols[i];
-        if (symbol->n_value) {
-            XRSymbolEntry *entry = [[XRSymbolEntry alloc] initWithSymbol:symbol machoLibrary:self];
-            self.symbolEntry[@(symbol->n_value)] = entry;
-        }
-    }
-    
 }
 
 @end

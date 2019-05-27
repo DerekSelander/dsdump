@@ -8,19 +8,14 @@
 
 #import "XRMachOLibrary.h"
 
-NS_ASSUME_NONNULL_BEGIN
+#define FILE_OFFSET_UNKNOWN ((intptr_t)-1)
 
-typedef enum {
-    OffSetTypeIvar,
-    OffSetTypeMethods,
-    OffSetTypeProperties
-} OffSetType;
+NS_ASSUME_NONNULL_BEGIN
 
 @interface XRMachOLibrary (ObjectiveC)
 - (void)dumpObjectiveCClasses;
 -(const char*)nameForObjCClass:(uintptr_t)address;
 
-#define FILE_OFFSET_UNKNOWN ((intptr_t)-1)
 
 @end
 

@@ -7,11 +7,10 @@
 //
 
 #import <Foundation/Foundation.h>
-#import "uthash.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
-/// Used for dyld opcodes bind mapping
+/// Used for dyld opcode bind mapping
 @interface XRBindSymbol : NSObject
 
 @property (nonatomic, assign) NSNumber *address;

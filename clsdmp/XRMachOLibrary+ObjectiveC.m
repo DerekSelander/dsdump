@@ -24,6 +24,14 @@ typedef struct  {
 } d_offsets;
 
 
+// OffsetType used in
+typedef enum {
+    OffSetTypeIvar,
+    OffSetTypeMethods,
+    OffSetTypeProperties
+} OffSetType;
+
+
 @implementation XRMachOLibrary (ObjectiveC)
 
 - (void)dumpObjCClassInfo:(const char *)name resolvedAddress:(uintptr_t)resolvedAddress {
@@ -42,7 +50,6 @@ typedef struct  {
     // Meta Needed to determine ObjC output class/instance type (-/+)
     class_ro_t *ro_info = (class_ro_t *)DATABUF([self ROOffsetAddressForObjCClass:resolvedAddress]);
     uint8_t isMeta = ro_info->flags & RO_META;
-    
     
     for (int j = 0; j < methodsCount; j++) {
         
@@ -76,6 +83,9 @@ SWIFT_PART:
     }
 }
 
+/********************************************************************************
+ // Properties
+ ********************************************************************************/
 - (void)dumpObjCPropertiesWithResolvedAddress:(uintptr_t)resolvedAddress {
     resolvedAddress = ARM64e_PTRMASK(resolvedAddress);
     intptr_t propertiesList_FO = [self offsetAddressForObjCClass:resolvedAddress forType:OffSetTypeProperties];
@@ -104,6 +114,9 @@ SWIFT_PART:
     }
 }
 
+/********************************************************************************
+ // ivars
+ ********************************************************************************/
 - (void)dumpObjCInstanceVariablesWithResolvedAddress:(uintptr_t)resolvedAddress {
     resolvedAddress = ARM64e_PTRMASK(resolvedAddress);
     intptr_t ivarList_FO = [self offsetAddressForObjCClass:resolvedAddress forType:OffSetTypeIvar];

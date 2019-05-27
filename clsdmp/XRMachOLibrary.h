@@ -18,6 +18,9 @@
 
 #define DATABUF(offset) (void*)&self.data[(offset)]
 
+///
+#define ARM64e_PTRMASK(data)  (self.isARM64e ? ((data)&0x000007FFFFFFFFFFUL) : (data))
+
 NS_ASSUME_NONNULL_BEGIN
 
 extern NSMutableSet <NSString*> *pathsSet;
@@ -70,7 +73,7 @@ extern "C" {
 @property (nonatomic, copy) NSString *path;
 @property NSString *testFUCK;
 
-#define ARM64e_PTRMASK(data)  (self.isARM64e ? ((data)&0x000007FFFFFFFFFFUL) : (data))
+
 //#define ARM64e_PTRMASK(data)  (data)
 @property (nonatomic, readonly) BOOL isARM64e;
 
@@ -82,6 +85,8 @@ extern "C" {
 
 @property (nonatomic, strong) NSMutableDictionary <NSString*, XRBindSymbol*> *stringObjCDictionary;
 @property (nonatomic, strong) NSMutableDictionary <NSNumber*, XRBindSymbol*> *addressObjCDictionary;
+@property (nonatomic, strong) NSMutableArray <XRBindSymbol *>* threadedHolder;
+
 @property (nonatomic, strong) NSMutableDictionary <NSNumber*, NSNumber*> *addressSymbolDictionary;
 @property (nonatomic, strong) NSMutableDictionary <NSString*, NSNumber*> *externalObjectiveClassesDict;
 
@@ -112,22 +117,14 @@ extern "C" {
 
 
 @property (nonatomic, assign) struct linkedit_data_command *function_starts_cmd;
-
-
 @property (nonatomic, assign) struct section_64 *lazy_ptr_section;
-
 @property (nonatomic, assign) struct dyld_info_command *dyldInfo;
-
-
-
-
 
 /// The indirect symbol table *int that points to actual symbols
 @property (nonatomic, assign) indirect_symbols_t indirect_symbols;
 @property (nonatomic, assign) uintptr_t file_offset;
 
 - (instancetype)initWithPath:(NSString*)path;
-
 - (NSString *)realizedPath;
 
 
