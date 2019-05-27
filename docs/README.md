@@ -1,6 +1,6 @@
-# xref
+# clsdmp
 
-Some ugly mix between `class-dump`, `nm`, and `vmmap`. This tool is great for an initial pass at inspecting executables to see what's in them before jumping to your favorite, jtool/hopper/Ghidra/IDA/whatevs
+**clsdmp** is an up to date implementation of `nm` and `class-dump` for MachO (Apple) binaries. It lists symbols and Objective-C/Swift classes
 
 ## Installing 
 
