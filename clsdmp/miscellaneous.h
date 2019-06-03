@@ -40,7 +40,8 @@ typedef NS_OPTIONS(NSUInteger, DSCOLOR) {
     DSCOLOR_BLUE,
     DSCOLOR_GRAY,
     DSCOLOR_GREEN,
-    DSCOLOR_BOLD
+    DSCOLOR_BOLD,
+    DSCOLOR_CYANISH
 };
 char* dcolor(DSCOLOR c);
 

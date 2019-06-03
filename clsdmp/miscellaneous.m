@@ -113,6 +113,8 @@ char* dcolor(DSCOLOR c) {
             return "\e[90m";
         case DSCOLOR_BOLD:
              return "\e[1m";
+        case DSCOLOR_CYANISH:
+            return "\033[36;1;4m";
         default:
             return "";
     }

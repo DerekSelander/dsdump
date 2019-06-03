@@ -120,8 +120,12 @@
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = "  $(TARGET_BUILD_DIR)/clsdmp  -vvvv --swift"
+            argument = "  $(TARGET_BUILD_DIR)/clsdmp  -vvUvv --objc"
             isEnabled = "YES">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "/tmp/swifttest -vvvv --swift"
+            isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
             argument = "/Users/lolgrep/Desktop/Payload/Twitter.app/Frameworks/TwitterVectorGraphics.framework/TwitterVectorGraphics --objc "
@@ -174,7 +178,7 @@
       </CommandLineArguments>
       <EnvironmentVariables>
          <EnvironmentVariable
-            key = "DSDEBUG=1"
+            key = "DEBUG=1"
             value = ""
             isEnabled = "YES">
          </EnvironmentVariable>

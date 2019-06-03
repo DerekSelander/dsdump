@@ -14,6 +14,11 @@ NS_ASSUME_NONNULL_BEGIN
 
 /// F it, I am using Apple's demangler since they change their mangling too much
 - (BOOL)loadSwiftDemangle;
+- (void)dumpSwiftTypes;
 @end
+
+#define Resolve32BitAddress(addr) *(uint32_t *)(DATABUF([self translateLoadAddressToFileOffset:(uintptr_t)(addr) useFatOffset:YES]))
+
+#define Resolve64BitAddress(addr) *(uint64_t *)(DATABUF([self translateLoadAddressToFileOffset:(uintptr_t)(addr) useFatOffset:YES]))
 
 NS_ASSUME_NONNULL_END

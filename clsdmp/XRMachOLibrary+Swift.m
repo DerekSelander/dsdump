@@ -7,7 +7,10 @@
 //
 
 #import "XRMachOLibrary+Swift.h"
+#import "objc_.h"
 #import <dlfcn.h>
+
+const char *getKindString(uint32_t kind);
 
 @implementation XRMachOLibrary (Swift)
 
@@ -41,6 +44,59 @@ static void(*ds_xcselect_get_developer_dir_path)(const char *ptr, size_t length,
     return YES;
 }
 
+- (void)dumpSwiftTypes {
+    struct section_64* swiftTypes = [self.sectionCommandsDictionary[@"__TEXT.__swift4_types"] pointerValue];
+    if (!swiftTypes) {
+        swiftTypes = [self.sectionCommandsDictionary[@"__TEXT.__swift5_types"] pointerValue];
+    }
+    
+    if (!swiftTypes) { return; }
+    
+    int32_t *typeOffsets = (int32_t*)swiftTypes->addr;
+    for (int i = 0; i < swiftTypes->size / sizeof(uint32_t); i++) {
+        
+        
+        int32_t typeOffset = Resolve32BitAddress(&typeOffsets[i]);
+        uintptr_t resolvedTypedOffset = (uintptr_t)(&typeOffsets[i]) + typeOffset;
+        swift_descriptor *descriptor = (swift_descriptor*)resolvedTypedOffset;
+        
+        // flags
+//        uintptr_t flags_FO =  [self translateLoadAddressToFileOffset:offsetof(swift_descriptor, flags) + (uintptr_t)descriptor  useFatOffset:YES];
+//        uint32_t flagss = *(uint32_t *)DATABUF(flags_FO);
+        uint32_t flags = Resolve32BitAddress(offsetof(swift_descriptor, flags) + (uintptr_t)descriptor);
+        uint32_t kind = DescriptorFlagsGetKind(flags);
+        int32_t parentTypeOffset = Resolve32BitAddress((uintptr_t)descriptor + offsetof(swift_descriptor, parentOffset));
+        
+        
+        uintptr_t resolvedParentTypeOffset = (uintptr_t)descriptor + offsetof(swift_descriptor, parentOffset) + parentTypeOffset;
+        swift_descriptor *parent_descriptor = (swift_descriptor *)resolvedParentTypeOffset;
+        
+        int32_t parentNamedOffset = Resolve32BitAddress((uintptr_t)parent_descriptor + offsetof(swift_descriptor, namedOffset));
+        uintptr_t parentNamedOffset_FO = [self translateLoadAddressToFileOffset:offsetof(swift_descriptor, namedOffset) + (uintptr_t)parent_descriptor + parentNamedOffset useFatOffset:YES];
+        char * parentName = DATABUF(parentNamedOffset_FO);
+        
+        // name
+        int32_t namedOffset = Resolve32BitAddress((uintptr_t)&descriptor->namedOffset);
+        uintptr_t namedOffset_FO = [self translateLoadAddressToFileOffset:offsetof(swift_descriptor, namedOffset) + (uintptr_t)descriptor + namedOffset useFatOffset:YES];
+        char * name = DATABUF(namedOffset_FO);
+        
+        // Parent flags
+        uint32_t parentFlags = Resolve32BitAddress(offsetof(swift_descriptor, flags) + (uintptr_t)parent_descriptor);
+        uint32_t parentKind = DescriptorFlagsGetKind(parentFlags);
+        
+        uintptr_t ptr = Resolve64BitAddress(offsetof(swift_descriptor, accessFunctionOffset) + (uintptr_t)descriptor);
+        printf("%s %s : %s (%s)", getKindString(kind), name, parentName, getKindString(parentKind));
+        putchar('{');
+        
+//        for (int j = 0; j < fieldCount; j++) {
+//            
+//        }
+        putchar('}');
+        putchar('\n');
+    }
+}
+
+
 //- (const char *)demangledSwiftName:(const char*)name {
 
 
@@ -55,3 +111,71 @@ static void(*ds_xcselect_get_developer_dir_path)(const char *ptr, size_t length,
  }
  */
 @end
+
+/*
+ /// Kinds of context descriptor.
+ enum class ContextDescriptorKind : uint8_t {
+ /// This context descriptor represents a module.
+ Module = 0,
+ 
+ /// This context descriptor represents an extension.
+ Extension = 1,
+ 
+ /// This context descriptor represents an anonymous possibly-generic context
+ /// such as a function body.
+ Anonymous = 2,
+ 
+ /// This context descriptor represents a protocol context.
+ Protocol = 3,
+ 
+ /// This context descriptor represents an opaque type alias.
+ OpaqueType = 4,
+ 
+ /// First kind that represents a type of any sort.
+ Type_First = 16,
+ 
+ /// This context descriptor represents a class.
+ Class = Type_First,
+ 
+ /// This context descriptor represents a struct.
+ Struct = Type_First + 1,
+ 
+ /// This context descriptor represents an enum.
+ Enum = Type_First + 2,
+ 
+ /// Last kind that represents a type of any sort.
+ Type_Last = 31,
+ };
+
+ */
+
+const char *getKindString(uint32_t kind) {
+    switch (kind) {
+        case 0:
+            return "class";
+        case 1:
+            return "struct";
+        case 2:
+            return "enum";
+        case 3:
+            return "optional";
+        case 8:
+            return "opaque";
+        case 9:
+            return "tuple";
+        case 10:
+            return "function";
+        case 12:
+            return "protocol";
+        case 13:
+            return "metatype";
+        case 14:
+            return "objc";
+        case 15:
+            return "ext metatype";
+        default:
+            break;
+    }
+    
+    return "<unknown>";
+}

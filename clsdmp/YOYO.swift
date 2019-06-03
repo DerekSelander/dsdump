@@ -8,12 +8,40 @@
 
 import Cocoa
 
+struct testStruct {
+    let f = "some text"
+}
+
+class SubclassClass : YOYO {
+    let z = "hi"
+}
+
+
+enum someEnum {
+     case  aVal
+    case  bVal
+}
+
+
+enum subclassedEnum : Error {
+//    typealias RawValue = <#type#>
+    
+    case aVal
+    case bVal
+    case c
+}
+
 class YOYO: NSViewController {
     let someproperty = "https://www.google.com"
     let someotherproperty = "https://www.google.com"
     var avar = "https://www.google.com"
     func testyay() {
         print("yay")
+    }
+    
+    class func someotherclassTest() {
+        
+        
     }
     private func someothertest() {
         print("woot")

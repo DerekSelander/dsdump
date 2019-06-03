@@ -13,7 +13,8 @@
 #import "XRMachOLibrary+Swift.h"
 #import <stddef.h>
 #import "XRSymbolEntry.h"
-
+//#import "Metadata.h"
+#import "MetadataValues.h"
 
 typedef struct  {
     uint16_t mod_off : 16;
@@ -31,12 +32,30 @@ typedef enum {
     OffSetTypeProperties
 } OffSetType;
 
+// Swift uses offset references for ivars when referencing methods
+static NSMutableDictionary *__ivarsDictionary = nil;
+
+static NSDictionary <NSString*, NSNumber*> *blacklistedSelectors = nil;
 
 @implementation XRMachOLibrary (ObjectiveC)
+
++ (void)load {
+    blacklistedSelectors = @{
+                             @".cxx_destruct" : @YES,
+                             @"description" : @YES,
+                             @"debugDescription" : @YES,
+                             @"hash" : @YES
+                             };
+}
 
 - (void)dumpObjCClassInfo:(const char *)name resolvedAddress:(uintptr_t)resolvedAddress {
     resolvedAddress = ARM64e_PTRMASK(resolvedAddress);
     uintptr_t methodsList_FO = [self offsetAddressForObjCClass:resolvedAddress forType:OffSetTypeMethods];  //[self methodsOffsetAddressForObjCClass:resolvedAddress];
+    method_list_t *methodsList = NULL;
+    int methodsCount = 0;
+    class_ro_t *ro_info = NULL;
+    
+    uint8_t isMeta;
     if (methodsList_FO == FILE_OFFSET_UNKNOWN) {
         if (xref_options.debug) {
             dprintf(STDERR_FILENO, "%sCouldn't find method list! (%p)%s\n", dcolor(DSCOLOR_RED), (void*)resolvedAddress, color_end());
@@ -44,23 +63,25 @@ typedef enum {
         goto SWIFT_PART;
     }
     
-    method_list_t *methodsList = (method_list_t *)DATABUF(methodsList_FO);
-    int methodsCount = methodsList->count;
+    methodsList = (method_list_t *)DATABUF(methodsList_FO);
+    methodsCount = methodsList->count;
     
     // Meta Needed to determine ObjC output class/instance type (-/+)
-    class_ro_t *ro_info = (class_ro_t *)DATABUF([self ROOffsetAddressForObjCClass:resolvedAddress]);
-    uint8_t isMeta = ro_info->flags & RO_META;
+    ro_info = (class_ro_t *)DATABUF([self ROOffsetAddressForObjCClass:resolvedAddress]);
+    isMeta = ro_info->flags & RO_META;
     
     for (int j = 0; j < methodsCount; j++) {
         
         
         uintptr_t methodOffset_FO = ARM64e_PTRMASK(*(uintptr_t *)(DATABUF(methodsList_FO + PTR_SIZE + (sizeof(method_t) * j))));
         uintptr_t methodOffset = [self translateLoadAddressToFileOffset:methodOffset_FO useFatOffset:YES];
+        char *methodName = (char *)DATABUF(methodOffset);
+        if (blacklistedSelectors[[NSString stringWithUTF8String:methodName]]) {
+            continue;
+        }
         putchar('\t');
-
-        
         uintptr_t methodAddress = ARM64e_PTRMASK(*(uintptr_t *)(DATABUF(methodsList_FO + PTR_SIZE * 3 + (sizeof(method_t) * j))));
-        printf("%s0x%011lx%s %s%c[%s %s]%s\n", dcolor(DSCOLOR_GRAY), methodAddress, color_end(), dcolor(DSCOLOR_BOLD), "-+"[isMeta], name, (char*)DATABUF(methodOffset), color_end());
+        printf("%s0x%011lx%s %s%c[%s %s]%s\n", dcolor(DSCOLOR_GRAY), methodAddress, color_end(), dcolor(DSCOLOR_BOLD), "-+"[isMeta], name, methodName, color_end());
     }
     
 SWIFT_PART:
@@ -76,9 +97,13 @@ SWIFT_PART:
         
         int swiftMethodCount = (classSize - classAddressOffset - offsetof(struct swift_class_t, swiftMethods)) / PTR_SIZE;
         for (int i = 1; i < swiftMethodCount; i++) {
-            if (!curSwiftMethod[i]) { continue; }
+//            if (!curSwiftMethod[i]) { continue; }
             XRSymbolEntry *entry = self.symbolEntry[@(curSwiftMethod[i])];
-            printf("\t%s0x%011lx%s %s\n", dcolor(DSCOLOR_GRAY), (long)curSwiftMethod[i], color_end(), entry.name);
+            NSString *resolvedSwiftProperty = __ivarsDictionary[@(curSwiftMethod[i])];
+            if (!entry.name && resolvedSwiftProperty) {
+                continue;
+            }
+            printf("\t%s0x%011lx%s %s%s%s\n", dcolor(DSCOLOR_GRAY), (long)curSwiftMethod[i], color_end(), dcolor(DSCOLOR_CYANISH), entry.name, color_end());
         }
     }
 }
@@ -100,7 +125,6 @@ SWIFT_PART:
     if (propertiesList_FO == FILE_OFFSET_UNKNOWN) {
         warn_debug("%sProperties not found! (%p)%s\n", dcolor(DSCOLOR_RED), resolvedAddress, color_end());
     }
-    
     for (int i = 0; i < propertyCount; i++) {
         property_t property = properties[i];
         
@@ -117,6 +141,7 @@ SWIFT_PART:
 /********************************************************************************
  // ivars
  ********************************************************************************/
+
 - (void)dumpObjCInstanceVariablesWithResolvedAddress:(uintptr_t)resolvedAddress {
     resolvedAddress = ARM64e_PTRMASK(resolvedAddress);
     intptr_t ivarList_FO = [self offsetAddressForObjCClass:resolvedAddress forType:OffSetTypeIvar];
@@ -126,6 +151,8 @@ SWIFT_PART:
     
     
     uint32_t ivarCount = *(uint32_t *)DATABUF(ivarList_FO + offsetof(ivar_list_t, count));
+    
+    __ivarsDictionary = [NSMutableDictionary dictionaryWithCapacity:ivarCount];
     ivar_t *ivars = (ivar_t *)DATABUF(ivarList_FO + offsetof(ivar_list_t, ivars));
     if (ivarCount && ivarList_FO != FILE_OFFSET_UNKNOWN) {
         putchar('{');
@@ -139,6 +166,7 @@ SWIFT_PART:
         uintptr_t ivarName_FO = [self translateLoadAddressToFileOffset:(uintptr_t)ivar.name useFatOffset:YES];
         char* ivarName = (char *)DATABUF(ivarName_FO);
 
+        __ivarsDictionary[@(ivarOffset)] = [NSString stringWithUTF8String:ivarName];
         printf("\t+0x%04x %s (0x%x)\n", ivarOffset, ivarName, ivar.size);
     }
     
@@ -146,6 +174,7 @@ SWIFT_PART:
         putchar('}');
         putchar('\n');
     }
+
 }
 
 - (void)dumpObjectiveCClasses {
@@ -177,17 +206,17 @@ SWIFT_PART:
                     printf("0x%011lx %s%s%s", resolvedAddress,  dcolor(DSCOLOR_CYAN), name, color_end());
                 }
                 
-                XRBindSymbol *objcReference;
+                XRBindSymbol *objcReference = nil;
                 
                 // Print out the superclass if any verbose level
                 if (xref_options.verbose > VERBOSE_NONE) {
                     // Check if it's a local symbol first via the dylds binding opcodes....
-                    objcReference = self.addressObjCDictionary[@((resolvedAddress + offsetof(objc_class, superclass)))];
+                    objcReference = self.addressObjCDictionary[@((resolvedAddress + offsetof(ds_objc_class, superclass)))];
                     const char *supercls_name = objcReference.shortName.UTF8String;
                     
                     char *color = dcolor(DSCOLOR_GREEN);
                     if (!supercls_name) {
-                        uintptr_t superClassAddress = ARM64e_PTRMASK(resolvedAddress + offsetof(objc_class, superclass));
+                        uintptr_t superClassAddress = ARM64e_PTRMASK(resolvedAddress + offsetof(ds_objc_class, superclass));
                         
                         offset = [self translateLoadAddressToFileOffset:superClassAddress useFatOffset:YES];
                         uintptr_t supercls = ARM64e_PTRMASK(*(uintptr_t *)&self.data[offset]);
@@ -226,11 +255,9 @@ SWIFT_PART:
                     
                     intptr_t metacls_offset = [self translateLoadAddressToFileOffset:resolvedAddress useFatOffset:YES];
                     intptr_t resolvedMetaAddress = *(intptr_t *)DATABUF(metacls_offset);
-                    
-                    if (xref_options.verbose > VERBOSE_3) {
-                        // Dump properties...
-                        [self dumpObjCInstanceVariablesWithResolvedAddress:resolvedAddress];
-                    }
+                
+                    // Dump properties...
+                    [self dumpObjCInstanceVariablesWithResolvedAddress:resolvedAddress];
                     
                     [self dumpObjCPropertiesWithResolvedAddress:resolvedAddress];
                     
@@ -242,8 +269,25 @@ SWIFT_PART:
                     
                     putchar('\n');
                     
-//                    swift_class *s = (swift_class *)resolvedAddress;
-//                    swift_class *meta = (swift_class *)resolvedMetaAddress;
+                    swift_class *s = (swift_class *)resolvedAddress;
+                    swift_class *meta = (swift_class *)resolvedMetaAddress;
+                    
+                    
+//                    int32_t flags =  ResolveSwiftDescriptorAddress(s->description, flags);
+//                    int32_t parent =  ResolveSwiftDescriptorAddress(s->description, parentOffset);
+//                    intptr_t parentAddress = parent + (uintptr_t)&s->description->parentOffset;
+//                    int32_t nameOffset = ResolveSwiftDescriptorAddress(s->description, namedOffset);
+//                    char *name = (char *)(nameOffset + (uintptr_t)&s->description->namedOffset);
+//
+//                    int32_t property4Offset = ResolveSwiftDescriptorAddress(s->description, metadataAccessorOffset);
+//                    uintptr_t property4 = (uintptr_t)(property4Offset + (uintptr_t)&s->description->metadataAccessorOffset);
+                    char * name = (char*)TEST(s->description,    namedOffset);
+                    uintptr_t fields = TEST(s->description,    fieldsOffset);
+//                    uintptr_t reflection = TEST(s->description,    reflectionOffset);
+//                    uintptr_t fieldOffset = TEST(s->description,    fieldsOffset);
+                    
+                    
+                    
 //                    printf("hmmm");
                 }
             }
@@ -313,7 +357,7 @@ SWIFT_PART:
     if (!(offset )) { return FILE_OFFSET_UNKNOWN; }
     
     // On disk, the bits value is gonna hold class_ro_t*  + other bit packing
-    int disk_ro_offset = offsetof(objc_class, bits);
+    int disk_ro_offset = offsetof(ds_objc_class, bits);
     uintptr_t buff = ARM64e_PTRMASK(*(uintptr_t *)DATABUF(offset + disk_ro_offset));
     
     // buff now has the class_ro_t instance, translate to disk....
@@ -365,7 +409,7 @@ SWIFT_PART:
     
 #define FAST_IS_SWIFT_LEGACY 1 // f'ing swift devs changing their minds every 3 seconds...
 #define FAST_IS_SWIFT_STABLE 2
-    uintptr_t buff = (*(uintptr_t *)DATABUF(offset +  offsetof(objc_class, bits)));
+    uintptr_t buff = (*(uintptr_t *)DATABUF(offset +  offsetof(ds_objc_class, bits)));
     return buff & (FAST_IS_SWIFT_LEGACY|FAST_IS_SWIFT_STABLE) ? YES : NO;
 }
 
