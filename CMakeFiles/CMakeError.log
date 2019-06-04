@@ -1,0 +1,414 @@
+Checking whether the ASM compiler is GNU using "--version" did not match "(GNU assembler)|(GCC)|(Free Software Foundation)":
+Apple LLVM version 10.0.1 (clang-1001.0.46.3)
+Target: x86_64-apple-darwin18.6.0
+Thread model: posix
+InstalledDir: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin
+Checking whether the ASM compiler is Clang using "--version" did not match "(clang version)":
+Apple LLVM version 10.0.1 (clang-1001.0.46.3)
+Target: x86_64-apple-darwin18.6.0
+Thread model: posix
+InstalledDir: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin
+Determining if the include file link.h exists failed with the following output:
+Change Dir: /Users/lolgrep/code/xref/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/make cmTC_d7893/fast 
+/Applications/Xcode.app/Contents/Developer/usr/bin/make -f CMakeFiles/cmTC_d7893.dir/build.make CMakeFiles/cmTC_d7893.dir/build
+Building C object CMakeFiles/cmTC_d7893.dir/CheckIncludeFile.c.o
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/cc   -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.14.sdk   -o CMakeFiles/cmTC_d7893.dir/CheckIncludeFile.c.o   -c /Users/lolgrep/code/xref/CMakeFiles/CMakeTmp/CheckIncludeFile.c
+/Users/lolgrep/code/xref/CMakeFiles/CMakeTmp/CheckIncludeFile.c:1:10: fatal error: 'link.h' file not found
+#include <link.h>
+         ^~~~~~~~
+1 error generated.
+make[1]: *** [CMakeFiles/cmTC_d7893.dir/CheckIncludeFile.c.o] Error 1
+make: *** [cmTC_d7893/fast] Error 2
+
+
+Determining if the include file valgrind/valgrind.h exists failed with the following output:
+Change Dir: /Users/lolgrep/code/xref/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/make cmTC_7741a/fast 
+/Applications/Xcode.app/Contents/Developer/usr/bin/make -f CMakeFiles/cmTC_7741a.dir/build.make CMakeFiles/cmTC_7741a.dir/build
+Building C object CMakeFiles/cmTC_7741a.dir/CheckIncludeFile.c.o
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/cc   -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.14.sdk   -o CMakeFiles/cmTC_7741a.dir/CheckIncludeFile.c.o   -c /Users/lolgrep/code/xref/CMakeFiles/CMakeTmp/CheckIncludeFile.c
+/Users/lolgrep/code/xref/CMakeFiles/CMakeTmp/CheckIncludeFile.c:1:10: fatal error: 'valgrind/valgrind.h' file not found
+#include <valgrind/valgrind.h>
+         ^~~~~~~~~~~~~~~~~~~~~
+1 error generated.
+make[1]: *** [CMakeFiles/cmTC_7741a.dir/CheckIncludeFile.c.o] Error 1
+make: *** [cmTC_7741a/fast] Error 2
+
+
+Determining if the include file CrashReporterClient.h exists failed with the following output:
+Change Dir: /Users/lolgrep/code/xref/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/make cmTC_c79aa/fast 
+/Applications/Xcode.app/Contents/Developer/usr/bin/make -f CMakeFiles/cmTC_c79aa.dir/build.make CMakeFiles/cmTC_c79aa.dir/build
+Building C object CMakeFiles/cmTC_c79aa.dir/CheckIncludeFile.c.o
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/cc   -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.14.sdk   -o CMakeFiles/cmTC_c79aa.dir/CheckIncludeFile.c.o   -c /Users/lolgrep/code/xref/CMakeFiles/CMakeTmp/CheckIncludeFile.c
+/Users/lolgrep/code/xref/CMakeFiles/CMakeTmp/CheckIncludeFile.c:1:10: fatal error: 'CrashReporterClient.h' file not found
+#include <CrashReporterClient.h>
+         ^~~~~~~~~~~~~~~~~~~~~~~
+1 error generated.
+make[1]: *** [CMakeFiles/cmTC_c79aa.dir/CheckIncludeFile.c.o] Error 1
+make: *** [cmTC_c79aa/fast] Error 2
+
+
+Determining if the function clock_gettime exists in the rt failed with the following output:
+Change Dir: /Users/lolgrep/code/xref/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/make cmTC_b5cc0/fast 
+/Applications/Xcode.app/Contents/Developer/usr/bin/make -f CMakeFiles/cmTC_b5cc0.dir/build.make CMakeFiles/cmTC_b5cc0.dir/build
+Building C object CMakeFiles/cmTC_b5cc0.dir/CheckFunctionExists.c.o
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/cc   -DCHECK_FUNCTION_EXISTS=clock_gettime -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.14.sdk   -o CMakeFiles/cmTC_b5cc0.dir/CheckFunctionExists.c.o   -c /Applications/CMake.app/Contents/share/cmake-3.14/Modules/CheckFunctionExists.c
+Linking C executable cmTC_b5cc0
+/Applications/CMake.app/Contents/bin/cmake -E cmake_link_script CMakeFiles/cmTC_b5cc0.dir/link.txt --verbose=1
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/cc  -DCHECK_FUNCTION_EXISTS=clock_gettime -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.14.sdk -Wl,-search_paths_first -Wl,-headerpad_max_install_names   CMakeFiles/cmTC_b5cc0.dir/CheckFunctionExists.c.o  -o cmTC_b5cc0 -lrt -lm 
+ld: library not found for -lrt
+clang: error: linker command failed with exit code 1 (use -v to see invocation)
+make[1]: *** [cmTC_b5cc0] Error 1
+make: *** [cmTC_b5cc0/fast] Error 2
+
+
+Determining if the function pfm_initialize exists in the pfm failed with the following output:
+Change Dir: /Users/lolgrep/code/xref/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/make cmTC_b4c0b/fast 
+/Applications/Xcode.app/Contents/Developer/usr/bin/make -f CMakeFiles/cmTC_b4c0b.dir/build.make CMakeFiles/cmTC_b4c0b.dir/build
+Building C object CMakeFiles/cmTC_b4c0b.dir/CheckFunctionExists.c.o
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/cc   -DCHECK_FUNCTION_EXISTS=pfm_initialize -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.14.sdk   -o CMakeFiles/cmTC_b4c0b.dir/CheckFunctionExists.c.o   -c /Applications/CMake.app/Contents/share/cmake-3.14/Modules/CheckFunctionExists.c
+Linking C executable cmTC_b4c0b
+/Applications/CMake.app/Contents/bin/cmake -E cmake_link_script CMakeFiles/cmTC_b4c0b.dir/link.txt --verbose=1
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/cc  -DCHECK_FUNCTION_EXISTS=pfm_initialize -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.14.sdk -Wl,-search_paths_first -Wl,-headerpad_max_install_names   CMakeFiles/cmTC_b4c0b.dir/CheckFunctionExists.c.o  -o cmTC_b4c0b -lpfm -lm 
+ld: library not found for -lpfm
+clang: error: linker command failed with exit code 1 (use -v to see invocation)
+make[1]: *** [cmTC_b4c0b] Error 1
+make: *** [cmTC_b4c0b/fast] Error 2
+
+
+Determining if the function setupterm exists in the terminfo failed with the following output:
+Change Dir: /Users/lolgrep/code/xref/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/make cmTC_16508/fast 
+/Applications/Xcode.app/Contents/Developer/usr/bin/make -f CMakeFiles/cmTC_16508.dir/build.make CMakeFiles/cmTC_16508.dir/build
+Building C object CMakeFiles/cmTC_16508.dir/CheckFunctionExists.c.o
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/cc   -DCHECK_FUNCTION_EXISTS=setupterm -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.14.sdk   -o CMakeFiles/cmTC_16508.dir/CheckFunctionExists.c.o   -c /Applications/CMake.app/Contents/share/cmake-3.14/Modules/CheckFunctionExists.c
+Linking C executable cmTC_16508
+/Applications/CMake.app/Contents/bin/cmake -E cmake_link_script CMakeFiles/cmTC_16508.dir/link.txt --verbose=1
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/cc  -DCHECK_FUNCTION_EXISTS=setupterm -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.14.sdk -Wl,-search_paths_first -Wl,-headerpad_max_install_names   CMakeFiles/cmTC_16508.dir/CheckFunctionExists.c.o  -o cmTC_16508 -lterminfo -lm 
+ld: library not found for -lterminfo
+clang: error: linker command failed with exit code 1 (use -v to see invocation)
+make[1]: *** [cmTC_16508] Error 1
+make: *** [cmTC_16508/fast] Error 2
+
+
+Determining if the function setupterm exists in the tinfo failed with the following output:
+Change Dir: /Users/lolgrep/code/xref/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/make cmTC_55c02/fast 
+/Applications/Xcode.app/Contents/Developer/usr/bin/make -f CMakeFiles/cmTC_55c02.dir/build.make CMakeFiles/cmTC_55c02.dir/build
+Building C object CMakeFiles/cmTC_55c02.dir/CheckFunctionExists.c.o
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/cc   -DCHECK_FUNCTION_EXISTS=setupterm -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.14.sdk   -o CMakeFiles/cmTC_55c02.dir/CheckFunctionExists.c.o   -c /Applications/CMake.app/Contents/share/cmake-3.14/Modules/CheckFunctionExists.c
+Linking C executable cmTC_55c02
+/Applications/CMake.app/Contents/bin/cmake -E cmake_link_script CMakeFiles/cmTC_55c02.dir/link.txt --verbose=1
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/cc  -DCHECK_FUNCTION_EXISTS=setupterm -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.14.sdk -Wl,-search_paths_first -Wl,-headerpad_max_install_names   CMakeFiles/cmTC_55c02.dir/CheckFunctionExists.c.o  -o cmTC_55c02 -ltinfo -lm 
+ld: library not found for -ltinfo
+clang: error: linker command failed with exit code 1 (use -v to see invocation)
+make[1]: *** [cmTC_55c02] Error 1
+make: *** [cmTC_55c02/fast] Error 2
+
+
+Determining if the posix_fallocate exist failed with the following output:
+Change Dir: /Users/lolgrep/code/xref/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/make cmTC_af2c3/fast 
+/Applications/Xcode.app/Contents/Developer/usr/bin/make -f CMakeFiles/cmTC_af2c3.dir/build.make CMakeFiles/cmTC_af2c3.dir/build
+Building C object CMakeFiles/cmTC_af2c3.dir/CheckSymbolExists.c.o
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/cc   -Werror=unguarded-availability-new -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.14.sdk   -o CMakeFiles/cmTC_af2c3.dir/CheckSymbolExists.c.o   -c /Users/lolgrep/code/xref/CMakeFiles/CMakeTmp/CheckSymbolExists.c
+/Users/lolgrep/code/xref/CMakeFiles/CMakeTmp/CheckSymbolExists.c:8:19: error: use of undeclared identifier 'posix_fallocate'
+  return ((int*)(&posix_fallocate))[argc];
+                  ^
+1 error generated.
+make[1]: *** [CMakeFiles/cmTC_af2c3.dir/CheckSymbolExists.c.o] Error 1
+make: *** [cmTC_af2c3/fast] Error 2
+
+File /Users/lolgrep/code/xref/CMakeFiles/CMakeTmp/CheckSymbolExists.c:
+/* */
+#include <fcntl.h>
+
+int main(int argc, char** argv)
+{
+  (void)argv;
+#ifndef posix_fallocate
+  return ((int*)(&posix_fallocate))[argc];
+#else
+  (void)argc;
+  return 0;
+#endif
+}
+
+Determining if the lseek64 exist failed with the following output:
+Change Dir: /Users/lolgrep/code/xref/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/make cmTC_50d61/fast 
+/Applications/Xcode.app/Contents/Developer/usr/bin/make -f CMakeFiles/cmTC_50d61.dir/build.make CMakeFiles/cmTC_50d61.dir/build
+Building C object CMakeFiles/cmTC_50d61.dir/CheckSymbolExists.c.o
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/cc -D_LARGEFILE64_SOURCE  -Werror=unguarded-availability-new -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.14.sdk   -o CMakeFiles/cmTC_50d61.dir/CheckSymbolExists.c.o   -c /Users/lolgrep/code/xref/CMakeFiles/CMakeTmp/CheckSymbolExists.c
+/Users/lolgrep/code/xref/CMakeFiles/CMakeTmp/CheckSymbolExists.c:9:19: error: use of undeclared identifier 'lseek64'; did you mean 'lseek'?
+  return ((int*)(&lseek64))[argc];
+                  ^~~~~~~
+                  lseek
+/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.14.sdk/usr/include/unistd.h:464:8: note: 'lseek' declared here
+off_t    lseek(int, off_t, int);
+         ^
+1 error generated.
+make[1]: *** [CMakeFiles/cmTC_50d61.dir/CheckSymbolExists.c.o] Error 1
+make: *** [cmTC_50d61/fast] Error 2
+
+File /Users/lolgrep/code/xref/CMakeFiles/CMakeTmp/CheckSymbolExists.c:
+/* */
+#include <sys/types.h>
+#include <unistd.h>
+
+int main(int argc, char** argv)
+{
+  (void)argv;
+#ifndef lseek64
+  return ((int*)(&lseek64))[argc];
+#else
+  (void)argc;
+  return 0;
+#endif
+}
+
+Determining if the mallctl exist failed with the following output:
+Change Dir: /Users/lolgrep/code/xref/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/make cmTC_7d862/fast 
+/Applications/Xcode.app/Contents/Developer/usr/bin/make -f CMakeFiles/cmTC_7d862.dir/build.make CMakeFiles/cmTC_7d862.dir/build
+Building C object CMakeFiles/cmTC_7d862.dir/CheckSymbolExists.c.o
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/cc   -Werror=unguarded-availability-new -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.14.sdk   -o CMakeFiles/cmTC_7d862.dir/CheckSymbolExists.c.o   -c /Users/lolgrep/code/xref/CMakeFiles/CMakeTmp/CheckSymbolExists.c
+/Users/lolgrep/code/xref/CMakeFiles/CMakeTmp/CheckSymbolExists.c:2:10: fatal error: 'malloc_np.h' file not found
+#include <malloc_np.h>
+         ^~~~~~~~~~~~~
+1 error generated.
+make[1]: *** [CMakeFiles/cmTC_7d862.dir/CheckSymbolExists.c.o] Error 1
+make: *** [cmTC_7d862/fast] Error 2
+
+File /Users/lolgrep/code/xref/CMakeFiles/CMakeTmp/CheckSymbolExists.c:
+/* */
+#include <malloc_np.h>
+
+int main(int argc, char** argv)
+{
+  (void)argv;
+#ifndef mallctl
+  return ((int*)(&mallctl))[argc];
+#else
+  (void)argc;
+  return 0;
+#endif
+}
+
+Determining if the mallinfo exist failed with the following output:
+Change Dir: /Users/lolgrep/code/xref/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/make cmTC_af49b/fast 
+/Applications/Xcode.app/Contents/Developer/usr/bin/make -f CMakeFiles/cmTC_af49b.dir/build.make CMakeFiles/cmTC_af49b.dir/build
+Building C object CMakeFiles/cmTC_af49b.dir/CheckSymbolExists.c.o
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/cc   -Werror=unguarded-availability-new -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.14.sdk   -o CMakeFiles/cmTC_af49b.dir/CheckSymbolExists.c.o   -c /Users/lolgrep/code/xref/CMakeFiles/CMakeTmp/CheckSymbolExists.c
+/Users/lolgrep/code/xref/CMakeFiles/CMakeTmp/CheckSymbolExists.c:2:10: fatal error: 'malloc.h' file not found
+#include <malloc.h>
+         ^~~~~~~~~~
+1 error generated.
+make[1]: *** [CMakeFiles/cmTC_af49b.dir/CheckSymbolExists.c.o] Error 1
+make: *** [cmTC_af49b/fast] Error 2
+
+File /Users/lolgrep/code/xref/CMakeFiles/CMakeTmp/CheckSymbolExists.c:
+/* */
+#include <malloc.h>
+
+int main(int argc, char** argv)
+{
+  (void)argv;
+#ifndef mallinfo
+  return ((int*)(&mallinfo))[argc];
+#else
+  (void)argc;
+  return 0;
+#endif
+}
+
+Determining if the strerror_s exist failed with the following output:
+Change Dir: /Users/lolgrep/code/xref/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/make cmTC_f7c50/fast 
+/Applications/Xcode.app/Contents/Developer/usr/bin/make -f CMakeFiles/cmTC_f7c50.dir/build.make CMakeFiles/cmTC_f7c50.dir/build
+Building C object CMakeFiles/cmTC_f7c50.dir/CheckSymbolExists.c.o
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/cc   -Werror=unguarded-availability-new -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.14.sdk   -o CMakeFiles/cmTC_f7c50.dir/CheckSymbolExists.c.o   -c /Users/lolgrep/code/xref/CMakeFiles/CMakeTmp/CheckSymbolExists.c
+/Users/lolgrep/code/xref/CMakeFiles/CMakeTmp/CheckSymbolExists.c:8:19: error: use of undeclared identifier 'strerror_s'; did you mean 'strerror_r'?
+  return ((int*)(&strerror_s))[argc];
+                  ^~~~~~~~~~
+                  strerror_r
+/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.14.sdk/usr/include/string.h:116:6: note: 'strerror_r' declared here
+int      strerror_r(int __errnum, char *__strerrbuf, size_t __buflen);
+         ^
+1 error generated.
+make[1]: *** [CMakeFiles/cmTC_f7c50.dir/CheckSymbolExists.c.o] Error 1
+make: *** [cmTC_f7c50/fast] Error 2
+
+File /Users/lolgrep/code/xref/CMakeFiles/CMakeTmp/CheckSymbolExists.c:
+/* */
+#include <string.h>
+
+int main(int argc, char** argv)
+{
+  (void)argv;
+#ifndef strerror_s
+  return ((int*)(&strerror_s))[argc];
+#else
+  (void)argc;
+  return 0;
+#endif
+}
+
+Performing C SOURCE FILE Test HAVE_STRUCT_STAT_ST_MTIM_TV_NSEC failed with the following output:
+Change Dir: /Users/lolgrep/code/xref/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/make cmTC_78445/fast 
+/Applications/Xcode.app/Contents/Developer/usr/bin/make -f CMakeFiles/cmTC_78445.dir/build.make CMakeFiles/cmTC_78445.dir/build
+Building C object CMakeFiles/cmTC_78445.dir/src.c.o
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/cc   -DHAVE_STRUCT_STAT_ST_MTIM_TV_NSEC  -Werror=unguarded-availability-new -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.14.sdk   -o CMakeFiles/cmTC_78445.dir/src.c.o   -c /Users/lolgrep/code/xref/CMakeFiles/CMakeTmp/src.c
+/Users/lolgrep/code/xref/CMakeFiles/CMakeTmp/src.c:7:37: error: no member named 'st_mtim' in 'struct stat'
+   (void)sizeof(((struct stat *)0)->st_mtim.tv_nsec);
+                ~~~~~~~~~~~~~~~~~~  ^
+1 error generated.
+make[1]: *** [CMakeFiles/cmTC_78445.dir/src.c.o] Error 1
+make: *** [cmTC_78445/fast] Error 2
+
+Source file was:
+
+#include <sys/types.h>
+#include <sys/stat.h>
+
+int main()
+{
+   (void)sizeof(((struct stat *)0)->st_mtim.tv_nsec);
+   return 0;
+}
+
+Determining if the __GLIBC__ exist failed with the following output:
+Change Dir: /Users/lolgrep/code/xref/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/make cmTC_2308e/fast 
+/Applications/Xcode.app/Contents/Developer/usr/bin/make -f CMakeFiles/cmTC_2308e.dir/build.make CMakeFiles/cmTC_2308e.dir/build
+Building C object CMakeFiles/cmTC_2308e.dir/CheckSymbolExists.c.o
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/cc   -Werror=unguarded-availability-new -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.14.sdk   -o CMakeFiles/cmTC_2308e.dir/CheckSymbolExists.c.o   -c /Users/lolgrep/code/xref/CMakeFiles/CMakeTmp/CheckSymbolExists.c
+/Users/lolgrep/code/xref/CMakeFiles/CMakeTmp/CheckSymbolExists.c:8:19: error: use of undeclared identifier '__GLIBC__'
+  return ((int*)(&__GLIBC__))[argc];
+                  ^
+1 error generated.
+make[1]: *** [CMakeFiles/cmTC_2308e.dir/CheckSymbolExists.c.o] Error 1
+make: *** [cmTC_2308e/fast] Error 2
+
+File /Users/lolgrep/code/xref/CMakeFiles/CMakeTmp/CheckSymbolExists.c:
+/* */
+#include <stdio.h>
+
+int main(int argc, char** argv)
+{
+  (void)argv;
+#ifndef __GLIBC__
+  return ((int*)(&__GLIBC__))[argc];
+#else
+  (void)argc;
+  return 0;
+#endif
+}
+
+Determining if the sched_getaffinity exist failed with the following output:
+Change Dir: /Users/lolgrep/code/xref/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/make cmTC_9d8b3/fast 
+/Applications/Xcode.app/Contents/Developer/usr/bin/make -f CMakeFiles/cmTC_9d8b3.dir/build.make CMakeFiles/cmTC_9d8b3.dir/build
+Building C object CMakeFiles/cmTC_9d8b3.dir/CheckSymbolExists.c.o
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/cc   -Werror=unguarded-availability-new -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.14.sdk   -o CMakeFiles/cmTC_9d8b3.dir/CheckSymbolExists.c.o   -c /Users/lolgrep/code/xref/CMakeFiles/CMakeTmp/CheckSymbolExists.c
+/Users/lolgrep/code/xref/CMakeFiles/CMakeTmp/CheckSymbolExists.c:8:19: error: use of undeclared identifier 'sched_getaffinity'
+  return ((int*)(&sched_getaffinity))[argc];
+                  ^
+1 error generated.
+make[1]: *** [CMakeFiles/cmTC_9d8b3.dir/CheckSymbolExists.c.o] Error 1
+make: *** [cmTC_9d8b3/fast] Error 2
+
+File /Users/lolgrep/code/xref/CMakeFiles/CMakeTmp/CheckSymbolExists.c:
+/* */
+#include <sched.h>
+
+int main(int argc, char** argv)
+{
+  (void)argv;
+#ifndef sched_getaffinity
+  return ((int*)(&sched_getaffinity))[argc];
+#else
+  (void)argc;
+  return 0;
+#endif
+}
+
+Determining if the CPU_COUNT exist failed with the following output:
+Change Dir: /Users/lolgrep/code/xref/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/make cmTC_56ae4/fast 
+/Applications/Xcode.app/Contents/Developer/usr/bin/make -f CMakeFiles/cmTC_56ae4.dir/build.make CMakeFiles/cmTC_56ae4.dir/build
+Building C object CMakeFiles/cmTC_56ae4.dir/CheckSymbolExists.c.o
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/cc   -Werror=unguarded-availability-new -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.14.sdk   -o CMakeFiles/cmTC_56ae4.dir/CheckSymbolExists.c.o   -c /Users/lolgrep/code/xref/CMakeFiles/CMakeTmp/CheckSymbolExists.c
+/Users/lolgrep/code/xref/CMakeFiles/CMakeTmp/CheckSymbolExists.c:8:19: error: use of undeclared identifier 'CPU_COUNT'
+  return ((int*)(&CPU_COUNT))[argc];
+                  ^
+1 error generated.
+make[1]: *** [CMakeFiles/cmTC_56ae4.dir/CheckSymbolExists.c.o] Error 1
+make: *** [cmTC_56ae4/fast] Error 2
+
+File /Users/lolgrep/code/xref/CMakeFiles/CMakeTmp/CheckSymbolExists.c:
+/* */
+#include <sched.h>
+
+int main(int argc, char** argv)
+{
+  (void)argv;
+#ifndef CPU_COUNT
+  return ((int*)(&CPU_COUNT))[argc];
+#else
+  (void)argc;
+  return 0;
+#endif
+}
+
+Performing C++ SOURCE FILE Test CXX_SUPPORTS_CLASS_MEMACCESS_FLAG failed with the following output:
+Change Dir: /Users/lolgrep/code/xref/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/make cmTC_391fc/fast 
+/Applications/Xcode.app/Contents/Developer/usr/bin/make -f CMakeFiles/cmTC_391fc.dir/build.make CMakeFiles/cmTC_391fc.dir/build
+Building CXX object CMakeFiles/cmTC_391fc.dir/src.cxx.o
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/c++    -fPIC -fvisibility-inlines-hidden -Werror=date-time -Werror=unguarded-availability-new -std=c++11 -Wall -Wextra -Wno-unused-parameter -Wwrite-strings -Wcast-qual -Wmissing-field-initializers -pedantic -Wno-long-long -Wimplicit-fallthrough -Wcovered-switch-default -DCXX_SUPPORTS_CLASS_MEMACCESS_FLAG  -Werror=unguarded-availability-new -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.14.sdk   -Wclass-memaccess -o CMakeFiles/cmTC_391fc.dir/src.cxx.o -c /Users/lolgrep/code/xref/CMakeFiles/CMakeTmp/src.cxx
+warning: unknown warning option '-Wclass-memaccess'; did you mean '-Wclass-varargs'? [-Wunknown-warning-option]
+1 warning generated.
+Linking CXX executable cmTC_391fc
+/Applications/CMake.app/Contents/bin/cmake -E cmake_link_script CMakeFiles/cmTC_391fc.dir/link.txt --verbose=1
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/c++   -fPIC -fvisibility-inlines-hidden -Werror=date-time -Werror=unguarded-availability-new -std=c++11 -Wall -Wextra -Wno-unused-parameter -Wwrite-strings -Wcast-qual -Wmissing-field-initializers -pedantic -Wno-long-long -Wimplicit-fallthrough -Wcovered-switch-default -DCXX_SUPPORTS_CLASS_MEMACCESS_FLAG  -Werror=unguarded-availability-new -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.14.sdk -Wl,-search_paths_first -Wl,-headerpad_max_install_names   CMakeFiles/cmTC_391fc.dir/src.cxx.o  -o cmTC_391fc -lm 
+
+Source file was:
+int main() { return 0; }
+Performing C++ SOURCE FILE Test HAVE_CXX_FLAG_WD654 failed with the following output:
+Change Dir: /Users/lolgrep/code/xref/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/make cmTC_bcdf2/fast 
+/Applications/Xcode.app/Contents/Developer/usr/bin/make -f CMakeFiles/cmTC_bcdf2.dir/build.make CMakeFiles/cmTC_bcdf2.dir/build
+Building CXX object CMakeFiles/cmTC_bcdf2.dir/src.cxx.o
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/c++    -fPIC -fvisibility-inlines-hidden -Werror=date-time -Werror=unguarded-availability-new -std=c++11 -Wall -Wextra -Wno-unused-parameter -Wwrite-strings -Wcast-qual -Wmissing-field-initializers -pedantic -Wno-long-long -Wimplicit-fallthrough -Wcovered-switch-default -Wno-noexcept-type -Wnon-virtual-dtor -Wdelete-non-virtual-dtor -Wstring-conversion  -std=c++11  -Wall  -Wextra  -Wshadow  -pedantic  -pedantic-errors  -Wshorten-64-to-32  -Wfloat-equal  -fstrict-aliasing  -fno-exceptions  -Wstrict-aliasing -DHAVE_CXX_FLAG_WD654  -Werror=unguarded-availability-new -wd654 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.14.sdk   -wd654 -o CMakeFiles/cmTC_bcdf2.dir/src.cxx.o -c /Users/lolgrep/code/xref/CMakeFiles/CMakeTmp/src.cxx
+clang: error: unknown argument: '-wd654'
+clang: error: unknown argument: '-wd654'
+make[1]: *** [CMakeFiles/cmTC_bcdf2.dir/src.cxx.o] Error 1
+make: *** [cmTC_bcdf2/fast] Error 2
+
+Source file was:
+int main() { return 0; }

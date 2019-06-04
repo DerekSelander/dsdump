@@ -1,0 +1,1 @@
+"/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/libtool" -static -no_warning_for_no_symbols -o ../../libLLVMBitWriter.a  CMakeFiles/LLVMBitWriter.dir/BitWriter.cpp.o CMakeFiles/LLVMBitWriter.dir/BitcodeWriter.cpp.o CMakeFiles/LLVMBitWriter.dir/BitcodeWriterPass.cpp.o CMakeFiles/LLVMBitWriter.dir/ValueEnumerator.cpp.o

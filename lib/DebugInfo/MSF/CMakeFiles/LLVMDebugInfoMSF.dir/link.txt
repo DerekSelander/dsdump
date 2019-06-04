@@ -1,0 +1,1 @@
+"/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/libtool" -static -no_warning_for_no_symbols -o ../../libLLVMDebugInfoMSF.a  CMakeFiles/LLVMDebugInfoMSF.dir/MappedBlockStream.cpp.o CMakeFiles/LLVMDebugInfoMSF.dir/MSFBuilder.cpp.o CMakeFiles/LLVMDebugInfoMSF.dir/MSFCommon.cpp.o CMakeFiles/LLVMDebugInfoMSF.dir/MSFError.cpp.o

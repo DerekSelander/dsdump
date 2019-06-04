@@ -1,0 +1,1 @@
+"/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/libtool" -static -no_warning_for_no_symbols -o ../../../libLLVMAArch64AsmParser.a  CMakeFiles/LLVMAArch64AsmParser.dir/AArch64AsmParser.cpp.o

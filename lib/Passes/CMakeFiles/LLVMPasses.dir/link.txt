@@ -1,0 +1,1 @@
+"/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/libtool" -static -no_warning_for_no_symbols -o ../libLLVMPasses.a  CMakeFiles/LLVMPasses.dir/PassBuilder.cpp.o CMakeFiles/LLVMPasses.dir/PassPlugin.cpp.o CMakeFiles/LLVMPasses.dir/StandardInstrumentations.cpp.o

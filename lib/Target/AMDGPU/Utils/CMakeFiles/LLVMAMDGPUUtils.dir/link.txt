@@ -1,0 +1,1 @@
+"/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/libtool" -static -no_warning_for_no_symbols -o ../../../libLLVMAMDGPUUtils.a  CMakeFiles/LLVMAMDGPUUtils.dir/AMDGPUBaseInfo.cpp.o CMakeFiles/LLVMAMDGPUUtils.dir/AMDKernelCodeTUtils.cpp.o CMakeFiles/LLVMAMDGPUUtils.dir/AMDGPUAsmUtils.cpp.o CMakeFiles/LLVMAMDGPUUtils.dir/AMDGPUPALMetadata.cpp.o

@@ -1,0 +1,1 @@
+"/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/libtool" -static -no_warning_for_no_symbols -o ../../libLLVMMIRParser.a  CMakeFiles/LLVMMIRParser.dir/MILexer.cpp.o CMakeFiles/LLVMMIRParser.dir/MIParser.cpp.o CMakeFiles/LLVMMIRParser.dir/MIRParser.cpp.o

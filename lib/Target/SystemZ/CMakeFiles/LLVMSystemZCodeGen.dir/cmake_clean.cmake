@@ -1,0 +1,40 @@
+file(REMOVE_RECURSE
+  "SystemZGenAsmMatcher.inc"
+  "SystemZGenAsmWriter.inc"
+  "SystemZGenCallingConv.inc"
+  "SystemZGenDAGISel.inc"
+  "SystemZGenDisassemblerTables.inc"
+  "SystemZGenInstrInfo.inc"
+  "SystemZGenMCCodeEmitter.inc"
+  "SystemZGenRegisterInfo.inc"
+  "SystemZGenSubtargetInfo.inc"
+  "CMakeFiles/LLVMSystemZCodeGen.dir/SystemZAsmPrinter.cpp.o"
+  "CMakeFiles/LLVMSystemZCodeGen.dir/SystemZCallingConv.cpp.o"
+  "CMakeFiles/LLVMSystemZCodeGen.dir/SystemZConstantPoolValue.cpp.o"
+  "CMakeFiles/LLVMSystemZCodeGen.dir/SystemZElimCompare.cpp.o"
+  "CMakeFiles/LLVMSystemZCodeGen.dir/SystemZExpandPseudo.cpp.o"
+  "CMakeFiles/LLVMSystemZCodeGen.dir/SystemZFrameLowering.cpp.o"
+  "CMakeFiles/LLVMSystemZCodeGen.dir/SystemZHazardRecognizer.cpp.o"
+  "CMakeFiles/LLVMSystemZCodeGen.dir/SystemZISelDAGToDAG.cpp.o"
+  "CMakeFiles/LLVMSystemZCodeGen.dir/SystemZISelLowering.cpp.o"
+  "CMakeFiles/LLVMSystemZCodeGen.dir/SystemZInstrInfo.cpp.o"
+  "CMakeFiles/LLVMSystemZCodeGen.dir/SystemZLDCleanup.cpp.o"
+  "CMakeFiles/LLVMSystemZCodeGen.dir/SystemZLongBranch.cpp.o"
+  "CMakeFiles/LLVMSystemZCodeGen.dir/SystemZMachineFunctionInfo.cpp.o"
+  "CMakeFiles/LLVMSystemZCodeGen.dir/SystemZMachineScheduler.cpp.o"
+  "CMakeFiles/LLVMSystemZCodeGen.dir/SystemZMCInstLower.cpp.o"
+  "CMakeFiles/LLVMSystemZCodeGen.dir/SystemZRegisterInfo.cpp.o"
+  "CMakeFiles/LLVMSystemZCodeGen.dir/SystemZSelectionDAGInfo.cpp.o"
+  "CMakeFiles/LLVMSystemZCodeGen.dir/SystemZShortenInst.cpp.o"
+  "CMakeFiles/LLVMSystemZCodeGen.dir/SystemZSubtarget.cpp.o"
+  "CMakeFiles/LLVMSystemZCodeGen.dir/SystemZTargetMachine.cpp.o"
+  "CMakeFiles/LLVMSystemZCodeGen.dir/SystemZTargetTransformInfo.cpp.o"
+  "CMakeFiles/LLVMSystemZCodeGen.dir/SystemZTDC.cpp.o"
+  "../../libLLVMSystemZCodeGen.pdb"
+  "../../libLLVMSystemZCodeGen.a"
+)
+
+# Per-language clean rules from dependency scanning.
+foreach(lang CXX)
+  include(CMakeFiles/LLVMSystemZCodeGen.dir/cmake_clean_${lang}.cmake OPTIONAL)
+endforeach()
