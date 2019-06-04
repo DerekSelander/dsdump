@@ -370,6 +370,11 @@
 					"$(inherited)",
 					"DEBUG_VERBOSE=1",
 				);
+				HEADER_SEARCH_PATHS = (
+					"\"$(SRCROOT)/swift/include/\"",
+					"\"$(SRCROOT)/llvm/include/\"",
+					"\"$(SRCROOT)/include/\"/**",
+				);
 				LD_NO_PIE = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -391,6 +396,11 @@
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = H4U46V6494;
+				HEADER_SEARCH_PATHS = (
+					"\"$(SRCROOT)/swift/include/\"",
+					"\"$(SRCROOT)/llvm/include/\"",
+					"\"$(SRCROOT)/include/\"/**",
+				);
 				LD_NO_PIE = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",

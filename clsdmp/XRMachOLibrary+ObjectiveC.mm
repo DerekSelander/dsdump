@@ -14,7 +14,10 @@
 #import <stddef.h>
 #import "XRSymbolEntry.h"
 //#import "Metadata.h"
-#import "MetadataValues.h"
+//#import "MetadataValues.h"
+//#import "Metadata.h"
+#import "swift/ABI/MetadataValues.h"
+#import "swift/ABI/Metadata.h"
 
 typedef struct  {
     uint16_t mod_off : 16;
