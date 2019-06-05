@@ -119,7 +119,7 @@
 		A66A9CB222316CF3006602AB = {
 			isa = PBXGroup;
 			children = (
-				A66A9CBD22316CF3006602AB /* clsdmp */,
+				A66A9CBD22316CF3006602AB /* dsdump */,
 				A66A9CBC22316CF3006602AB /* Products */,
 			);
 			sourceTree = "<group>";
@@ -132,7 +132,7 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
-		A66A9CBD22316CF3006602AB /* clsdmp */ = {
+		A66A9CBD22316CF3006602AB /* dsdump */ = {
 			isa = PBXGroup;
 			children = (
 				A66A9CBE22316CF3006602AB /* main.m */,
@@ -163,7 +163,7 @@
 				3FF9AE0A2277A0E100F71FA5 /* TestClass.m */,
 				3FC3405F228FC77E00B03813 /* YOYO.swift */,
 			);
-			path = clsdmp;
+			path = dsdump;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
