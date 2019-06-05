@@ -15,9 +15,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "A66A9CBA22316CF3006602AB"
-               BuildableName = "clsdmp"
-               BlueprintName = "clsdmp"
-               ReferencedContainer = "container:clsdmp.xcodeproj">
+               BuildableName = "dsdump"
+               BlueprintName = "dsdump"
+               ReferencedContainer = "container:dsdump.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -33,9 +33,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "A66A9CBA22316CF3006602AB"
-            BuildableName = "clsdmp"
-            BlueprintName = "clsdmp"
-            ReferencedContainer = "container:clsdmp.xcodeproj">
+            BuildableName = "dsdump"
+            BlueprintName = "dsdump"
+            ReferencedContainer = "container:dsdump.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
       <AdditionalOptions>
@@ -57,9 +57,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "A66A9CBA22316CF3006602AB"
-            BuildableName = "clsdmp"
-            BlueprintName = "clsdmp"
-            ReferencedContainer = "container:clsdmp.xcodeproj">
+            BuildableName = "dsdump"
+            BlueprintName = "dsdump"
+            ReferencedContainer = "container:dsdump.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
       <CommandLineArguments>
@@ -120,7 +120,7 @@
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = "  $(TARGET_BUILD_DIR)/clsdmp  -vvUvv --objc"
+            argument = "  $(TARGET_BUILD_DIR)/clsdmp  -vvUvv --swift"
             isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
@@ -180,7 +180,7 @@
          <EnvironmentVariable
             key = "DEBUG=1"
             value = ""
-            isEnabled = "YES">
+            isEnabled = "NO">
          </EnvironmentVariable>
          <EnvironmentVariable
             key = "DSCOLOR=1"
@@ -207,9 +207,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "A66A9CBA22316CF3006602AB"
-            BuildableName = "clsdmp"
-            BlueprintName = "clsdmp"
-            ReferencedContainer = "container:clsdmp.xcodeproj">
+            BuildableName = "dsdump"
+            BlueprintName = "dsdump"
+            ReferencedContainer = "container:dsdump.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>

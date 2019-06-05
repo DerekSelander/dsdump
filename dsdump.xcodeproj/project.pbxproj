@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		3F0C98C32290F276005D7D0F /* XRMachOLibrary+Swift.m in Sources */ = {isa = PBXBuildFile; fileRef = 3F0C98C22290F276005D7D0F /* XRMachOLibrary+Swift.m */; };
+		3F0C98C32290F276005D7D0F /* XRMachOLibrary+Swift.mm in Sources */ = {isa = PBXBuildFile; fileRef = 3F0C98C22290F276005D7D0F /* XRMachOLibrary+Swift.mm */; };
 		3F29124A22820A99003C2BD7 /* TaskPath.mm in Sources */ = {isa = PBXBuildFile; fileRef = 3F29124822820A99003C2BD7 /* TaskPath.mm */; };
 		3F29126322877648003C2BD7 /* XRMachOLibrary+Dump.m in Sources */ = {isa = PBXBuildFile; fileRef = 3F29126222877648003C2BD7 /* XRMachOLibrary+Dump.m */; };
 		3F480806227A322E0078AE76 /* XRMachOLibrary+FAT.m in Sources */ = {isa = PBXBuildFile; fileRef = 3F480805227A322E0078AE76 /* XRMachOLibrary+FAT.m */; };
@@ -23,7 +23,7 @@
 		A66A9CBF22316CF3006602AB /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = A66A9CBE22316CF3006602AB /* main.m */; };
 		A66A9CC922316D7F006602AB /* miscellaneous.m in Sources */ = {isa = PBXBuildFile; fileRef = A66A9CC822316D7F006602AB /* miscellaneous.m */; };
 		A66A9CCC22316EA5006602AB /* XRMachOLibrary.mm in Sources */ = {isa = PBXBuildFile; fileRef = A66A9CCB22316EA5006602AB /* XRMachOLibrary.mm */; };
-		A674F3EA2231DD0E0005BD40 /* clsdmp in Copy File */ = {isa = PBXBuildFile; fileRef = A66A9CBB22316CF3006602AB /* clsdmp */; };
+		A674F3EA2231DD0E0005BD40 /* dsdump in Copy File */ = {isa = PBXBuildFile; fileRef = A66A9CBB22316CF3006602AB /* dsdump */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -43,7 +43,7 @@
 			dstPath = /usr/local/bin;
 			dstSubfolderSpec = 0;
 			files = (
-				A674F3EA2231DD0E0005BD40 /* clsdmp in Copy File */,
+				A674F3EA2231DD0E0005BD40 /* dsdump in Copy File */,
 			);
 			name = "Copy File";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -52,7 +52,7 @@
 
 /* Begin PBXFileReference section */
 		3F0C98C12290F276005D7D0F /* XRMachOLibrary+Swift.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "XRMachOLibrary+Swift.h"; sourceTree = "<group>"; };
-		3F0C98C22290F276005D7D0F /* XRMachOLibrary+Swift.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = "XRMachOLibrary+Swift.m"; sourceTree = "<group>"; };
+		3F0C98C22290F276005D7D0F /* XRMachOLibrary+Swift.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = "XRMachOLibrary+Swift.mm"; sourceTree = "<group>"; };
 		3F291247228207C7003C2BD7 /* dyld_process_info_internal.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = dyld_process_info_internal.h; sourceTree = "<group>"; };
 		3F29124822820A99003C2BD7 /* TaskPath.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = TaskPath.mm; sourceTree = "<group>"; };
 		3F29124922820A99003C2BD7 /* TaskPath.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = TaskPath.h; sourceTree = "<group>"; };
@@ -77,7 +77,7 @@
 		3FF9AE0722777A9500F71FA5 /* XRMachOLibrary+ObjectiveC.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = "XRMachOLibrary+ObjectiveC.mm"; sourceTree = "<group>"; };
 		3FF9AE092277A0E100F71FA5 /* TestClass.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = TestClass.h; sourceTree = "<group>"; };
 		3FF9AE0A2277A0E100F71FA5 /* TestClass.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = TestClass.m; sourceTree = "<group>"; };
-		A66A9CBB22316CF3006602AB /* clsdmp */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = clsdmp; sourceTree = BUILT_PRODUCTS_DIR; };
+		A66A9CBB22316CF3006602AB /* dsdump */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = dsdump; sourceTree = BUILT_PRODUCTS_DIR; };
 		A66A9CBE22316CF3006602AB /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		A66A9CC722316D7F006602AB /* miscellaneous.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = miscellaneous.h; sourceTree = "<group>"; };
 		A66A9CC822316D7F006602AB /* miscellaneous.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = miscellaneous.m; sourceTree = "<group>"; };
@@ -127,7 +127,7 @@
 		A66A9CBC22316CF3006602AB /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				A66A9CBB22316CF3006602AB /* clsdmp */,
+				A66A9CBB22316CF3006602AB /* dsdump */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -146,7 +146,7 @@
 				3FF9AE0722777A9500F71FA5 /* XRMachOLibrary+ObjectiveC.mm */,
 				3F2912782289B476003C2BD7 /* objc_.h */,
 				3F0C98C12290F276005D7D0F /* XRMachOLibrary+Swift.h */,
-				3F0C98C22290F276005D7D0F /* XRMachOLibrary+Swift.m */,
+				3F0C98C22290F276005D7D0F /* XRMachOLibrary+Swift.mm */,
 				3F98C3B2225F06E900606F97 /* XRMachOLibrary+FileManagement.m */,
 				3F29126122877648003C2BD7 /* XRMachOLibrary+Dump.h */,
 				3F29126222877648003C2BD7 /* XRMachOLibrary+Dump.m */,
@@ -169,9 +169,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		A66A9CBA22316CF3006602AB /* clsdmp */ = {
+		A66A9CBA22316CF3006602AB /* dsdump */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = A66A9CC222316CF3006602AB /* Build configuration list for PBXNativeTarget "clsdmp" */;
+			buildConfigurationList = A66A9CC222316CF3006602AB /* Build configuration list for PBXNativeTarget "dsdump" */;
 			buildPhases = (
 				A66A9CB722316CF3006602AB /* Sources */,
 				A66A9CB822316CF3006602AB /* Frameworks */,
@@ -182,9 +182,9 @@
 			);
 			dependencies = (
 			);
-			name = clsdmp;
+			name = dsdump;
 			productName = xref;
-			productReference = A66A9CBB22316CF3006602AB /* clsdmp */;
+			productReference = A66A9CBB22316CF3006602AB /* dsdump */;
 			productType = "com.apple.product-type.tool";
 		};
 /* End PBXNativeTarget section */
@@ -202,7 +202,7 @@
 					};
 				};
 			};
-			buildConfigurationList = A66A9CB622316CF3006602AB /* Build configuration list for PBXProject "clsdmp" */;
+			buildConfigurationList = A66A9CB622316CF3006602AB /* Build configuration list for PBXProject "dsdump" */;
 			compatibilityVersion = "Xcode 9.3";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
@@ -215,7 +215,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				A66A9CBA22316CF3006602AB /* clsdmp */,
+				A66A9CBA22316CF3006602AB /* dsdump */,
 			);
 		};
 /* End PBXProject section */
@@ -228,7 +228,7 @@
 				A66A9CCC22316EA5006602AB /* XRMachOLibrary.mm in Sources */,
 				A66A9CC922316D7F006602AB /* miscellaneous.m in Sources */,
 				3FF9AE0822777A9500F71FA5 /* XRMachOLibrary+ObjectiveC.mm in Sources */,
-				3F0C98C32290F276005D7D0F /* XRMachOLibrary+Swift.m in Sources */,
+				3F0C98C32290F276005D7D0F /* XRMachOLibrary+Swift.mm in Sources */,
 				3FF9AE0B2277A0E100F71FA5 /* TestClass.m in Sources */,
 				3F5F41AB226EA3A800D3DCB1 /* XRMachOLibrary+SymbolDumper.m in Sources */,
 				3FEAB9D8226D0C0E00ED706A /* XRMachOLibrary+Opcode.mm in Sources */,
@@ -417,7 +417,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		A66A9CB622316CF3006602AB /* Build configuration list for PBXProject "clsdmp" */ = {
+		A66A9CB622316CF3006602AB /* Build configuration list for PBXProject "dsdump" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				A66A9CC022316CF3006602AB /* Debug */,
@@ -426,7 +426,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		A66A9CC222316CF3006602AB /* Build configuration list for PBXNativeTarget "clsdmp" */ = {
+		A66A9CC222316CF3006602AB /* Build configuration list for PBXNativeTarget "dsdump" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				A66A9CC322316CF3006602AB /* Debug */,
