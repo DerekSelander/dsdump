@@ -1,6 +1,3 @@
-[submodule "swift"]
-	path = swift
-	url = https://derekselander@github.com/apple/swift.git
 [submodule "llvm"]
 	path = llvm
 	url = https://derekselander@github.com/llvm-mirror/llvm.git
