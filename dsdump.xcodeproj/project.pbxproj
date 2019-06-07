@@ -53,6 +53,7 @@
 /* Begin PBXFileReference section */
 		3F0C98C12290F276005D7D0F /* XRMachOLibrary+Swift.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "XRMachOLibrary+Swift.h"; sourceTree = "<group>"; };
 		3F0C98C22290F276005D7D0F /* XRMachOLibrary+Swift.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = "XRMachOLibrary+Swift.mm"; sourceTree = "<group>"; };
+		3F20316422A78BA000014502 /* XRMachOLibraryCplusHelpers.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = XRMachOLibraryCplusHelpers.h; sourceTree = "<group>"; };
 		3F291247228207C7003C2BD7 /* dyld_process_info_internal.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = dyld_process_info_internal.h; sourceTree = "<group>"; };
 		3F29124822820A99003C2BD7 /* TaskPath.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = TaskPath.mm; sourceTree = "<group>"; };
 		3F29124922820A99003C2BD7 /* TaskPath.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = TaskPath.h; sourceTree = "<group>"; };
@@ -61,6 +62,8 @@
 		3F2912782289B476003C2BD7 /* objc_.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = objc_.h; sourceTree = "<group>"; };
 		3F480804227A322E0078AE76 /* XRMachOLibrary+FAT.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "XRMachOLibrary+FAT.h"; sourceTree = "<group>"; };
 		3F480805227A322E0078AE76 /* XRMachOLibrary+FAT.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = "XRMachOLibrary+FAT.m"; sourceTree = "<group>"; };
+		3F59227D22AAA1D2003972E1 /* MetadataValues.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MetadataValues.h; sourceTree = "<group>"; };
+		3F59227E22AAA1E1003972E1 /* Metadata.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Metadata.h; sourceTree = "<group>"; };
 		3F5F41A9226EA3A800D3DCB1 /* XRMachOLibrary+SymbolDumper.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "XRMachOLibrary+SymbolDumper.h"; sourceTree = "<group>"; };
 		3F5F41AA226EA3A800D3DCB1 /* XRMachOLibrary+SymbolDumper.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = "XRMachOLibrary+SymbolDumper.m"; sourceTree = "<group>"; };
 		3F5F41AF226EC1FC00D3DCB1 /* XRBindSymbol.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = XRBindSymbol.h; sourceTree = "<group>"; };
@@ -116,6 +119,17 @@
 			path = FAT;
 			sourceTree = "<group>";
 		};
+		3F59227A22AA9BD1003972E1 /* Swift */ = {
+			isa = PBXGroup;
+			children = (
+				3F59227E22AAA1E1003972E1 /* Metadata.h */,
+				3F59227D22AAA1D2003972E1 /* MetadataValues.h */,
+				3F0C98C12290F276005D7D0F /* XRMachOLibrary+Swift.h */,
+				3F0C98C22290F276005D7D0F /* XRMachOLibrary+Swift.mm */,
+			);
+			path = Swift;
+			sourceTree = "<group>";
+		};
 		A66A9CB222316CF3006602AB = {
 			isa = PBXGroup;
 			children = (
@@ -135,18 +149,18 @@
 		A66A9CBD22316CF3006602AB /* dsdump */ = {
 			isa = PBXGroup;
 			children = (
+				3F59227A22AA9BD1003972E1 /* Swift */,
 				A66A9CBE22316CF3006602AB /* main.m */,
 				3F3D70CD229B65F900307FD3 /* Bind Symbols */,
 				3F3D70CE229B666400307FD3 /* FAT */,
 				3F7C9AAF2295BBD50070F2B1 /* XRSymbolEntry.h */,
 				3F7C9AB02295BBD50070F2B1 /* XRSymbolEntry.m */,
 				A66A9CCA22316EA5006602AB /* XRMachOLibrary.h */,
+				3F20316422A78BA000014502 /* XRMachOLibraryCplusHelpers.h */,
 				A66A9CCB22316EA5006602AB /* XRMachOLibrary.mm */,
 				3FF9AE0622777A9500F71FA5 /* XRMachOLibrary+ObjectiveC.h */,
 				3FF9AE0722777A9500F71FA5 /* XRMachOLibrary+ObjectiveC.mm */,
 				3F2912782289B476003C2BD7 /* objc_.h */,
-				3F0C98C12290F276005D7D0F /* XRMachOLibrary+Swift.h */,
-				3F0C98C22290F276005D7D0F /* XRMachOLibrary+Swift.mm */,
 				3F98C3B2225F06E900606F97 /* XRMachOLibrary+FileManagement.m */,
 				3F29126122877648003C2BD7 /* XRMachOLibrary+Dump.h */,
 				3F29126222877648003C2BD7 /* XRMachOLibrary+Dump.m */,
@@ -374,6 +388,7 @@
 					"\"$(SRCROOT)/swift/include/\"",
 					"\"$(SRCROOT)/llvm/include/\"",
 					"\"$(SRCROOT)/include/\"/**",
+					"\"$(SRCROOT)/swift/stdlib/public/runtime/\"",
 				);
 				LD_NO_PIE = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -400,6 +415,7 @@
 					"\"$(SRCROOT)/swift/include/\"",
 					"\"$(SRCROOT)/llvm/include/\"",
 					"\"$(SRCROOT)/include/\"/**",
+					"\"$(SRCROOT)/swift/stdlib/public/runtime/\"",
 				);
 				LD_NO_PIE = YES;
 				LD_RUNPATH_SEARCH_PATHS = (

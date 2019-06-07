@@ -186,6 +186,11 @@ SWIFT_PART:
         struct section_64* class_list = (struct section_64* )[self.sectionCommandsDictionary[@"__DATA.__objc_classlist"]
                                          pointerValue];
         
+        if (!class_list) {
+            class_list = (struct section_64* )[self.sectionCommandsDictionary[@"__DATA_CONST.__objc_classlist"]
+                                               pointerValue];
+        }
+        
         if (class_list) {
             uintptr_t offset = [self translateLoadAddressToFileOffset:class_list->addr useFatOffset:NO] + self.file_offset;
             uintptr_t *buff = (uintptr_t *)&self.data[offset];

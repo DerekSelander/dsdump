@@ -8,8 +8,16 @@
 
 import Cocoa
 
-struct testStruct {
-    let f = "some text"
+struct testStruct  {
+    let f : String? = "some text"
+    var somevar = "some yay"
+    var someInt: Int = 0
+    var somed : Double = 0
+    var somefloat : Float = 0
+    var someOptionalInt: Int? = 0
+    var someImpInt: Int!
+    var view : NSView!
+    func dosomething () { print("yay") }
 }
 
 class SubclassClass : YOYO {

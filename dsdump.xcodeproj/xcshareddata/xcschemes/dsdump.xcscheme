@@ -68,6 +68,10 @@
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
+            argument = "/Volumes/YukonSeed17A5492t.J98aJ99aDeveloperOS//Applications/Diagnostics.app/Diagnostics -vvvvvU --swift"
+            isEnabled = "NO">
+         </CommandLineArgument>
+         <CommandLineArgument
             argument = "/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation  -v --objc"
             isEnabled = "NO">
          </CommandLineArgument>
@@ -112,6 +116,10 @@
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
+            argument = "/Users/lolgrep/Desktop/SwiftTest  --swift -v"
+            isEnabled = "NO">
+         </CommandLineArgument>
+         <CommandLineArgument
             argument = "--verbose"
             isEnabled = "NO">
          </CommandLineArgument>
@@ -120,7 +128,7 @@
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = "  $(TARGET_BUILD_DIR)/clsdmp  -vvUvv --swift"
+            argument = "  $(TARGET_BUILD_DIR)/dsdump  -vvUvv --swift"
             isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument

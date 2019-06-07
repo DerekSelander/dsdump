@@ -242,7 +242,7 @@ using namespace std;
     
     // DYLD opcodes contain information about ObjC classes, used for classdump
     if (xref_options.objectiveC_mode) {
-        [self preparseExternalObjectiveCSymbols];
+        [self preparseUndefinedObjectiveCSymbols];
         [self parseDYLDExports];
     }
     
@@ -259,7 +259,7 @@ using namespace std;
  ********************************************************************************/
 
 /// Grab externally referenced ObjectiveC Swift classes, which are located in externals in symbol table
-- (void)preparseExternalObjectiveCSymbols {
+- (void)preparseUndefinedObjectiveCSymbols {
     for (int i = self.dysymtab->iundefsym; i < self.dysymtab->nundefsym + self.dysymtab->iundefsym; i++) {
         struct nlist_64 symbol = self.symbols[i];
         char * chr = &self.str_symbols[symbol.n_un.n_strx];
@@ -270,6 +270,7 @@ using namespace std;
 }
 
 - (void)parseLocalSymbolsInSymbolTable {
+    // Only goes after local and external symbols
     for (int i = self.dysymtab->ilocalsym; i < self.dysymtab->ilocalsym + self.dysymtab->nlocalsym; i++) {
         struct nlist_64 *symbol = &self.symbols[i];
         XRSymbolEntry *cur = self.symbolEntry[@(symbol->n_value)];

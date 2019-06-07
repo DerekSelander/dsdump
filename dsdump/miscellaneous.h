@@ -13,6 +13,7 @@
 #import <Foundation/Foundation.h>
 #import <stdlib.h>
 
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -48,7 +49,7 @@ char* dcolor(DSCOLOR c);
 /// Ends the color option if the DSCOLOR env var is set
 char *color_end(void);
 
-
+/// Different levels to logging, opted for a "codesign -vvvv" style
 #define VERBOSE_NONE 0
 #define VERBOSE_1    1
 #define VERBOSE_2    2
@@ -67,10 +68,7 @@ typedef struct {
     int use_regex;
     int external;
     int analyze;
-//    int all_sections;
-//    uintptr_t address;
     uintptr_t file_offset;
-//    char * symbol;
     int library;
     char * arch;
     char * showSymbolReferences;
@@ -87,7 +85,7 @@ extern xref_options_t xref_options;
 const uint8_t *r_uleb128_decode(uint8_t *data, int *datalen, uint64_t *v);
 const uintptr_t r_sleb128_decode(uint8_t *byte, uintptr_t* shift, uint64_t *v);
     
-    void warn_debug(const char *format, ...);
+void warn_debug(const char *format, ...);
 
 #ifdef __cplusplus
 }
