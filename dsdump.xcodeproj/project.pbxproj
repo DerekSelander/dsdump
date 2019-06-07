@@ -62,8 +62,8 @@
 		3F2912782289B476003C2BD7 /* objc_.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = objc_.h; sourceTree = "<group>"; };
 		3F480804227A322E0078AE76 /* XRMachOLibrary+FAT.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "XRMachOLibrary+FAT.h"; sourceTree = "<group>"; };
 		3F480805227A322E0078AE76 /* XRMachOLibrary+FAT.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = "XRMachOLibrary+FAT.m"; sourceTree = "<group>"; };
-		3F59227D22AAA1D2003972E1 /* MetadataValues.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MetadataValues.h; sourceTree = "<group>"; };
-		3F59227E22AAA1E1003972E1 /* Metadata.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Metadata.h; sourceTree = "<group>"; };
+		3F59227F22AAB39A003972E1 /* MetadataValues.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = MetadataValues.h; path = swift/include/swift/ABI/MetadataValues.h; sourceTree = SOURCE_ROOT; };
+		3F59228022AAB3A1003972E1 /* Metadata.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = Metadata.h; path = swift/include/swift/ABI/Metadata.h; sourceTree = SOURCE_ROOT; };
 		3F5F41A9226EA3A800D3DCB1 /* XRMachOLibrary+SymbolDumper.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "XRMachOLibrary+SymbolDumper.h"; sourceTree = "<group>"; };
 		3F5F41AA226EA3A800D3DCB1 /* XRMachOLibrary+SymbolDumper.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = "XRMachOLibrary+SymbolDumper.m"; sourceTree = "<group>"; };
 		3F5F41AF226EC1FC00D3DCB1 /* XRBindSymbol.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = XRBindSymbol.h; sourceTree = "<group>"; };
@@ -122,8 +122,8 @@
 		3F59227A22AA9BD1003972E1 /* Swift */ = {
 			isa = PBXGroup;
 			children = (
-				3F59227E22AAA1E1003972E1 /* Metadata.h */,
-				3F59227D22AAA1D2003972E1 /* MetadataValues.h */,
+				3F59228022AAB3A1003972E1 /* Metadata.h */,
+				3F59227F22AAB39A003972E1 /* MetadataValues.h */,
 				3F0C98C12290F276005D7D0F /* XRMachOLibrary+Swift.h */,
 				3F0C98C22290F276005D7D0F /* XRMachOLibrary+Swift.mm */,
 			);
