@@ -28,6 +28,9 @@ static char *demangledName(const char* mangledTypeName);
 
 using namespace swift;
 
+static auto simplifiedOptions = swift::Demangle::DemangleOptions::SimplifiedUIDemangleOptions();
+static auto context = Context();
+
 @implementation XRMachOLibrary (Swift)
 
 static void(*ds_xcselect_get_developer_dir_path)(const char *ptr, size_t length, uintptr_t *a, uintptr_t *b, uintptr_t *c);
@@ -81,16 +84,11 @@ static void(*ds_xcselect_get_developer_dir_path)(const char *ptr, size_t length,
     
 
     struct section_64* swiftTypes = (struct section_64*)[self.sectionCommandsDictionary[@"__TEXT.__swift5_types"] pointerValue];
-//    if (!swiftTypes) {
-//        swiftTypes = (struct section_64*)[self.sectionCommandsDictionary[@"__TEXT.__swift5_types"] pointerValue];
-//    }
-    
     if (!swiftTypes) {
         if ([self.sectionCommandsDictionary[@"__TEXT.__swift4_types"] pointerValue]) {
             printf("%sdsdump only supports swift5 :[\n%s", dcolor(DSCOLOR_RED), color_end());
         }
         return;
-        
     }
     
     int32_t *typeOffsets = (int32_t*)swiftTypes->addr;
@@ -98,7 +96,7 @@ static void(*ds_xcselect_get_developer_dir_path)(const char *ptr, size_t length,
         
         int32_t typeOffset = FROMDISK(&typeOffsets[i]);
         uintptr_t resolvedTypedOffset = (uintptr_t)(&typeOffsets[i]) + typeOffset;
-        TypeContextDescriptor* descriptor = FROMDISK_PTR(reinterpret_cast<TypeContextDescriptor*>(resolvedTypedOffset));
+        TypeContextDescriptor* descriptor = (reinterpret_cast<TypeContextDescriptor*>(resolvedTypedOffset));
 
         ContextDescriptorKind kind = descriptor->Flags.getKind();
         const char* name = descriptor->Name.get();
@@ -123,8 +121,14 @@ static void(*ds_xcselect_get_developer_dir_path)(const char *ptr, size_t length,
             } case ContextDescriptorKind::Class: {
                 TargetClassDescriptor<InProcess>* classDescriptor = static_cast<TargetClassDescriptor<InProcess> *>(descriptor);
 
-               
+//                auto a = classDescriptor->areImmediateMembersNegative();
+                if (classDescriptor->SuperclassType) {
+                    auto superclassMangledName = classDescriptor->SuperclassType.get();
+                    auto superclassName = context.demangleTypeAsString(superclassMangledName, simplifiedOptions);
+                    printf(" : %s", superclassName.c_str());
+                }
                 [self dumpTargetTypeContextDescriptorFields:classDescriptor];
+                
                 break;
                 
             } case ContextDescriptorKind::Protocol:
@@ -134,8 +138,8 @@ static void(*ds_xcselect_get_developer_dir_path)(const char *ptr, size_t length,
                 TargetEnumDescriptor<InProcess>* enumDescriptor = static_cast<TargetEnumDescriptor<InProcess> *>(descriptor);
                 
                 [self dumpTargetTypeContextDescriptorFields:enumDescriptor];
-            }
                 break;
+            }
             default:
                 break;
         }
@@ -215,10 +219,10 @@ static void(*ds_xcselect_get_developer_dir_path)(const char *ptr, size_t length,
     }
 
     ContextDescriptorKind kind = contextDescriptor->Flags.getKind();
+//    contextDescriptor->Fields.get()->
 
     auto fieldDescriptor = contextDescriptor->Fields.get()->getFields();
-    auto simplifiedOptions = swift::Demangle::DemangleOptions::SimplifiedUIDemangleOptions();
-    auto context = Context();
+
     
     for (auto &pt : fieldDescriptor) {
         
@@ -232,13 +236,14 @@ static void(*ds_xcselect_get_developer_dir_path)(const char *ptr, size_t length,
         auto mangledTypeName = (pt.MangledTypeName.get());
         auto fieldName = (pt.FieldName.get());
      
+        
         std::string demangledName;
         if (mangledTypeName) {
             auto strref = StringRef(mangledTypeName);
             demangledName = context.demangleTypeAsString(strref, simplifiedOptions);
         }
         
-        printf("\t%s %s %s %s\n", declarationNameType, fieldName, mangledTypeName ? ":" : "", mangledTypeName? demangledName.c_str() : "");
+        printf("\t%s %s %s %s \n", declarationNameType, fieldName, mangledTypeName ? ":" : "", mangledTypeName? demangledName.c_str() : "");
     }
     
 }
