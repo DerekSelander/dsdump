@@ -11,6 +11,15 @@
 		3F29124A22820A99003C2BD7 /* TaskPath.mm in Sources */ = {isa = PBXBuildFile; fileRef = 3F29124822820A99003C2BD7 /* TaskPath.mm */; };
 		3F29126322877648003C2BD7 /* XRMachOLibrary+Dump.m in Sources */ = {isa = PBXBuildFile; fileRef = 3F29126222877648003C2BD7 /* XRMachOLibrary+Dump.m */; };
 		3F480806227A322E0078AE76 /* XRMachOLibrary+FAT.m in Sources */ = {isa = PBXBuildFile; fileRef = 3F480805227A322E0078AE76 /* XRMachOLibrary+FAT.m */; };
+		3F5922E422AB4506003972E1 /* Remangler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3F5922DB22AB4506003972E1 /* Remangler.cpp */; };
+		3F5922E522AB4506003972E1 /* OldRemangler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3F5922DC22AB4506003972E1 /* OldRemangler.cpp */; };
+		3F5922E622AB4506003972E1 /* Punycode.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3F5922DD22AB4506003972E1 /* Punycode.cpp */; };
+		3F5922E722AB4507003972E1 /* Demangler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3F5922DE22AB4506003972E1 /* Demangler.cpp */; };
+		3F5922E822AB4507003972E1 /* Context.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3F5922DF22AB4506003972E1 /* Context.cpp */; };
+		3F5922E922AB4507003972E1 /* OldDemangler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3F5922E022AB4506003972E1 /* OldDemangler.cpp */; };
+		3F5922EA22AB4507003972E1 /* ManglingUtils.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3F5922E122AB4506003972E1 /* ManglingUtils.cpp */; };
+		3F5922EB22AB4507003972E1 /* NodeDumper.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3F5922E222AB4506003972E1 /* NodeDumper.cpp */; };
+		3F5922EC22AB4507003972E1 /* NodePrinter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3F5922E322AB4506003972E1 /* NodePrinter.cpp */; };
 		3F5F41AB226EA3A800D3DCB1 /* XRMachOLibrary+SymbolDumper.m in Sources */ = {isa = PBXBuildFile; fileRef = 3F5F41AA226EA3A800D3DCB1 /* XRMachOLibrary+SymbolDumper.m */; };
 		3F5F41B1226EC1FC00D3DCB1 /* XRBindSymbol.m in Sources */ = {isa = PBXBuildFile; fileRef = 3F5F41B0226EC1FC00D3DCB1 /* XRBindSymbol.m */; };
 		3F7C9AB12295BBD50070F2B1 /* XRSymbolEntry.m in Sources */ = {isa = PBXBuildFile; fileRef = 3F7C9AB02295BBD50070F2B1 /* XRSymbolEntry.m */; };
@@ -62,8 +71,15 @@
 		3F2912782289B476003C2BD7 /* objc_.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = objc_.h; sourceTree = "<group>"; };
 		3F480804227A322E0078AE76 /* XRMachOLibrary+FAT.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "XRMachOLibrary+FAT.h"; sourceTree = "<group>"; };
 		3F480805227A322E0078AE76 /* XRMachOLibrary+FAT.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = "XRMachOLibrary+FAT.m"; sourceTree = "<group>"; };
-		3F59227F22AAB39A003972E1 /* MetadataValues.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = MetadataValues.h; path = swift/include/swift/ABI/MetadataValues.h; sourceTree = SOURCE_ROOT; };
-		3F59228022AAB3A1003972E1 /* Metadata.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = Metadata.h; path = swift/include/swift/ABI/Metadata.h; sourceTree = SOURCE_ROOT; };
+		3F5922DB22AB4506003972E1 /* Remangler.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Remangler.cpp; path = swift/lib/Demangling/Remangler.cpp; sourceTree = SOURCE_ROOT; };
+		3F5922DC22AB4506003972E1 /* OldRemangler.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = OldRemangler.cpp; path = swift/lib/Demangling/OldRemangler.cpp; sourceTree = SOURCE_ROOT; };
+		3F5922DD22AB4506003972E1 /* Punycode.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Punycode.cpp; path = swift/lib/Demangling/Punycode.cpp; sourceTree = SOURCE_ROOT; };
+		3F5922DE22AB4506003972E1 /* Demangler.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Demangler.cpp; path = swift/lib/Demangling/Demangler.cpp; sourceTree = SOURCE_ROOT; };
+		3F5922DF22AB4506003972E1 /* Context.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Context.cpp; path = swift/lib/Demangling/Context.cpp; sourceTree = SOURCE_ROOT; };
+		3F5922E022AB4506003972E1 /* OldDemangler.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = OldDemangler.cpp; path = swift/lib/Demangling/OldDemangler.cpp; sourceTree = SOURCE_ROOT; };
+		3F5922E122AB4506003972E1 /* ManglingUtils.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = ManglingUtils.cpp; path = swift/lib/Demangling/ManglingUtils.cpp; sourceTree = SOURCE_ROOT; };
+		3F5922E222AB4506003972E1 /* NodeDumper.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = NodeDumper.cpp; path = swift/lib/Demangling/NodeDumper.cpp; sourceTree = SOURCE_ROOT; };
+		3F5922E322AB4506003972E1 /* NodePrinter.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = NodePrinter.cpp; path = swift/lib/Demangling/NodePrinter.cpp; sourceTree = SOURCE_ROOT; };
 		3F5F41A9226EA3A800D3DCB1 /* XRMachOLibrary+SymbolDumper.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "XRMachOLibrary+SymbolDumper.h"; sourceTree = "<group>"; };
 		3F5F41AA226EA3A800D3DCB1 /* XRMachOLibrary+SymbolDumper.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = "XRMachOLibrary+SymbolDumper.m"; sourceTree = "<group>"; };
 		3F5F41AF226EC1FC00D3DCB1 /* XRBindSymbol.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = XRBindSymbol.h; sourceTree = "<group>"; };
@@ -122,12 +138,35 @@
 		3F59227A22AA9BD1003972E1 /* Swift */ = {
 			isa = PBXGroup;
 			children = (
-				3F59228022AAB3A1003972E1 /* Metadata.h */,
-				3F59227F22AAB39A003972E1 /* MetadataValues.h */,
+				3F5922D922AB44C3003972E1 /* lib */,
 				3F0C98C12290F276005D7D0F /* XRMachOLibrary+Swift.h */,
 				3F0C98C22290F276005D7D0F /* XRMachOLibrary+Swift.mm */,
 			);
 			path = Swift;
+			sourceTree = "<group>";
+		};
+		3F5922D922AB44C3003972E1 /* lib */ = {
+			isa = PBXGroup;
+			children = (
+				3F5922DA22AB44E5003972E1 /* Demangling */,
+			);
+			path = lib;
+			sourceTree = "<group>";
+		};
+		3F5922DA22AB44E5003972E1 /* Demangling */ = {
+			isa = PBXGroup;
+			children = (
+				3F5922DF22AB4506003972E1 /* Context.cpp */,
+				3F5922DE22AB4506003972E1 /* Demangler.cpp */,
+				3F5922E122AB4506003972E1 /* ManglingUtils.cpp */,
+				3F5922E222AB4506003972E1 /* NodeDumper.cpp */,
+				3F5922E322AB4506003972E1 /* NodePrinter.cpp */,
+				3F5922E022AB4506003972E1 /* OldDemangler.cpp */,
+				3F5922DC22AB4506003972E1 /* OldRemangler.cpp */,
+				3F5922DD22AB4506003972E1 /* Punycode.cpp */,
+				3F5922DB22AB4506003972E1 /* Remangler.cpp */,
+			);
+			path = Demangling;
 			sourceTree = "<group>";
 		};
 		A66A9CB222316CF3006602AB = {
@@ -242,6 +281,7 @@
 				A66A9CCC22316EA5006602AB /* XRMachOLibrary.mm in Sources */,
 				A66A9CC922316D7F006602AB /* miscellaneous.m in Sources */,
 				3FF9AE0822777A9500F71FA5 /* XRMachOLibrary+ObjectiveC.mm in Sources */,
+				3F5922E422AB4506003972E1 /* Remangler.cpp in Sources */,
 				3F0C98C32290F276005D7D0F /* XRMachOLibrary+Swift.mm in Sources */,
 				3FF9AE0B2277A0E100F71FA5 /* TestClass.m in Sources */,
 				3F5F41AB226EA3A800D3DCB1 /* XRMachOLibrary+SymbolDumper.m in Sources */,
@@ -249,11 +289,19 @@
 				3FEBCB60227C98D200D3AD07 /* DSXRLibrary+PID_Info.m in Sources */,
 				3F29126322877648003C2BD7 /* XRMachOLibrary+Dump.m in Sources */,
 				3F480806227A322E0078AE76 /* XRMachOLibrary+FAT.m in Sources */,
+				3F5922E522AB4506003972E1 /* OldRemangler.cpp in Sources */,
+				3F5922E822AB4507003972E1 /* Context.cpp in Sources */,
 				A66A9CBF22316CF3006602AB /* main.m in Sources */,
+				3F5922E722AB4507003972E1 /* Demangler.cpp in Sources */,
+				3F5922E922AB4507003972E1 /* OldDemangler.cpp in Sources */,
 				3F29124A22820A99003C2BD7 /* TaskPath.mm in Sources */,
+				3F5922EC22AB4507003972E1 /* NodePrinter.cpp in Sources */,
+				3F5922E622AB4506003972E1 /* Punycode.cpp in Sources */,
+				3F5922EB22AB4507003972E1 /* NodeDumper.cpp in Sources */,
 				3F7C9AB12295BBD50070F2B1 /* XRSymbolEntry.m in Sources */,
 				3FC34060228FC77E00B03813 /* YOYO.swift in Sources */,
 				3F5F41B1226EC1FC00D3DCB1 /* XRBindSymbol.m in Sources */,
+				3F5922EA22AB4507003972E1 /* ManglingUtils.cpp in Sources */,
 				3F98C3B3225F06E900606F97 /* XRMachOLibrary+FileManagement.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

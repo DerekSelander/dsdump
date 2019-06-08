@@ -17,6 +17,7 @@
 #import "swift/ABI/MetadataValues.h"
 #import "swift/ABI/Metadata.h"
 #import "swift/Reflection/Records.h"
+#import "swift/Demangling/Demangler.h"
 
 #pragma clang diagnostic pop
 #import "XRMachOLibraryCplusHelpers.h"
@@ -216,7 +217,9 @@ static void(*ds_xcselect_get_developer_dir_path)(const char *ptr, size_t length,
     ContextDescriptorKind kind = contextDescriptor->Flags.getKind();
 
     auto fieldDescriptor = contextDescriptor->Fields.get()->getFields();
-
+    auto simplifiedOptions = swift::Demangle::DemangleOptions::SimplifiedUIDemangleOptions();
+    auto context = Context();
+    
     for (auto &pt : fieldDescriptor) {
         
         const char * declarationNameType;
@@ -228,8 +231,14 @@ static void(*ds_xcselect_get_developer_dir_path)(const char *ptr, size_t length,
 
         auto mangledTypeName = (pt.MangledTypeName.get());
         auto fieldName = (pt.FieldName.get());
-
-        printf("\t%s %s %s %s\n", declarationNameType, fieldName, mangledTypeName ? ":" : "", mangledTypeName? demangledName(mangledTypeName) : "");
+     
+        std::string demangledName;
+        if (mangledTypeName) {
+            auto strref = StringRef(mangledTypeName);
+            demangledName = context.demangleTypeAsString(strref, simplifiedOptions);
+        }
+        
+        printf("\t%s %s %s %s\n", declarationNameType, fieldName, mangledTypeName ? ":" : "", mangledTypeName? demangledName.c_str() : "");
     }
     
 }
