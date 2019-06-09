@@ -17,6 +17,11 @@
 //#import "MetadataValues.h"
 //#import "Metadata.h"
 
+#pragma clang diagnostic ignored "-Weverything"
+
+#import "swift/Demangling/Demangler.h"
+
+#pragma clang diagnostic pop
 
 typedef struct  {
     uint16_t mod_off : 16;
@@ -237,14 +242,19 @@ SWIFT_PART:
                     if (xref_options.swift_mode && [self demangleSwiftName:supercls_name offset:&off]) {
                         strncpy(modname, &supercls_name[off.mod_off], off.mod_len);
                         modname[off.mod_len] = '\00';
-                        printf(" : %s%s%s%s", color, modname, &supercls_name[off.cls_off], color_end());
+                        auto context = Context();
+                        auto str = StringRef( &supercls_name[off.cls_off]);
+                        
+                        ;
+                        printf(" : %s%s%s%s", color, modname, context.demangleSymbolAsString(str).c_str(), color_end());
                     } else {
                         class_ro_t *ro = (class_ro_t *)DATABUF([self ROOffsetAddressForObjCClass:buff[i]]);
                         if (!supercls_name && (ro->flags & RO_ROOT) == 0) {
                             printf(" %sbug! \"%s\" shouldn't be ROOT (report this to Derek) (0x%lu) %s", dcolor(DSCOLOR_RED), name,  resolvedAddress, color_end());
                         }
-                        
-                        printf(" : %s%s%s", color, supercls_name ? supercls_name : "<ROOT>", color_end());
+                        auto context = Context();
+                        auto str = StringRef( supercls_name);
+                        printf(" : %s%s%s", color, supercls_name ? context.demangleSymbolAsString(str).c_str() : "<ROOT>", color_end());
                     }
                 }
                 
@@ -280,6 +290,7 @@ SWIFT_PART:
                     swift_class *meta = (swift_class *)resolvedMetaAddress;
                     
                     
+                    printf("HI");
 //                    int32_t flags =  ResolveSwiftDescriptorAddress(s->description, flags);
 //                    int32_t parent =  ResolveSwiftDescriptorAddress(s->description, parentOffset);
 //                    intptr_t parentAddress = parent + (uintptr_t)&s->description->parentOffset;
@@ -288,8 +299,8 @@ SWIFT_PART:
 //
 //                    int32_t property4Offset = ResolveSwiftDescriptorAddress(s->description, metadataAccessorOffset);
 //                    uintptr_t property4 = (uintptr_t)(property4Offset + (uintptr_t)&s->description->metadataAccessorOffset);
-                    char * name = (char*)TEST(s->description,    namedOffset);
-                    uintptr_t fields = TEST(s->description,    fieldsOffset);
+//                    char * name = (char*)TEST(s->description,    namedOffset);
+//                    uintptr_t fields = TEST(s->description,    fieldsOffset);
 //                    uintptr_t reflection = TEST(s->description,    reflectionOffset);
 //                    uintptr_t fieldOffset = TEST(s->description,    fieldsOffset);
                     
@@ -423,7 +434,7 @@ SWIFT_PART:
 - (BOOL)demangleSwiftName:(const char *)name offset:(d_offsets *)f {
 
     return NO;
-    [self loadSwiftDemangle];
+//    [self loadSwiftDemangle];
 //    const char * ff = [self demangledSwiftName:name];
 //    "_TtC9SwiftTest14ViewController"
     if (!name || strlen(name) == 0) {
@@ -453,5 +464,4 @@ SWIFT_PART:
     f->mod_off++;
     return YES;
 }
-
 @end

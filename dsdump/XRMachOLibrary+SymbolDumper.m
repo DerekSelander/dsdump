@@ -14,18 +14,15 @@
 #import "XRMachOLibrary+Swift.h"
 @implementation XRMachOLibrary (SymbolDumper)
 
-/********************************************************************************
- // Dump symbols
- ********************************************************************************/
 
 - (void)dumpSymbols {
     
-    if (xref_options.swift_mode) {
-        [self dumpSwiftTypes];
-        return; 
-    }
     if (xref_options.objectiveC_mode) {
         [self dumpObjectiveCClasses];
+        return;
+    }
+    if (xref_options.swift_mode && [self preparseSwiftTypes]) {
+        [self dumpSwiftTypes];
         return;
     }
     
