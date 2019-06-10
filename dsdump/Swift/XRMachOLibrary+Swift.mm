@@ -8,7 +8,9 @@
 
 #import <dlfcn.h>
 #import "XRMachOLibrary+Swift.h"
+#import "XRSymbolEntry.h"
 #import "objc_.h"
+#import "XRMachOLibrary+ObjectiveC.h"
 #import "string.h"
 #import <unordered_map>
 #import <vector>
@@ -28,17 +30,26 @@
 
 /// declarations
 const char *getKindString(swift::ContextDescriptorKind kind);
+const char *getKindMethodString(swift::MethodDescriptorFlags::Kind kind);
 static char *demangledName(const char* mangledTypeName);
 
 using namespace std;
 using namespace swift;
 
+
+int testShit () {return 4;}
+
+static NSMutableDictionary * __ivarsDictionary = nil;
+
 // Used to sort all the type references by module
 using DescriptorDict =  unordered_map<const TargetModuleContextDescriptor<InProcess>*, vector<TypeContextDescriptor*>>;
-static DescriptorDict descriptorDict;
+static DescriptorDict moduleDescriptorDictionary;
 
-static auto simplifiedOptions = swift::Demangle::DemangleOptions::SimplifiedUIDemangleOptions();
-static auto context = Context();
+/**
+ Swift Type Descriptors currently don't give enough deets about the methods, so using objc, to get that missing info
+ This will associate the type descriptor with the corresponding class found in the ObjC classes (__objc_classlist)
+ */
+unordered_map<TargetClassDescriptor<InProcess>*, swift_class*> swiftDescriptorToClassDictionary;
 
 @implementation XRMachOLibrary (Swift)
 
@@ -46,6 +57,13 @@ static auto context = Context();
  // Dump symbols
  ********************************************************************************/
 
+/**
+  The swift5_types is an array of relative pointers to the different Swift types compiled,
+  This needs to sort those types by the corresponding module (there could be multiple
+ 
+  In addition, I am grabbing the associated ObjC class and pairing it with the appropriate type descriptor
+  If the type descriptor is a Swift class. This is stored in swiftDescriptorToClassDictionary
+ */
 - (BOOL)preparseSwiftTypes {
     struct section_64* swiftTypes = (struct section_64*)[self.sectionCommandsDictionary[@"__TEXT.__swift5_types"] pointerValue];
     if (!swiftTypes) {
@@ -57,38 +75,74 @@ static auto context = Context();
     
     int32_t *typeOffsets = (int32_t*)swiftTypes->addr;
     for (int i = 0; i < swiftTypes->size / sizeof(uint32_t); i++) {
-        
-        int32_t typeOffset = FROMDISK(&typeOffsets[i]);
+        int32_t typeOffset = TODISKDEREF(&typeOffsets[i]);
         uintptr_t resolvedTypedOffset = (uintptr_t)(&typeOffsets[i]) + typeOffset;
-        // TODO RE-add FROMDISK_PTR
-        TypeContextDescriptor* descriptor = FROMDISK_PTR(reinterpret_cast<TypeContextDescriptor*>(resolvedTypedOffset));
-
+        TypeContextDescriptor* descriptor = TODISK(reinterpret_cast<TypeContextDescriptor*>(resolvedTypedOffset));
         const TargetModuleContextDescriptor<InProcess> * module = descriptor->getModuleContext();
-        descriptorDict.emplace(module, vector<TypeContextDescriptor*>());
-        descriptorDict.at(module).push_back(descriptor);
+        moduleDescriptorDictionary.emplace(module, vector<TypeContextDescriptor*>());
+        moduleDescriptorDictionary.at(module).push_back(descriptor);
+    }
+    
+    ///////////////////////
+    // swiftDescriptorToClassDictionary logic
+    //////////////////////////
+    struct section_64* class_list = (struct section_64* )[self.sectionCommandsDictionary[@"__DATA.__objc_classlist"] pointerValue];
+    if (!class_list) { class_list = (struct section_64* )[self.sectionCommandsDictionary[@"__DATA_CONST.__objc_classlist"] pointerValue]; }
+    if (!class_list) {
+        perror("Couldn't find __objc_classlist segment?!\n");
+        return YES;
+    }
+
+    swift_class **classes = TODISK(reinterpret_cast<swift_class**>(class_list->addr));
+    int numClasses = class_list->size / PTR_SIZE;
+  
+#define FAST_IS_SWIFT_LEGACY 1 // f'ing swift devs changing their minds every 3 seconds...
+#define FAST_IS_SWIFT_STABLE 2
+    
+    for (int i = 0; i < numClasses; i++) {
+        auto swiftClass = TODISK(classes[i]);
+        if (!(swiftClass->bits & (FAST_IS_SWIFT_LEGACY|FAST_IS_SWIFT_STABLE))) {
+            continue;
+        }
+        // classes[i] will be the load address,
+        swiftDescriptorToClassDictionary[TODISK(swiftClass->description)] = classes[i];
     }
     
     return YES;
 }
 
-//- (void)checkCorrectReflectionVersion {
-////    ___swift_reflection_version
-//    char *strtab = self.str_symbols;
-//    for (int i = self.dysymtab->ilocalsym; i < self.dysymtab->nlocalsym + self.dysymtab->ilocalsym; i++) {
-//        struct nlist_64 symbol = self.symbols[i];
-//        if ( strcmp(&strtab[symbol.n_un.n_strx], "___swift_reflection_version") == 0) {
-//            uint16_t reflection_version = *(uint16_t *)DATABUF(symbol.n_value + self.file_offset);
-//            if (reflection_version > SWIFT_REFLECTION_METADATA_VERSION) {
-//                printf("%sNew swift reflection version, tell Derek what binary you're using\n%s", dcolor(DSCOLOR_RED), color_end());
-//            }
-//            return;
-//        }
-//    }
-//}
+
+
+/*
+ 
+ SWIFT_PART:
+ if (xref_options.swift_mode && [self isSwiftClass:resolvedAddress]) {
+ uintptr_t classSizeOffset_FO = [self translateLoadAddressToFileOffset:resolvedAddress + offsetof(swift_class, classSize) useFatOffset:YES];
+ uint32_t classSize = *(uint32_t *)DATABUF(classSizeOffset_FO);
+ uintptr_t classAddressOffset_FO = [self translateLoadAddressToFileOffset:(resolvedAddress + offsetof(struct swift_class_t, classAddressOffset)) useFatOffset:YES];
+ uint32_t classAddressOffset = *(uint32_t *)DATABUF(classAddressOffset_FO);
+ 
+ 
+ uintptr_t description_FO = [self translateLoadAddressToFileOffset:(resolvedAddress + offsetof(struct swift_class_t, swiftMethods)) useFatOffset:YES];
+ uintptr_t *curSwiftMethod = (uintptr_t *)DATABUF(description_FO);
+ 
+ int swiftMethodCount = (classSize - classAddressOffset - offsetof(struct swift_class_t, swiftMethods)) / PTR_SIZE;
+ for (int i = 1; i < swiftMethodCount; i++) {
+ //            if (!curSwiftMethod[i]) { continue; }
+ XRSymbolEntry *entry = self.symbolEntry[@(curSwiftMethod[i])];
+ NSString *resolvedSwiftProperty = __ivarsDictionary[@(curSwiftMethod[i])];
+ if (!entry.name && resolvedSwiftProperty) {
+ continue;
+ }
+ std::string str;
+ printf("\t%s0x%011lx%s %s%s%s\n", dcolor(DSCOLOR_GRAY), (long)curSwiftMethod[i], color_end(), dcolor(DSCOLOR_CYANISH), dshelpers::simple_demangle(entry.name, str), color_end());
+ }
+ }
+
+ */
 
 - (void)dumpSwiftTypes {
     
-
     struct section_64* swiftTypes = (struct section_64*)[self.sectionCommandsDictionary[@"__TEXT.__swift5_types"] pointerValue];
     if (!swiftTypes) {
         if ([self.sectionCommandsDictionary[@"__TEXT.__swift4_types"] pointerValue]) {
@@ -98,8 +152,7 @@ static auto context = Context();
     }
     
 
-    for ( auto ptr = descriptorDict.begin(); ptr != descriptorDict.end(); ++ptr ) {
-        
+    for ( auto ptr = moduleDescriptorDictionary.begin(); ptr != moduleDescriptorDictionary.end(); ++ptr ) {
         
         auto module = ptr->first;
         if ((module->Name.isNull() || module->isCImportedContext()) && xref_options.verbose < VERBOSE_4) {
@@ -118,27 +171,56 @@ static auto context = Context();
             switch (kind) {
                 case ContextDescriptorKind::Struct: {
                     
-                    TargetStructDescriptor<InProcess>* structDescriptor = static_cast<TargetStructDescriptor<InProcess> *>(descriptor);
+                    auto structDescriptor = static_cast<TargetStructDescriptor<InProcess> *>(descriptor);
                     [self dumpTargetTypeContextDescriptorFields:structDescriptor];
-                    
                     
                     break;
                 } case ContextDescriptorKind::Class: {
-                    TargetClassDescriptor<InProcess>* classDescriptor = static_cast<TargetClassDescriptor<InProcess> *>(descriptor);
+                    auto classDescriptor = static_cast<TargetClassDescriptor<InProcess> *>(descriptor);
+
+                    auto it = swiftDescriptorToClassDictionary.find(classDescriptor);
+                    //                    if (it != swiftDescriptorToClassDictionary.end()) {
+                    if (it == swiftDescriptorToClassDictionary.end()) { continue; }
+                    auto swiftClass_load = it->second;
+                    //                        auto load = FROMDISK(classDescriptor);
                     
-                    auto  cls = classDescriptor->getMethodDescriptors();
+                    auto swiftClass_disk = TODISK(swiftClass_load);
+                    
+                    
+                    std::string str;
+                    DSCOLOR color;
+                    const char *demangledName = NULL;
+                    // Print out parent
+                    if (swiftClass_disk->superclass) {
+                        auto supercls_disk = TODISK(swiftClass_disk->superclass);
+                        auto rodata_disk = TODISK(supercls_disk->rodata());
+                        auto mangledName = TODISK(rodata_disk->name);
+                        
+                        dshelpers::simple_demangle(mangledName, str);
+                        demangledName = str.c_str();
+                        color = DSCOLOR_MAGENTA;
+                    } else {
+                        XRBindSymbol *bindSymbol = self.addressObjCDictionary[@((uintptr_t)&swiftClass_load->superclass)];
+                        
+                        auto name = bindSymbol.name.UTF8String;
+                        if (strnstr(name, "_OBJC_CLASS_$_", strlen("_OBJC_CLASS_$_"))) {
+                            name = &name[strlen("_OBJC_CLASS_$_")];
+                        }
+                        dshelpers::simple_demangle(name, str);
+                        demangledName = str.c_str();
+                        
+                        color = DSCOLOR_GREEN;
+                    }
+                    
+                    printf(" : %s%s%s\n", dcolor(color), demangledName, color_end());
+                    
+                    // Printed parent, now to properties...
+
+//                    } //           //                    if (it != swiftDescriptorToClassDictionary.end()) {
+                    
                  
-                    if (!classDescriptor->SuperclassType.isNull()) {
-                        auto superclassMangledName = classDescriptor->SuperclassType.get();
-                        auto superclassName = context.demangleTypeAsString(superclassMangledName, simplifiedOptions);
-                        auto someClass = classDescriptor->getObjCResilientClassStub();
-                        
-                        printf(" : %s", superclassName.c_str());
-                    }
-                    if (classDescriptor->hasResilientSuperclass()) {
-                        printf("yay!");
-                    }
-                        
+
+                    
                     [self dumpTargetTypeContextDescriptorFields:classDescriptor];
                     [self dumpSwiftMethods:classDescriptor];
                     break;
@@ -163,14 +245,84 @@ static auto context = Context();
         }
         putchar('}');
     }
+    
+    putchar('\n');
 }
 
 
 - (void)dumpSwiftMethods:(TargetClassDescriptor<InProcess>*)classDescriptor {
     
     auto methodDescriptors = classDescriptor->getMethodDescriptors();
-    if (xref_options.verbose >= VERBOSE_3 && methodDescriptors.size()) {
+    if (xref_options.verbose >= VERBOSE_4 && methodDescriptors.size()) {
         printf("\n%s\t// Swift methods%s\n", dcolor(DSCOLOR_GRAY), color_end());
+    }
+//    auto swiftDescriptorToClassDictionary.find(classDescriptor);
+    
+    auto it = swiftDescriptorToClassDictionary.find(classDescriptor);
+    if (it == swiftDescriptorToClassDictionary.end()) {
+        return;
+    }
+    
+    auto swiftClass_load = it->second;
+    auto swiftClass_disk = TODISK(swiftClass_load);
+    auto rodata_disk = TODISK(swiftClass_disk->rodata());
+    auto objcMethods = rodata_disk->baseMethodList;
+
+//    swiftClass_disk->classAddressOffset /
+    
+    
+//    swiftClass_disk->
+    
+//    uintptr_t classSizeOffset_FO = [self translateLoadAddressToFileOffset:resolvedAddress + offsetof(swift_class, classSize) useFatOffset:YES];
+//    uint32_t classSize = *(uint32_t *)DATABUF(classSizeOffset_FO);
+//    uintptr_t classAddressOffset_FO = [self translateLoadAddressToFileOffset:(resolvedAddress + offsetof(struct swift_class_t, classAddressOffset)) useFatOffset:YES];
+//    uint32_t classAddressOffset = *(uint32_t *)DATABUF(classAddressOffset_FO);
+//
+//
+//    uintptr_t description_FO = [self translateLoadAddressToFileOffset:(resolvedAddress + offsetof(struct swift_class_t, swiftMethods)) useFatOffset:YES];
+//    uintptr_t *curSwiftMethod = (uintptr_t *)DATABUF(description_FO);
+//
+//    int swiftMethodCount = (classSize - classAddressOffset - offsetof(struct swift_class_t, swiftMethods)) / PTR_SIZE;
+//    for (int i = 1; i < swiftMethodCount; i++) {
+//        //            if (!curSwiftMethod[i]) { continue; }
+//        XRSymbolEntry *entry = self.symbolEntry[@(curSwiftMethod[i])];
+//        NSString *resolvedSwiftProperty = __ivarsDictionary[@(curSwiftMethod[i])];
+//        if (!entry.name && resolvedSwiftProperty) {
+//            continue;
+//        }
+//        std::string str;
+//        printf("\t%s0x%011lx%s %s%s%s\n", dcolor(DSCOLOR_GRAY), (long)curSwiftMethod[i], color_end(), dcolor(DSCOLOR_CYANISH), dshelpers::simple_demangle(entry.name, str), color_end());
+//    }
+//    }
+    
+    
+    char stripped[PATH_MAX];
+    snprintf(stripped, PATH_MAX, "%s%s%s", dcolor(DSCOLOR_RED), "<stripped>", color_end());
+    
+    for (auto &pt : methodDescriptors) {
+     
+        auto flags = pt.Flags;
+        if (pt.Impl.isNull()) { continue; }
+        auto methodAddress = reinterpret_cast<uintptr_t>(FROMDISK(pt.Impl.get()));
+        auto entry = self.symbolEntry[@(methodAddress)];
+        
+        std::string str;
+        dshelpers::simple_demangle(entry.name, str);
+        
+        
+        bool isInstance = pt.Flags.isInstance();
+//        flags.getKind()
+        
+        
+        const char *resolvedMethodName = str.length() == 0 ? stripped : str.c_str();
+        printf("\t%s%p%s%s %s func %s%s", dcolor(DSCOLOR_GRAY), methodAddress, color_end(), dcolor(DSCOLOR_BOLD), isInstance ? "" : " class", resolvedMethodName, color_end());
+//        pt.Impl
+        
+        if (xref_options.verbose >= VERBOSE_3) {
+            printf(" %s// %s %s", dcolor(DSCOLOR_GRAY), getKindMethodString(flags.getKind()), color_end());
+        }
+        
+        putchar('\n');
     }
 }
 
@@ -181,7 +333,7 @@ static auto context = Context();
     auto fields = contextDescriptor->Fields.get();
     if (!fields) { return;  }
     auto numFields = fields->NumFields;
-    if (xref_options.verbose >= VERBOSE_3 && numFields > 0) {
+    if (xref_options.verbose >= VERBOSE_4 && numFields > 0) {
         printf("\n%s\t// Properties%s", dcolor(DSCOLOR_GRAY), color_end());
     }
     if (numFields) {
@@ -192,11 +344,12 @@ static auto context = Context();
     }
 
     ContextDescriptorKind kind = contextDescriptor->Flags.getKind();
-
-    auto fieldDescriptor = contextDescriptor->Fields.get()->getFields();
+    auto fieldRecords = contextDescriptor->Fields.get()->getFields();
 
     
-    for (auto &pt : fieldDescriptor) {
+    auto contextDescriptor_load = FROMDISK(contextDescriptor);
+
+    for (auto &pt : fieldRecords) {
         
         const char * declarationNameType;
         if (kind ==  ContextDescriptorKind::Enum) {
@@ -207,15 +360,48 @@ static auto context = Context();
 
         auto mangledTypeName = (pt.MangledTypeName.get());
         auto fieldName = (pt.FieldName.get());
-     
+
         
-        std::string demangledName;
-        if (mangledTypeName) {
-            auto strref = StringRef(mangledTypeName);
-            demangledName = context.demangleTypeAsString(strref, simplifiedOptions);
-        }
+        std::string str;
+        const char* demangledName = dshelpers::simple_type(mangledTypeName, str);
         
-        printf("\t%s %s %s %s \n", declarationNameType, fieldName, mangledTypeName ? ":" : "", mangledTypeName? demangledName.c_str() : "");
+        printf("\t%s%s %s %s %s %s\n", dcolor(DSCOLOR_GREEN), declarationNameType, fieldName, mangledTypeName ? ":" : "", mangledTypeName? demangledName : "", color_end());
+    }
+    
+    putchar('\n');
+}
+
+- (void)dumpSwiftInstanceVariablesWithResolvedAddress:(uintptr_t)resolvedAddress {
+    resolvedAddress = ARM64e_PTRMASK(resolvedAddress);
+    intptr_t ivarList_FO = [self offsetAddressForObjCClass:resolvedAddress forType:OffSetTypeIvar];
+    
+    ivar_list_t *ivarList = (ivar_list_t *)DATABUF(ivarList_FO);
+    ivarList = (ivar_list_t *)ARM64e_PTRMASK((uintptr_t)ivarList);
+    
+    
+    uint32_t ivarCount = *(uint32_t *)DATABUF(ivarList_FO + offsetof(ivar_list_t, count));
+    
+     __ivarsDictionary = [NSMutableDictionary dictionaryWithCapacity:ivarCount];
+    ivar_t *ivars = (ivar_t *)DATABUF(ivarList_FO + offsetof(ivar_list_t, ivars));
+    if (ivarCount && ivarList_FO != FILE_OFFSET_UNKNOWN) {
+        putchar('{');
+        putchar('\n');
+    }
+    for (int i = 0; ivarList_FO != FILE_OFFSET_UNKNOWN && i < ivarCount; i++) {
+        ivar_t ivar = ivars[i];
+        uintptr_t ivarOffset_FO = [self translateLoadAddressToFileOffset:(uintptr_t)ivar.offset useFatOffset:YES];
+        uint32_t ivarOffset = *(uint32_t*)DATABUF(ivarOffset_FO);
+        
+        uintptr_t ivarName_FO = [self translateLoadAddressToFileOffset:(uintptr_t)ivar.name useFatOffset:YES];
+        char* ivarName = (char *)DATABUF(ivarName_FO);
+        
+        __ivarsDictionary[@(ivarOffset)] = [NSString stringWithUTF8String:ivarName];
+        printf("\t+0x%04x %s (0x%x)\n", ivarOffset, ivarName, ivar.size);
+    }
+    
+    if (ivarCount && ivarList_FO != FILE_OFFSET_UNKNOWN) {
+        putchar('}');
+        putchar('\n');
     }
     
 }
@@ -245,6 +431,27 @@ const char *getKindString(swift::ContextDescriptorKind kind) {
             return "protocol";
         case swift::ContextDescriptorKind::Type_Last:
             return "last<unknown>";
+    }
+    
+    return "<unknown>";
+}
+
+
+const char *getKindMethodString(swift::MethodDescriptorFlags::Kind kind) {
+    switch (kind) {
+            /// This context descriptor represents a module.
+        case swift::MethodDescriptorFlags::Kind::Method:
+            return "method";
+        case swift::MethodDescriptorFlags::Kind::Init:
+            return "init";
+        case swift::MethodDescriptorFlags::Kind::Getter:
+            return "getter";
+        case swift::MethodDescriptorFlags::Kind::Setter:
+            return "setter";
+        case swift::MethodDescriptorFlags::Kind::ModifyCoroutine:
+            return "modifyCoroutine";
+        case swift::MethodDescriptorFlags::Kind::ReadCoroutine:
+            return "readCoroutine";
     }
     
     return "<unknown>";

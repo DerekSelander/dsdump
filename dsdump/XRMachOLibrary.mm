@@ -13,6 +13,7 @@
 #import "XRMachOLibrary+Opcode.h"
 #import "XRMachOLibrary+FAT.h"
 #import "XRSymbolEntry.h"
+#import "XRMachOLibraryCplusHelpers.h"
 #include <unordered_map>
 
 using namespace std;
@@ -22,6 +23,57 @@ using namespace std;
 @property (nonatomic, assign) int maxlibNameLength;
 @property (nonatomic, assign) std::unordered_map<uint64_t, XRSymbolEntry*> exports;
 @end
+
+namespace llvm {
+    int EnableABIBreakingChecks = 0;
+}
+
+
+namespace dshelpers {
+    swift::Demangle::DemangleOptions simplifiedOptions = swift::Demangle::DemangleOptions::SimplifiedUIDemangleOptions();
+    Context context = Context();
+    
+    const char *simple_demangle(char *mangled, std::string &strout_ref, swift::Demangle::DemangleOptions options) {
+        if (!mangled) { return nullptr; }
+        auto str = StringRef(mangled);
+        strout_ref = context.demangleSymbolAsString(str, options);
+        return strout_ref.c_str();
+    }
+    
+    const char* simple_demangle(const char *mangled, std::string &strout_ref, swift::Demangle::DemangleOptions options) {
+        if (!mangled) { return nullptr; }
+        auto str = StringRef(mangled);
+        strout_ref = context.demangleSymbolAsString(str, options);
+        return strout_ref.c_str();
+    }
+    
+    const char *simple_demangle(StringRef mangled, std::string &strout_ref, swift::Demangle::DemangleOptions options) {
+        strout_ref = context.demangleSymbolAsString(mangled, options);
+        return strout_ref.c_str();
+    }
+    
+    const char *simple_type(StringRef type, std::string &strout_ref) {
+        strout_ref = context.demangleTypeAsString(type, simplifiedOptions);
+        return strout_ref.c_str();
+    }
+    
+    const char *simple_type(char* type, std::string &strout_ref) {
+        if (!type)  { return nullptr; }
+        auto str = StringRef(type);
+        strout_ref = context.demangleTypeAsString(str, simplifiedOptions);
+        return strout_ref.c_str();
+    }
+    const char *simple_type(const char* type, std::string &strout_ref) {
+        if (!type)  { return nullptr; }
+        auto str = StringRef(type);
+        strout_ref = context.demangleTypeAsString(str, simplifiedOptions);
+        return strout_ref.c_str();
+    }
+    
+    
+}
+
+////////////////////////////////////////////////////////////////////////////////
 
 @implementation XRMachOLibrary
 
@@ -244,10 +296,8 @@ using namespace std;
     if (xref_options.objectiveC_mode) {
         [self preparseUndefinedObjectiveCSymbols];
         [self parseDYLDExports];
-    }
-    
-    // Swift can contains methods stripped out, that are given by exported info
-    if (xref_options.objectiveC_mode) {
+        
+        // Swift can contains methods stripped out, that are given by exported info
         [self parseLocalSymbolsInSymbolTable];
     }
     
@@ -353,13 +403,13 @@ using namespace std;
     return 0;
 }
 
-- (uintptr_t)translateOffsetToLoadAddress:(uintptr_t)offset {
+- (uintptr_t)translateOffsetToLoadAddress:(intptr_t)offset {
     uintptr_t f = -self.file_offset;
     for (int i = 1; i < self.sectionCommandsArray.count; i++) {
         NSNumber *sectionNumber = self.sectionCommandsArray[i];
         struct section_64 *sec = (struct section_64 *)sectionNumber.pointerValue;
         
-        if (sec->offset <= (offset + f) && (offset + f) < sec->offset + sec->size) {
+        if (sec->offset <= (offset + f) && (offset + f) < (sec->offset + sec->size)) {
             return offset - sec->offset + sec->addr + f;
         }
     }

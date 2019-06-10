@@ -8,12 +8,12 @@
 
 import Cocoa
 
-class SubclassClass  {
-    var abcabc = "hi"
-    func sometest()  {}
-}
-
-
+//class SubclassClass : YOYO  {
+//    var abcabc = "hi"
+//    func sometest()  {}
+//}
+//
+//
 //struct testStruct  {
 //    let f : String? = "some text"
 //    var somevar = "some yay"
@@ -25,15 +25,15 @@ class SubclassClass  {
 //    var view : NSView!
 //    func dosomething () { print("yay") }
 //}
-
-
-
+//
+//
+//
 //enum someEnum {
 //     case  aVal
 //    case  bVal
 //}
-
-
+//
+//
 //enum subclassedEnum : Error {
 ////    typealias RawValue = <#type#>
 //
@@ -41,7 +41,7 @@ class SubclassClass  {
 //    case bVal
 //    case c
 //}
-
+//
 //class YOYO: NSViewController {
 //
 //    let someDouble : Double = 3.0
@@ -52,33 +52,43 @@ class SubclassClass  {
 //    func testyay() {
 //        print("yay")
 //    }
-    
+//
 //    class func someotherclassTest() {
-//        
-//        
+//
+//
 //    }
 //    private func someothertest() {
 //        print("woot")
 //    }
-//    
+//
 //    @objc func someobjcmessage(num : Int, str : String) {
-//    
+//
 //        YOYO.classTest()
 //    }
-//    
+//
 //    static func >(left: YOYO, right: YOYO) -> Bool {
 //        return true
-//        
+//
 //    }
-//    
+//
 //    static func staticTest() {
-//    
+//
 //        let a = YOYO()
 //        let b = YOYO()
 //        if (a > b) { }
 //    }
-//    
-//    class func classTest() {
-//        
-//    }
 //}
+
+class YOYO : classTest {
+    let test : String! = "HI"
+}
+class classTest {
+    
+    init(test: Int) {
+        print("HI")
+    }
+    let aDouble: Double = 0
+    func atest() { }
+}
+
+

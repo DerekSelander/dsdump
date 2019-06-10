@@ -14,6 +14,24 @@
 #define RO_META               (1<<0)
 #define RO_ROOT               (1<<1)
 
+#pragma clang diagnostic ignored "-Weverything"
+
+#import "swift/ABI/MetadataValues.h"
+#import "swift/ABI/Metadata.h"
+
+
+#pragma clang diagnostic pop
+
+template <typename T>
+class PointerOffsetType {
+    int32_t offset;
+public:
+    T get() {
+        return reinterpret_cast<uintptr_t>(this) + offset;
+    }
+};
+
+
 /*****************************************************************
  methods
  *****************************************************************/
@@ -33,6 +51,8 @@ typedef struct {
 /*****************************************************************
  ivars
  *****************************************************************/
+
+
 
 typedef struct {
     int32_t *offset;
@@ -353,7 +373,7 @@ typedef struct {
 // Swift class heeeeeeeeeeeeeeeereeeeeeeee
 typedef struct swift_class_t {
     uintptr_t isa_cls;
-    uintptr_t superclass;
+    swift_class_t* superclass;
     void *_buckets;
     uint32_t _mask;
     uint32_t _occupied;
@@ -366,9 +386,13 @@ typedef struct swift_class_t {
     
     uint32_t classSize;
     uint32_t classAddressOffset;
-    swift_descriptor *description;
+    swift::TargetClassDescriptor<swift::InProcess> *description;
     void *ivar_destroyer;
     uintptr_t *swiftMethods;
+    
+    class_ro_t * rodata() {
+        return (class_ro_t *)(bits & FAST_DATA_MASK);
+    }
     // ...
     
 } swift_class;

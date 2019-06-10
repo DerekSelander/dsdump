@@ -13,31 +13,16 @@
 #import "XRMachOLibrary+Swift.h"
 #import <stddef.h>
 #import "XRSymbolEntry.h"
-//#import "Metadata.h"
-//#import "MetadataValues.h"
-//#import "Metadata.h"
+
 
 #pragma clang diagnostic ignored "-Weverything"
-
-#import "swift/Demangling/Demangler.h"
-
+    #import "swift/Demangling/Demangler.h"
+    #import "XRMachOLibraryCplusHelpers.h"
 #pragma clang diagnostic pop
 
-typedef struct  {
-    uint16_t mod_off : 16;
-    uint16_t mod_len : 16;
-    uint16_t cls_off : 16;
-//    uint16_t cls_len : 10;
-    BOOL success : 1;
-} d_offsets;
 
 
-// OffsetType used in
-typedef enum {
-    OffSetTypeIvar,
-    OffSetTypeMethods,
-    OffSetTypeProperties
-} OffSetType;
+
 
 // Swift uses offset references for ivars when referencing methods
 static NSMutableDictionary *__ivarsDictionary = nil;
@@ -67,7 +52,7 @@ static NSDictionary <NSString*, NSNumber*> *blacklistedSelectors = nil;
         if (xref_options.debug) {
             dprintf(STDERR_FILENO, "%sCouldn't find method list! (%p)%s\n", dcolor(DSCOLOR_RED), (void*)resolvedAddress, color_end());
         }
-        goto SWIFT_PART;
+        return;
     }
     
     methodsList = (method_list_t *)DATABUF(methodsList_FO);
@@ -91,28 +76,8 @@ static NSDictionary <NSString*, NSNumber*> *blacklistedSelectors = nil;
         printf("%s0x%011lx%s %s%c[%s %s]%s\n", dcolor(DSCOLOR_GRAY), methodAddress, color_end(), dcolor(DSCOLOR_BOLD), "-+"[isMeta], name, methodName, color_end());
     }
     
-SWIFT_PART:
-    if (xref_options.swift_mode && [self isSwiftClass:resolvedAddress]) {
-        uintptr_t classSizeOffset_FO = [self translateLoadAddressToFileOffset:resolvedAddress + offsetof(swift_class, classSize) useFatOffset:YES];
-        uint32_t classSize = *(uint32_t *)DATABUF(classSizeOffset_FO);
-        uintptr_t classAddressOffset_FO = [self translateLoadAddressToFileOffset:(resolvedAddress + offsetof(struct swift_class_t, classAddressOffset)) useFatOffset:YES];
-        uint32_t classAddressOffset = *(uint32_t *)DATABUF(classAddressOffset_FO);
-    
-        
-        uintptr_t description_FO = [self translateLoadAddressToFileOffset:(resolvedAddress + offsetof(struct swift_class_t, swiftMethods)) useFatOffset:YES];
-        uintptr_t *curSwiftMethod = (uintptr_t *)DATABUF(description_FO);
-        
-        int swiftMethodCount = (classSize - classAddressOffset - offsetof(struct swift_class_t, swiftMethods)) / PTR_SIZE;
-        for (int i = 1; i < swiftMethodCount; i++) {
-//            if (!curSwiftMethod[i]) { continue; }
-            XRSymbolEntry *entry = self.symbolEntry[@(curSwiftMethod[i])];
-            NSString *resolvedSwiftProperty = __ivarsDictionary[@(curSwiftMethod[i])];
-            if (!entry.name && resolvedSwiftProperty) {
-                continue;
-            }
-            printf("\t%s0x%011lx%s %s%s%s\n", dcolor(DSCOLOR_GRAY), (long)curSwiftMethod[i], color_end(), dcolor(DSCOLOR_CYANISH), entry.name, color_end());
-        }
-    }
+//SWIFT_PART:
+  
 }
 
 /********************************************************************************
@@ -209,10 +174,11 @@ SWIFT_PART:
                 const char *name = [self nameForObjCClass:buff[i]];
                 
                 d_offsets off;
-                if (xref_options.swift_mode && [self demangleSwiftName:name offset:&off]) {
-                    strncpy(modname, &name[off.mod_off], off.mod_len);
-                    modname[off.mod_len] = '\00';
-                    printf("0x%011lx %s%s.%s%s", resolvedAddress,  dcolor(DSCOLOR_CYAN), modname, &name[off.cls_off], color_end());
+                if (xref_options.swift_mode) {
+
+                    std::string str;
+                    const char *n = dshelpers::simple_demangle(name, str);
+                    printf("0x%011lx %s%s%s", resolvedAddress,  dcolor(DSCOLOR_CYAN), dshelpers::simple_demangle(name, str), color_end());
                     
                 } else {
                     printf("0x%011lx %s%s%s", resolvedAddress,  dcolor(DSCOLOR_CYAN), name, color_end());
@@ -239,14 +205,14 @@ SWIFT_PART:
                         }
                     }
                     color = supercls_name ? color : dcolor(DSCOLOR_RED);
-                    if (xref_options.swift_mode && [self demangleSwiftName:supercls_name offset:&off]) {
-                        strncpy(modname, &supercls_name[off.mod_off], off.mod_len);
-                        modname[off.mod_len] = '\00';
-                        auto context = Context();
-                        auto str = StringRef( &supercls_name[off.cls_off]);
-                        
-                        ;
-                        printf(" : %s%s%s%s", color, modname, context.demangleSymbolAsString(str).c_str(), color_end());
+                    if (xref_options.swift_mode &&  demangleSwiftName(supercls_name, &off)) {
+//                        strncpy(modname, &supercls_name[off.mod_off], off.mod_len);
+//                        modname[off.mod_len] = '\00';
+//                        auto context = Context();
+//                        auto str = StringRef( &supercls_name[off.cls_off]);
+//
+//                        ;
+                        printf(" : %s%s%s%s", color, modname, supercls_name, color_end());
                     } else {
                         class_ro_t *ro = (class_ro_t *)DATABUF([self ROOffsetAddressForObjCClass:buff[i]]);
                         if (!supercls_name && (ro->flags & RO_ROOT) == 0) {
@@ -431,21 +397,22 @@ SWIFT_PART:
     return buff & (FAST_IS_SWIFT_LEGACY|FAST_IS_SWIFT_STABLE) ? YES : NO;
 }
 
-- (BOOL)demangleSwiftName:(const char *)name offset:(d_offsets *)f {
 
-    return NO;
-//    [self loadSwiftDemangle];
-//    const char * ff = [self demangledSwiftName:name];
-//    "_TtC9SwiftTest14ViewController"
+
+@end
+
+
+
+BOOL demangleSwiftName(const char *name, d_offsets *f) {
+    
     if (!name || strlen(name) == 0) {
         f->success = NO;
         return NO;
     }
-    if (!strnstr(name, "_TtC", 4)) {
+    if (!strstr(name, "_OBJC_CLASS_$__TtCs")) {
         f->success = NO;
         return NO;
     }
-    
     
     int index = strlen("_TtC");
     f->mod_off = index;
@@ -464,4 +431,3 @@ SWIFT_PART:
     f->mod_off++;
     return YES;
 }
-@end
