@@ -9,7 +9,6 @@
 #import "XRMachOLibrary+SymbolDumper.h"
 #import "XRMachOLibrary+Opcode.h"
 #import "XRMachOLibrary+ObjectiveC.h"
-//#import "XRMachOLibrary_cplus.h"
 #import "XRSymbolEntry.h"
 #import "XRMachOLibrary+Swift.h"
 @implementation XRMachOLibrary (SymbolDumper)

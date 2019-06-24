@@ -21,9 +21,6 @@
 #pragma clang diagnostic pop
 
 
-
-
-
 // Swift uses offset references for ivars when referencing methods
 static NSMutableDictionary *__ivarsDictionary = nil;
 

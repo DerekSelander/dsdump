@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		3F009ADA22AF695400EA38D3 /* payload.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3F009AD822AF695400EA38D3 /* payload.cpp */; };
 		3F0C98C32290F276005D7D0F /* XRMachOLibrary+Swift.mm in Sources */ = {isa = PBXBuildFile; fileRef = 3F0C98C22290F276005D7D0F /* XRMachOLibrary+Swift.mm */; };
 		3F29124A22820A99003C2BD7 /* TaskPath.mm in Sources */ = {isa = PBXBuildFile; fileRef = 3F29124822820A99003C2BD7 /* TaskPath.mm */; };
 		3F29126322877648003C2BD7 /* XRMachOLibrary+Dump.m in Sources */ = {isa = PBXBuildFile; fileRef = 3F29126222877648003C2BD7 /* XRMachOLibrary+Dump.m */; };
@@ -60,6 +61,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		3F009AD822AF695400EA38D3 /* payload.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = payload.cpp; sourceTree = "<group>"; };
+		3F009AD922AF695400EA38D3 /* payload.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = payload.hpp; sourceTree = "<group>"; };
 		3F0C98C12290F276005D7D0F /* XRMachOLibrary+Swift.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "XRMachOLibrary+Swift.h"; sourceTree = "<group>"; };
 		3F0C98C22290F276005D7D0F /* XRMachOLibrary+Swift.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = "XRMachOLibrary+Swift.mm"; sourceTree = "<group>"; };
 		3F20316422A78BA000014502 /* XRMachOLibraryCplusHelpers.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = XRMachOLibraryCplusHelpers.h; sourceTree = "<group>"; };
@@ -199,6 +202,8 @@
 				A66A9CCB22316EA5006602AB /* XRMachOLibrary.mm */,
 				3FF9AE0622777A9500F71FA5 /* XRMachOLibrary+ObjectiveC.h */,
 				3FF9AE0722777A9500F71FA5 /* XRMachOLibrary+ObjectiveC.mm */,
+				3F009AD822AF695400EA38D3 /* payload.cpp */,
+				3F009AD922AF695400EA38D3 /* payload.hpp */,
 				3F2912782289B476003C2BD7 /* objc_.h */,
 				3F98C3B2225F06E900606F97 /* XRMachOLibrary+FileManagement.m */,
 				3F29126122877648003C2BD7 /* XRMachOLibrary+Dump.h */,
@@ -296,6 +301,7 @@
 				3F5922E922AB4507003972E1 /* OldDemangler.cpp in Sources */,
 				3F29124A22820A99003C2BD7 /* TaskPath.mm in Sources */,
 				3F5922EC22AB4507003972E1 /* NodePrinter.cpp in Sources */,
+				3F009ADA22AF695400EA38D3 /* payload.cpp in Sources */,
 				3F5922E622AB4506003972E1 /* Punycode.cpp in Sources */,
 				3F5922EB22AB4507003972E1 /* NodeDumper.cpp in Sources */,
 				3F7C9AB12295BBD50070F2B1 /* XRSymbolEntry.m in Sources */,

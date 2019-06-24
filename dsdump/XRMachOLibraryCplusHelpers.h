@@ -10,6 +10,7 @@
 #define XRMachOLibraryCplusHelpers_h
 
 #import "XRMachOLibrary.h"
+#import "payload.hpp"
 
 #pragma clang diagnostic ignored "-Weverything"
 #import "swift/Demangling/Demangler.h"
@@ -40,7 +41,7 @@
      template <typename T>
      T LoadToOffset(XRMachOLibrary *library, T t) {
          uintptr_t loadAddress = *reinterpret_cast<uintptr_t*>(&t); // TODO find a better way than this...
-         uintptr_t fileOff = [library translateLoadAddressToFileOffset:loadAddress useFatOffset:YES];
+         uintptr_t fileOff = [library translateLoadAddressToFileOffset:(loadAddress & 0x000007FFFFFFFFFFUL) useFatOffset:YES];
          T retT = reinterpret_cast<T>(&library.data[fileOff]);
          return retT;
      }

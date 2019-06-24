@@ -2,3 +2,5 @@
 /xref.xcodeproj/project.xcworkspace/xcuserdata/derekselander.xcuserdatad/UserInterfaceState.xcuserstate
 /xref.xcodeproj/xcuserdata/lolgrep.xcuserdatad/xcdebugger/Breakpoints_v2.xcbkptlist
 /xref.xcodeproj/project.xcworkspace/xcuserdata/lolgrep.xcuserdatad/UserInterfaceState.xcuserstate
+*.xcuserstate
+*.xcbkptlist

@@ -10,6 +10,7 @@
 #import <unistd.h>
 #include <libgen.h>
 #import <getopt.h>
+#import <dlfcn.h>
 
 #import "miscellaneous.h"
 #import "XRMachOLibrary.h"
@@ -24,8 +25,6 @@
 static NSArray <NSString *>* exc_rpaths = nil;
 static void handle_args(int argc, const char * argv[]);
 
-#import <dlfcn.h>
-
 int main(int argc, const char * argv[], const char*envp[]) {
     handle_args(argc, argv);
     if (argc < 2) {
@@ -39,7 +38,11 @@ int main(int argc, const char * argv[], const char*envp[]) {
         exit(1);
     }
     char resolved_path[PATH_MAX];
-    NSString *path = [NSString stringWithUTF8String:realpath(_path, resolved_path)];
+    if (!realpath(_path, resolved_path)) {
+        printf("Couldn't resolved \"%s\"\n", _path);
+        exit(1);
+    }
+    NSString *path = [NSString stringWithUTF8String:resolved_path];
     [pathsSet addObject:path];
     if (![[NSFileManager defaultManager] fileExistsAtPath:path]) {
         printf("File doesn't exist at \"%s\"\n", resolved_path);
@@ -47,8 +50,6 @@ int main(int argc, const char * argv[], const char*envp[]) {
     }
     
     XRMachOLibrary *image = [[XRMachOLibrary alloc] initWithPath:path];
-    
-    
     // Go through the options
     if (! ( xref_options.file_offset  || xref_options.analyze || xref_options.library || xref_options.dump)) {
         [image dumpSymbols];

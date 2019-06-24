@@ -14,23 +14,15 @@
 #define RO_META               (1<<0)
 #define RO_ROOT               (1<<1)
 
+
+#import "payload.hpp"
 #pragma clang diagnostic ignored "-Weverything"
 
 #import "swift/ABI/MetadataValues.h"
 #import "swift/ABI/Metadata.h"
 
-
+#import  <typeinfo>
 #pragma clang diagnostic pop
-
-template <typename T>
-class PointerOffsetType {
-    int32_t offset;
-public:
-    T get() {
-        return reinterpret_cast<uintptr_t>(this) + offset;
-    }
-};
-
 
 /*****************************************************************
  methods
@@ -51,8 +43,6 @@ typedef struct {
 /*****************************************************************
  ivars
  *****************************************************************/
-
-
 
 typedef struct {
     int32_t *offset;
@@ -88,7 +78,7 @@ typedef struct {
  class stuff, ro/rw
  *****************************************************************/
 
-typedef struct {
+typedef struct class_ro  {
     uint32_t flags;
     uint32_t instanceStart;
     uint32_t instanceSize;
@@ -96,13 +86,18 @@ typedef struct {
     
     const uint8_t * ivarLayout;
     
-    const char * name;
+//    const char * name;
+    payload::LoadToDiskTranslator<char>* name;
     method_list_t * baseMethodList;
     void * baseProtocols; // protocol_list_t
     const ivar_list_t * ivars; // ivar_list_t
     
     const uint8_t * weakIvarLayout;
     void *baseProperties; // property_list_t
+    
+//    char * disk_name() {
+//        return this->name->disk()->unwrap();
+//    }
     
 } class_ro_t; // The structure when on disk or before first call
 
@@ -309,14 +304,14 @@ typedef struct   {
 
 
 // ObjC class heeeeeeeeeeeeeeeereeeeeeeee
-typedef struct {
-    uintptr_t isa_cls;
-    uintptr_t superclass;
+typedef struct ds_objc_class {
+    payload::VirtualDiskPointer<struct ds_objc_class> isa_cls;
+    payload::VirtualDiskPointer<struct ds_objc_class> superclass;
     void *_buckets;
     uint32_t _mask;
     uint32_t _occupied;
     uintptr_t bits; //(class_ro_t* before access (and on disk), class_rw_t * after access) &= FAST_DATA_MASK
-} ds_objc_class;
+} ds_objc_class_t;
 
 // class ModuleDecl : public DeclContext, public TypeDecl {
 typedef struct {
@@ -359,6 +354,23 @@ typedef struct {
 //};
 //
 
+template<typename T>
+struct PtrCheck : public T {
+    static const bool isPtr(){ return false; }
+    
+};
+
+template<typename T>
+struct PtrCheck<T*> : public T {
+    static const bool isPtr(){ return true; }
+    
+};
+
+template<typename T>
+void func(const std::vector<T>& v) {
+//    std::cout << "is it a pointer? " << is_pointer<T>::value << std::endl;
+}
+
 typedef struct {
 
     int32_t mangledTypeName;
@@ -371,9 +383,9 @@ typedef struct {
 } FieldDescriptor;
 
 // Swift class heeeeeeeeeeeeeeeereeeeeeeee
-typedef struct swift_class_t {
-    uintptr_t isa_cls;
-    swift_class_t* superclass;
+typedef struct swift_class_t  : public payload::LoadToDiskTranslator<struct swift_class_t >  {
+    struct swift_class_t *isa_cls;
+    struct swift_class_t *superclass;
     void *_buckets;
     uint32_t _mask;
     uint32_t _occupied;
@@ -390,12 +402,52 @@ typedef struct swift_class_t {
     void *ivar_destroyer;
     uintptr_t *swiftMethods;
     
-    class_ro_t * rodata() {
-        return (class_ro_t *)(bits & FAST_DATA_MASK);
+    inline payload::LoadToDiskTranslator<class_ro_t> *rodata() {
+//        inline class_ro_t *rodata() {
+        auto resolved = bits & FAST_DATA_MASK;
+
+//            return reinterpret_cast<class_ro_t*>(resolved);
+        auto rodata = reinterpret_cast<payload::LoadToDiskTranslator<class_ro_t>*>(resolved);
+        return rodata;
     }
-    // ...
     
+
+    
+    
+//    inline swift_class_t* operator ->() {
+////        auto aa = typeid(this).name();
+//        
+////        if (std::is_pointer<typeid(this)>) {
+////            printf("yay");
+////        } else {
+////            printf("woo");
+////        }
+//        return this;
+//    }
+    
+    
+//    inline swift_class_t *disk_superclass() {
+//        return this->superclass->disk()->unwrap();
+//    }
+//    
+//    inline class_ro_t *disk_rodata() {
+////        if (!this->rodata)
+//        return this->rodata()->disk()->unwrap();
+//    }
+    
+
 } swift_class;
+
+
+
+//
+//template <typename U, typename T>
+//struct  swift_class_t : payload::AddressTranslatorWrapper<T*> {
+//    swift_class_t * operator->() {
+//        return this;
+//    }
+//}
+
 
 
 

@@ -14,6 +14,8 @@
 #import "XRMachOLibrary+FAT.h"
 #import "XRSymbolEntry.h"
 #import "XRMachOLibraryCplusHelpers.h"
+#import "payload.hpp"
+ #include <sys/mman.h>
 #include <unordered_map>
 
 using namespace std;
@@ -80,6 +82,8 @@ namespace dshelpers {
 - (instancetype)initWithPath:(NSString*)path {
     if (self = [super init]) {
         self.path = path;
+        
+        uintptr_t fatOffset = 0, fatSize = 0;
         self.depdencies = [NSMutableArray array];
         [self.depdencies addObject:(NSString *)[NSNull null]];
         
@@ -108,9 +112,17 @@ namespace dshelpers {
         fseek(f, 0, SEEK_END);
         long fsize = ftell(f);
         fseek(f, 0, SEEK_SET);  /* same as rewind(f); */
-        self.data = (uint8_t *)malloc(fsize + 1);
-        fread(self.data, 1, fsize, f);
-        fclose(f);
+        
+//        mach_vm_
+        // TODO fix this to figure out a memory window
+        void* buff = ::mmap((void*)0x0000000400000000, fsize, PROT_READ, MAP_PRIVATE, self.fd, 0);
+//        self.data = (uint8_t *)malloc(fsize + 1);
+//        fread(self.data, 1, fsize, f);
+//        fclose(f);
+        payload::data = (uint8_t *)buff; // self.data;
+        self.data = (uint8_t *)buff;
+        payload::size = fsize;
+        
         if (fsize < 4) {
             perror("File too small"); return nil;
         }
@@ -122,6 +134,7 @@ namespace dshelpers {
                 exit(1);
             }
             _file_offset += offset;
+            payload::offset = _file_offset;
         }
         uint32 magic = *(uint32_t *)&_data[_file_offset];
         
@@ -240,6 +253,7 @@ namespace dshelpers {
                         uintptr_t sec_ptr = (uintptr_t)&sections[j];
                         self.sectionCommandsDictionary[sectionKey] = @(sec_ptr);
                         [self.sectionCommandsArray addObject:@(sec_ptr)];
+                        payload::sections.push_back(&sections[j]);
                         
                         if (strcmp(section.segname, "__DATA") == 0 && strcmp(section.sectname, "__la_symbol_ptr") == 0) {
                             self.lazy_ptr_section = &sections[j]; //calloc(1, sizeof(struct section_64));

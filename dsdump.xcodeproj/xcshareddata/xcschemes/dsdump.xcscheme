@@ -100,8 +100,8 @@
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = "/tmp/libyay.dylib --swift -vvv"
-            isEnabled = "NO">
+            argument = "/tmp/yo --swift -vvv"
+            isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
             argument = "/bin/ls"
@@ -133,7 +133,7 @@
          </CommandLineArgument>
          <CommandLineArgument
             argument = "  $(TARGET_BUILD_DIR)/dsdump  -vUvv --swift"
-            isEnabled = "YES">
+            isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
             argument = "  $(TARGET_BUILD_DIR)/dsdump  -vvUvv --objc"
