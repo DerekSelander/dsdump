@@ -213,7 +213,8 @@ unordered_map<TargetClassDescriptor<InProcess>*, swift_class*> swiftDescriptorTo
                     std::string outDemangledstring;
             
                     // Print out parent
-                    if (superclass_ptr) {
+#warning ARM64e tmp hack
+                    if (reinterpret_cast<uintptr_t>(superclass_ptr) & 0x0000000FFFFFFFF0UL) {
                         auto &superclass = *superclass_ptr; // Needed fo the overloaded -> operator
                         auto &rodata = *superclass->rodata();
                         auto mangledName = rodata->name->disk();
