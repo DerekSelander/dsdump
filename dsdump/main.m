@@ -91,7 +91,7 @@ static void handle_args(int argc, const char * argv[]) {
         };
         
 
-        c = getopt_long(argc, (char * const *)argv, "hA:uUxcvSl",
+        c = getopt_long(argc, (char * const *)argv, "a:hA:uUxcvSl",
                         long_options, &option_index);
         if (c == -1) { break; }
         struct host_basic_info;
@@ -131,7 +131,29 @@ static void handle_args(int argc, const char * argv[]) {
                 exit(0);
                 break;
                 
-            case '?':
+            case 'a': {
+                char *end;
+                long address = strtoul(optarg, &end, 16);
+                if (!address) {
+                    address = strtoul(optarg, &end, 10);
+                }
+                if (!address) {
+                    printf("-a needs a virtual address");
+                    exit(1);
+                }
+                xref_options.virtual_address = address;
+                xref_options.virtual_address_count = 1;
+                if (strchr(optarg, ',')) {
+                    char *post_comma = strchr(optarg, ',');
+                    xref_options.virtual_address_count = (int)strtol(&post_comma[1], NULL, 10);
+                    if (!xref_options.virtual_address_count) {
+                        printf("Should be something like -a 0xffff,5\n");
+                        exit(1);
+                    }
+                    
+                }
+                
+            } case '?':
                 break;
                 
             default:

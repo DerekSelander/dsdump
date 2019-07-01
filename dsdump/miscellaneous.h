@@ -69,6 +69,8 @@ typedef struct {
     int external;
     int analyze;
     uintptr_t file_offset;
+    uintptr_t virtual_address;
+    int virtual_address_count; 
     int library;
     char * arch;
     char * showSymbolReferences;

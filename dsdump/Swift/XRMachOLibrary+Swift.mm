@@ -13,6 +13,7 @@
 #import "XRMachOLibrary+ObjectiveC.h"
 #import "string.h"
 #import <unordered_map>
+#import <iostream>
 #import <vector>
 
 #pragma clang diagnostic push
@@ -25,6 +26,9 @@
 
 #pragma clang diagnostic pop
 #import "XRMachOLibraryCplusHelpers.h"
+
+#import <Kernel/ptrauth.h>
+
 
 #define SWIFT_REFLECTION_METADATA_VERSION (uint16_t)(3)
 
@@ -100,13 +104,29 @@ unordered_map<TargetClassDescriptor<InProcess>*, swift_class*> swiftDescriptorTo
 #define FAST_IS_SWIFT_LEGACY 1 // f'ing swift devs changing their minds every 3 seconds...
 #define FAST_IS_SWIFT_STABLE 2
     
+    
+    
     for (int i = 0; i < numClasses; i++) {
-        auto swiftClass = TODISK(classes[i]);
-        if (!(swiftClass->bits & (FAST_IS_SWIFT_LEGACY|FAST_IS_SWIFT_STABLE))) {
+
+        auto swiftClassDiskPointer = classes[i]->disk();
+        if (!(swiftClassDiskPointer->bits & (FAST_IS_SWIFT_LEGACY|FAST_IS_SWIFT_STABLE))) {
             continue;
         }
-        // classes[i] will be the load address,
-        swiftDescriptorToClassDictionary[TODISK(swiftClass->description)] = classes[i];
+        
+//        auto &swiftClassLoad = *swiftClassLoadPointer;
+//        auto swiftClassDiskPointer = swiftClassLoadPointer->disk();
+//        auto &swiftClassDisk = *swiftClassDiskPointer;
+        
+//        swiftClassLoad->disk()->descriptor;
+        auto &swiftClassDisk  = *swiftClassDiskPointer;
+        auto descriptor = swiftClassDisk->descriptor->disk();
+
+
+        
+      
+        
+        swiftDescriptorToClassDictionary[descriptor] = classes[i]->load();
+        
     }
     
     return YES;
@@ -177,54 +197,22 @@ unordered_map<TargetClassDescriptor<InProcess>*, swift_class*> swiftDescriptorTo
                     
                     break;
                 } case ContextDescriptorKind::Class: {
-                    auto classDescriptor = static_cast<TargetClassDescriptor<InProcess> *>(descriptor);
+                    auto classDescriptorDisk = static_cast<TargetClassDescriptor<InProcess> *>(descriptor);
 
-                    auto it = swiftDescriptorToClassDictionary.find(classDescriptor);
+                    auto it = swiftDescriptorToClassDictionary.find(classDescriptorDisk);
                     if (it == swiftDescriptorToClassDictionary.end()) { continue; }
                     auto swiftClassLoad = it->second; // Load
                     auto &swiftClassDisk = *swiftClassLoad->disk(); // Disk
                     
+//                    auto rodataDisk = swiftClassDisk->rodata()->disk();
                     
-//                    auto &a = *swiftClassDisk;
-//                    auto g = payload::AddressTranslator<swift_class*>(swiftClassLoad);
-                 
-//                    g->classSize
-//                    g->rodata();
-                    
-//                    (*swiftClassLoad)->operator->()->superclass;
-//                    auto gg = a->superclass;
-//                    swiftClassDisk->sup
-                    
-//                    a->superclass;
-//                    printf("da fuck\n");
-//                    swiftClassLoad
-//                    swiftClassLoad->()
-                    
-//                    auto swiftClassDisk = swiftClassLoad->diskGet();
-//
-//
-//                    auto ee = swiftClassDisk->wrap();
-//
-////                    auto ee = swiftClassLoad
-//                    ++swiftClassDisk;
-//                    swiftClassDisk++;
-//                    ++ee;
-//                    ee++;
-//                    auto iis = ee + 5;
-////                    +ee;
-////                    auto gg = swiftClassDisk->rodata();
-////                    auto gh = swiftClassDisk->reserved;
-////                    swiftClassLoad
-////                    auto name = swiftClassLoad->diskGet()->rodata->diskGet()->name.disk()->unwrap();
-//                    std::string str;
+  
                     DSCOLOR color;
-////                    auto mangledName = swiftClassLoad->diskGet()->rodata()->unwrap()->name;
                     const char *demangledName = NULL;
-                    // Print out parent
-                    
                     auto superclass_ptr = swiftClassDisk->superclass;
                     std::string outDemangledstring;
-                    
+            
+                    // Print out parent
                     if (superclass_ptr) {
                         auto &superclass = *superclass_ptr; // Needed fo the overloaded -> operator
                         auto &rodata = *superclass->rodata();
@@ -246,8 +234,8 @@ unordered_map<TargetClassDescriptor<InProcess>*, swift_class*> swiftDescriptorTo
                     printf(" : %s%s%s \n", dcolor(color), demangledName, color_end());
                     putchar(' ');
                     putchar('{');
-                    [self dumpTargetTypeContextDescriptorFields:classDescriptor];
-                    [self dumpSwiftMethods:classDescriptor];
+                    [self dumpTargetTypeContextDescriptorFields:classDescriptorDisk];
+                    [self dumpSwiftMethods:classDescriptorDisk];
                     break;
                     
                 } case ContextDescriptorKind::Protocol:
@@ -336,13 +324,13 @@ unordered_map<TargetClassDescriptor<InProcess>*, swift_class*> swiftDescriptorTo
         std::string outDemangledString;
         dshelpers::simple_demangle(entry.name, outDemangledString);
         
-        
-        bool isInstance = pt.Flags.isInstance();
+    
+        bool isInstanceMethod = pt.Flags.isInstance();
 
         
         
         const char *resolvedMethodName = outDemangledString.length() == 0 ? stripped : outDemangledString.c_str();
-        printf("\t%s%p%s%s %s func %s%s", dcolor(DSCOLOR_GRAY), methodAddress, color_end(), dcolor(DSCOLOR_BOLD), isInstance ? "" : " class", resolvedMethodName, color_end());
+        printf("\t%s%p%s%s %s func %s%s", dcolor(DSCOLOR_GRAY), methodAddress, color_end(), dcolor(DSCOLOR_BOLD), isInstanceMethod ? "" : " class", resolvedMethodName, color_end());
         if (xref_options.verbose >= VERBOSE_3) {
             printf(" %s// %s %s", dcolor(DSCOLOR_GRAY), getKindMethodString(flags.getKind()), color_end());
         }
@@ -352,8 +340,8 @@ unordered_map<TargetClassDescriptor<InProcess>*, swift_class*> swiftDescriptorTo
 }
 
 /// AKA properties
-- (void)dumpTargetTypeContextDescriptorFields:(TypeContextDescriptor*)contextDescriptor {
-    auto fields = contextDescriptor->Fields.get();
+- (void)dumpTargetTypeContextDescriptorFields:(TypeContextDescriptor*)descriptorDisk {
+    auto fields = descriptorDisk->Fields.get();
     if (!fields) {
         return;
     }
@@ -365,15 +353,15 @@ unordered_map<TargetClassDescriptor<InProcess>*, swift_class*> swiftDescriptorTo
     if (numFields) {
         putchar('\n');
     }
-    if (!contextDescriptor->isReflectable()) {
+    if (!descriptorDisk->isReflectable()) {
         return;
     }
 
-    ContextDescriptorKind kind = contextDescriptor->Flags.getKind();
-    auto fieldRecords = contextDescriptor->Fields.get()->getFields();
+    ContextDescriptorKind kind = descriptorDisk->Flags.getKind();
+    auto fieldRecords = descriptorDisk->Fields.get()->getFields();
 
     
-    auto contextDescriptor_load = FROMDISK(contextDescriptor);
+    auto contextDescriptor_load = FROMDISK(descriptorDisk);
 
     for (auto &pt : fieldRecords) {
         

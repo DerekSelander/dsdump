@@ -384,6 +384,10 @@ typedef struct {
 
 // Swift class heeeeeeeeeeeeeeeereeeeeeeee
 typedef struct swift_class_t  : public payload::LoadToDiskTranslator<struct swift_class_t >  {
+    using SwiftClassDescriptor = payload::LoadToDiskTranslator<swift::TargetClassDescriptor<swift::InProcess>>;
+    
+    
+    
     struct swift_class_t *isa_cls;
     struct swift_class_t *superclass;
     void *_buckets;
@@ -398,15 +402,14 @@ typedef struct swift_class_t  : public payload::LoadToDiskTranslator<struct swif
     
     uint32_t classSize;
     uint32_t classAddressOffset;
-    swift::TargetClassDescriptor<swift::InProcess> *description;
+//    swift::TargetClassDescriptor<swift::InProcess> *descriptor;
+    SwiftClassDescriptor *descriptor;
     void *ivar_destroyer;
     uintptr_t *swiftMethods;
     
-    inline payload::LoadToDiskTranslator<class_ro_t> *rodata() {
-//        inline class_ro_t *rodata() {
-        auto resolved = bits & FAST_DATA_MASK;
 
-//            return reinterpret_cast<class_ro_t*>(resolved);
+    inline payload::LoadToDiskTranslator<class_ro_t> *rodata() {
+        auto resolved = bits & FAST_DATA_MASK;
         auto rodata = reinterpret_cast<payload::LoadToDiskTranslator<class_ro_t>*>(resolved);
         return rodata;
     }

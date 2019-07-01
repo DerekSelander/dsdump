@@ -16,7 +16,7 @@
 #import <mach-o/nlist.h>
 #import <mach-o/fat.h>
 
-#define DATABUF(offset) ((void*)&self.data[(offset)])
+#define DATABUF(offset) ((void*)&payload::data[(offset)])
 
 ///
 #define ARM64e_PTRMASK(data)  (self.isARM64e ? ((data)&0x000007FFFFFFFFFFUL) : (data))

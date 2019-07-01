@@ -113,12 +113,9 @@ namespace dshelpers {
         long fsize = ftell(f);
         fseek(f, 0, SEEK_SET);  /* same as rewind(f); */
         
-//        mach_vm_
         // TODO fix this to figure out a memory window
         void* buff = ::mmap((void*)0x0000000400000000, fsize, PROT_READ, MAP_PRIVATE, self.fd, 0);
-//        self.data = (uint8_t *)malloc(fsize + 1);
-//        fread(self.data, 1, fsize, f);
-//        fclose(f);
+
         payload::data = (uint8_t *)buff; // self.data;
         self.data = (uint8_t *)buff;
         payload::size = fsize;
@@ -136,6 +133,8 @@ namespace dshelpers {
             _file_offset += offset;
             payload::offset = _file_offset;
         }
+        
+   
         uint32 magic = *(uint32_t *)&_data[_file_offset];
         
         
@@ -216,7 +215,13 @@ namespace dshelpers {
                     self.symbols = static_cast<struct nlist_64 *>(DATABUF(_file_offset + self.symtab->symoff)); //(struct nlist_64 *)&_data[_file_offset + self.symtab->symoff];
                     self.str_symbols = static_cast<char *>(DATABUF(_file_offset + self.symtab->stroff)); // (char *)&_data[_file_offset + self.symtab->stroff];
      
+//                    char f = calloc(1000, 5);
+//                    fread(<#void *__ptr#>, <#size_t __size#>, <#size_t __nitems#>, <#FILE *__stream#>)
 
+                    lseek(self.fd, self.symtab->symoff, SEEK_SET);
+                    
+//                    frea
+                    int a = 4;
                 } else if (load_cmd->cmd == LC_DYLD_INFO || load_cmd->cmd == LC_DYLD_INFO_ONLY) {
                     
                     self.dyldInfo = (struct dyld_info_command *)load_cmd;
@@ -315,6 +320,19 @@ namespace dshelpers {
         [self parseLocalSymbolsInSymbolTable];
     }
     
+    
+    if (xref_options.virtual_address) {
+        struct _tmp { uintptr_t yoloolololollolo; };
+        auto addrs = reinterpret_cast<payload::LoadToDiskTranslator<_tmp> *> (xref_options.virtual_address);
+        auto diskAddr = addrs->disk();
+        printf("Virtual %012p -> Offset %012p\n", xref_options.virtual_address, (uintptr_t)diskAddr - (uintptr_t)payload::data);;
+        for (int i = 0; i < xref_options.virtual_address_count; i++) {
+            auto addr = &diskAddr[i];
+            printf("  %s%012p%s:   %s%018p  %s%s%014p%s\n", dcolor(DSCOLOR_CYAN), xref_options.virtual_address + (i * PTR_SIZE), color_end(), dcolor(DSCOLOR_YELLOW), *addr, color_end(), dcolor(DSCOLOR_RED), *reinterpret_cast<uintptr_t*>(addr) & 0x000000ffffffffff, color_end());
+        }
+        exit(0);
+    }
+    
     return self;
 }
 
@@ -335,8 +353,16 @@ namespace dshelpers {
 
 - (void)parseLocalSymbolsInSymbolTable {
     // Only goes after local and external symbols
+    
+    char *strings = self.str_symbols;
     for (int i = self.dysymtab->ilocalsym; i < self.dysymtab->ilocalsym + self.dysymtab->nlocalsym; i++) {
         struct nlist_64 *symbol = &self.symbols[i];
+        
+        // Don't need debugging symbols...
+        if (symbol->n_type & N_STAB) {
+            continue;
+        }
+        
         XRSymbolEntry *cur = self.symbolEntry[@(symbol->n_value)];
         if (symbol->n_value && !cur.name) {
             XRSymbolEntry *entry = [[XRSymbolEntry alloc] initWithSymbol:symbol machoLibrary:self];

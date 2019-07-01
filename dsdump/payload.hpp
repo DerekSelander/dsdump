@@ -117,6 +117,8 @@ namespace payload {
     //    };
     //
     
+//#define PAC_this  ((uintptr_t)this & 0x000007FFFFFFFFFFUL)
+    
     
     template <class T>
     struct LoadToDiskTranslator {
@@ -129,14 +131,37 @@ namespace payload {
             return v >= d && v <= (d + payload::size);
         }
         
+        inline uintptr_t strip_PAC() {
+            auto p = reinterpret_cast<uintptr_t>(this);
+            auto r = ((p & (1UL << 63)) ?
+                    (((uintptr_t)p & 0x0000000ffffffffUL) | 0x000100000000UL)
+                    :   ((uintptr_t)p & 0x0000000fffffffffUL));
+//            printf("\n%p -> %p\n", (void*)p, (void*)r);
+            return r;
+        }
+        
         inline bool isLoad() {
             return !isDisk();
         }
         
+        inline T* load() {
+            if (isLoad()) {return reinterpret_cast<T*>((uintptr_t)strip_PAC());  }
+            auto offset = reinterpret_cast<uintptr_t>(strip_PAC()) - reinterpret_cast<uintptr_t>(payload::data) + payload::offset;
+            for (auto &sec : payload::sections) {
+                if (sec->offset <= (offset) && (offset) < (sec->offset + sec->size)) {
+                    auto resolvedLoad = offset - sec->offset + sec->addr;
+                    auto payload = reinterpret_cast<T*>(resolvedLoad);
+                    return payload;
+                }
+            }
+            ::printf("WARNING: couldn't find address %p in binary!\n", (void*)this);
+            return nullptr;
+        }
+        
         inline T* disk() {
-            if (isDisk()) { return reinterpret_cast<T*>((uintptr_t)this & 0x000007FFFFFFFFFFUL); }
+            if (isDisk()) { return reinterpret_cast<T*>((uintptr_t)this); }
             
-            auto loadAddress = reinterpret_cast<uintptr_t>((uintptr_t)this & 0x000007FFFFFFFFFFUL) + payload::offset;
+            auto loadAddress = reinterpret_cast<uintptr_t>(strip_PAC()) + payload::offset;
             for (auto &sec : payload::sections) {
                 if (sec->addr <= loadAddress && loadAddress < sec->addr + sec->size) {
                     uintptr_t resolvedOffset = loadAddress - sec->addr  + sec->offset;
@@ -156,6 +181,8 @@ namespace payload {
             auto disk = this->disk();
             return  reinterpret_cast<T*>(disk);
         }
+        
+
     };
     
     

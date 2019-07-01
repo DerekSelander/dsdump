@@ -10,6 +10,7 @@
 #import "miscellaneous.h"
 #import "XRBindSymbol.h"
 //#import "XRMachOLibrary_cplus.h"
+#import "payload.hpp"
 #import "XRSymbolEntry.h"
 #import <vector>
 //#import <tuple>
