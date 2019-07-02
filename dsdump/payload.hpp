@@ -21,6 +21,10 @@ namespace payload {
     extern std::vector<struct section_64 *> sections;
     extern uintptr_t offset;
     
+    
+    
+    uintptr_t Offset2Virtual(uintptr_t f);
+
     /*
      I started writing this having to deal with translating the load address to the file offset on disk.
      It was particularly painful getting a pointer on disk, having to recast it to the proper load address
@@ -133,10 +137,11 @@ namespace payload {
         
         inline uintptr_t strip_PAC() {
             auto p = reinterpret_cast<uintptr_t>(this);
-            auto r = ((p & (1UL << 63)) ?
-                    (((uintptr_t)p & 0x0000000ffffffffUL) | 0x000100000000UL)
-                    :   ((uintptr_t)p & 0x0000000fffffffffUL));
-//            printf("\n%p -> %p\n", (void*)p, (void*)r);
+//            auto r = ((p & (1UL << 63)) ?
+//                    (((uintptr_t)p & 0x0000000ffffffffUL) | 0x000100000000UL)
+//                    :   ((uintptr_t)p & 0x0000000fffffffffUL));
+            auto r = payload::Offset2Virtual(p);
+//            printf("\n%p  -> %p\n", (void*)p, (void*)r);
             return r;
         }
         
@@ -171,7 +176,7 @@ namespace payload {
                 }
             }
             
-            ::printf("WARNING: couldn't find address %p in binary!\n", (void*)this);
+            ::printf("WARNING: couldn't find address %p (%p) in binary!\n", (void*)this, (void*)loadAddress);
             return nullptr;
         }
         

@@ -108,7 +108,7 @@ unordered_map<TargetClassDescriptor<InProcess>*, swift_class*> swiftDescriptorTo
     
     for (int i = 0; i < numClasses; i++) {
 
-        auto swiftClassDiskPointer = classes[i]->disk();
+        auto swiftClassDiskPointer = classes[i]->load()->disk();
         if (!(swiftClassDiskPointer->bits & (FAST_IS_SWIFT_LEGACY|FAST_IS_SWIFT_STABLE))) {
             continue;
         }

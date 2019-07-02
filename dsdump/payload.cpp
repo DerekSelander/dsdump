@@ -16,6 +16,18 @@ namespace payload {
     std::vector<struct section_64 *> sections;
     uintptr_t offset;
     
-    
+    uintptr_t Offset2Virtual(uintptr_t f) {
+        
+        auto r = f & 0x0000000ffffffffUL;
+        for (auto i = 1; i < payload::sections.size(); i++) {
+            struct section_64 *sec  = payload::sections[i];
+            if (sec->offset <= (r) && (r) < (sec->offset + sec->size)) {
+                return r + sec->addr - sec->offset;
+            }
+        }
+        
+        printf( "WARNING: couldn't find offset 0x%lx in binary!\n", r);
+        return 0;
+    }
 }
 
