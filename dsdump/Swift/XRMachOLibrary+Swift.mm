@@ -83,7 +83,26 @@ unordered_map<TargetClassDescriptor<InProcess>*, swift_class*> swiftDescriptorTo
         int32_t typeOffset = TODISKDEREF(&typeOffsets[i]);
         uintptr_t resolvedTypedOffset = (uintptr_t)(&typeOffsets[i]) + typeOffset;
         TypeContextDescriptor* descriptor = TODISK(reinterpret_cast<TypeContextDescriptor*>(resolvedTypedOffset));
+        
+//        printf("%s\n", descriptor->Name.get());
+//        char *a = (char*)descriptor->Name.get();
+//        if (strcmp(a, "CodingKeys") == 0) {
+//            printf("yay\n");
+//            
+//                
+// 
+//     
+//            auto f = descriptor->Parent.get();
+////            descriptor->
+//            auto h =  f->Parent.get();
+////            descriptor->Parent->na
+//            int a = 3;
+//            
+//        }
         const TargetModuleContextDescriptor<InProcess> * module = descriptor->getModuleContext();
+        if (module == nullptr) {
+            continue;
+        }
         moduleDescriptorDictionary.emplace(module, vector<TypeContextDescriptor*>());
         moduleDescriptorDictionary.at(module).push_back(descriptor);
     }
@@ -193,12 +212,16 @@ unordered_map<TargetClassDescriptor<InProcess>*, swift_class*> swiftDescriptorTo
                 case ContextDescriptorKind::Struct: {
                     
                     auto structDescriptor = static_cast<TargetStructDescriptor<InProcess> *>(descriptor);
+                    putchar(' ');
+                    putchar('{');
+//                    structDescriptor->
                     [self dumpTargetTypeContextDescriptorFields:structDescriptor];
                     
                     break;
                 } case ContextDescriptorKind::Class: {
                     auto classDescriptorDisk = static_cast<TargetClassDescriptor<InProcess> *>(descriptor);
 
+                    classDescriptorDisk->Parent.get();
                     auto it = swiftDescriptorToClassDictionary.find(classDescriptorDisk);
                     if (it == swiftDescriptorToClassDictionary.end()) { continue; }
                     auto swiftClassLoad = it->second; // Load
@@ -224,7 +247,7 @@ unordered_map<TargetClassDescriptor<InProcess>*, swift_class*> swiftDescriptorTo
                     } else {
                         XRBindSymbol *bindSymbol = self.addressObjCDictionary[@((uintptr_t)&swiftClassLoad->superclass)];
                         auto name = bindSymbol.name.UTF8String;
-                        if (strnstr(name, "_OBJC_CLASS_$_", strlen("_OBJC_CLASS_$_"))) {
+                        if (name && strnstr(name, "_OBJC_CLASS_$_", strlen("_OBJC_CLASS_$_"))) {
                             name = &name[strlen("_OBJC_CLASS_$_")];
                         }
                         dshelpers::simple_demangle(name, outDemangledstring);
@@ -343,6 +366,7 @@ unordered_map<TargetClassDescriptor<InProcess>*, swift_class*> swiftDescriptorTo
 /// AKA properties
 - (void)dumpTargetTypeContextDescriptorFields:(TypeContextDescriptor*)descriptorDisk {
     auto fields = descriptorDisk->Fields.get();
+    
     if (!fields) {
         return;
     }
@@ -362,8 +386,19 @@ unordered_map<TargetClassDescriptor<InProcess>*, swift_class*> swiftDescriptorTo
     auto fieldRecords = descriptorDisk->Fields.get()->getFields();
 
     
-    auto contextDescriptor_load = FROMDISK(descriptorDisk);
+//    auto contextDescriptor_load = FROMDISK(descriptorDisk);
+    
+//    int64_t *fieldOffsetPtr = (int64_t *)[self.sectionCommandsDictionary[@"__TEXT.__swift5_fieldmd"] pointerValue];
+    auto fieldmd = payload::sectionsDict["__TEXT.__swift5_fieldmd"];
+    auto typeref = payload::sectionsDict["__TEXT.__swift5_types"];
+//    int32_t fieldOffset = fieldmd && typeref ? fieldmd->addr - typeref->addr : 0;
+//    int32_t fieldOffset =  fieldmd && typeref ? *(int32_t *)&payload::data[fieldmd->offset]  -  *(int32_t *)&payload::data[typeref->offset] : 0;
 
+
+//    int32_t fieldOffset = fieldmd && typeref ? (fieldmd->size) - ( typeref->size) : 0;
+//    int32_t fieldOffset =  fieldmd && typeref ? *(int32_t *)&payload::data[fieldmd->offset]  -  *(int32_t *)&payload::data[typeref->offset] : 0;
+    
+    
     for (auto &pt : fieldRecords) {
         
         const char * declarationNameType;
@@ -373,14 +408,36 @@ unordered_map<TargetClassDescriptor<InProcess>*, swift_class*> swiftDescriptorTo
             declarationNameType = pt.Flags.isVar() ? "var" : "let";
         }
 
-        auto mangledTypeName = (pt.MangledTypeName.get());
-        auto fieldName = (pt.FieldName.get());
+        auto mangledTypeName = pt.MangledTypeName.get();
+        auto fieldName = pt.FieldName.get();
+        
+        
 
-        
         std::string str;
-        const char* demangledName = dshelpers::simple_type(mangledTypeName, str);
+        auto mangledName = pt.getMangledTypeName(0);
+        const char* resolvedSymbolicReference = "";
         
-        printf("\t%s%s %s %s %s %s\n", dcolor(DSCOLOR_GREEN), declarationNameType, fieldName, mangledTypeName ? ":" : "", mangledTypeName? demangledName : "", color_end());
+        if (mangledTypeName) {
+            // Check if a symbolic reference (visible in properties that reference classes in same module)
+            if (mangledTypeName[0] >= '\x01' && mangledTypeName[0] <= '\x17') {
+                const char *step = (const char *)mangledName.data() + 1;
+                int32_t symbolReference = *(int32_t*)&mangledTypeName[1];
+                int32_t gg  = *(int32_t*)&pt.MangledTypeName;
+                resolvedSymbolicReference = (const char*)((intptr_t)&pt + symbolReference + gg - mangledName.size());
+            } else {
+                resolvedSymbolicReference = dshelpers::simple_type(mangledTypeName, str);
+            }
+        }
+        
+        printf("\t%s%s %s %s %s%s\n", dcolor(DSCOLOR_GREEN),
+                                           declarationNameType,
+                                           fieldName,
+                                           mangledTypeName ? ":" : "",
+                                           resolvedSymbolicReference,
+                                           //mangledName[0] & '\x01' ? resolvedSymbolicReference : demangledName,
+                                           color_end());
+ 
+        
     }
     
     putchar('\n');

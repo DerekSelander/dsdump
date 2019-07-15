@@ -402,7 +402,6 @@ typedef struct swift_class_t  : public payload::LoadToDiskTranslator<struct swif
     
     uint32_t classSize;
     uint32_t classAddressOffset;
-//    swift::TargetClassDescriptor<swift::InProcess> *descriptor;
     SwiftClassDescriptor *descriptor;
     void *ivar_destroyer;
     uintptr_t *swiftMethods;

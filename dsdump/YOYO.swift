@@ -80,15 +80,18 @@ import Cocoa
 //}
 
 class YOYO : classTest {
-    let test : String! = "HI"
+//    let test : String! = "HI"
+    var daFuck : classTest? = nil
+    var normala : NSArray!
+    var hmmmm : classTest!
 }
 class classTest {
-    
-    init(test: Int) {
-        print("HI")
-    }
-    let aDouble: Double = 0
-    func atest() { }
+//
+//    init(test: Int) {
+//        print("HI")
+//    }
+//    let aDouble: Double = 0
+//    func atest() { }
 }
 
 

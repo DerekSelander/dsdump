@@ -15,7 +15,7 @@ namespace payload {
     uintptr_t size; 
     std::vector<struct section_64 *> sections;
     uintptr_t offset;
-    
+    std::map<std::string, struct section_64 *> sectionsDict;
     uintptr_t Offset2Virtual(uintptr_t f) {
         
         auto r = f & 0x0000000ffffffffUL;

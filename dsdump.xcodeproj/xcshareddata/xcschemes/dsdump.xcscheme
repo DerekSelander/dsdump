@@ -100,7 +100,23 @@
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = "/tmp/yo --swift -vvv"
+            argument = "/tmp/aa --swift -vvv "
+            isEnabled = "NO">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "/Volumes/YukonSeed17A5492t.D321D331DeveloperOS/Applications/AppStore.app/AppStore --swift"
+            isEnabled = "NO">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "/tmp/fuck_this --swift"
+            isEnabled = "NO">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "  $(TARGET_BUILD_DIR)/dsdump  -vUvv --swift "
+            isEnabled = "NO">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "/Volumes/YukonSeed17A5492t.N71DeveloperOS/Applications/Health.app/Health --swift"
             isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
@@ -129,10 +145,6 @@
          </CommandLineArgument>
          <CommandLineArgument
             argument = "-a 0x1001461cc"
-            isEnabled = "NO">
-         </CommandLineArgument>
-         <CommandLineArgument
-            argument = "  $(TARGET_BUILD_DIR)/dsdump  -vUvv --swift"
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument

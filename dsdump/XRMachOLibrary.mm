@@ -256,6 +256,7 @@ namespace dshelpers {
                         NSString *sectionKey = [NSString stringWithFormat:@"%s.%s", seg_name, sect_name];
                         
                         uintptr_t sec_ptr = (uintptr_t)&sections[j];
+                        payload::sectionsDict.emplace(std::string(sectionKey.UTF8String), &sections[j]);
                         self.sectionCommandsDictionary[sectionKey] = @(sec_ptr);
                         [self.sectionCommandsArray addObject:@(sec_ptr)];
                         payload::sections.push_back(&sections[j]);

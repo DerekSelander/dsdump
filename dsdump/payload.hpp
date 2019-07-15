@@ -12,6 +12,9 @@
 #import <type_traits>
 #import <stdio.h>
 #import <vector>
+#import <unordered_map>
+#import <map>
+#import <string>
 #import <mach-o/loader.h>
 
 namespace payload {
@@ -20,8 +23,7 @@ namespace payload {
     extern uintptr_t size;
     extern std::vector<struct section_64 *> sections;
     extern uintptr_t offset;
-    
-    
+    extern std::map<std::string, struct section_64 *> sectionsDict;
     
     uintptr_t Offset2Virtual(uintptr_t f);
 
@@ -137,10 +139,11 @@ namespace payload {
         
         inline uintptr_t strip_PAC() {
             auto p = reinterpret_cast<uintptr_t>(this);
+//            return p;
 //            auto r = ((p & (1UL << 63)) ?
 //                    (((uintptr_t)p & 0x0000000ffffffffUL) | 0x000100000000UL)
 //                    :   ((uintptr_t)p & 0x0000000fffffffffUL));
-            auto r = payload::Offset2Virtual(p);
+            auto r = (p & (1UL << 63)) ? payload::Offset2Virtual(p) : ((uintptr_t)p & 0x0000000fffffffffUL);
 //            printf("\n%p  -> %p\n", (void*)p, (void*)r);
             return r;
         }
