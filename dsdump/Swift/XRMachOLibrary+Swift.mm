@@ -84,21 +84,6 @@ unordered_map<TargetClassDescriptor<InProcess>*, swift_class*> swiftDescriptorTo
         uintptr_t resolvedTypedOffset = (uintptr_t)(&typeOffsets[i]) + typeOffset;
         TypeContextDescriptor* descriptor = TODISK(reinterpret_cast<TypeContextDescriptor*>(resolvedTypedOffset));
         
-//        printf("%s\n", descriptor->Name.get());
-//        char *a = (char*)descriptor->Name.get();
-//        if (strcmp(a, "CodingKeys") == 0) {
-//            printf("yay\n");
-//            
-//                
-// 
-//     
-//            auto f = descriptor->Parent.get();
-////            descriptor->
-//            auto h =  f->Parent.get();
-////            descriptor->Parent->na
-//            int a = 3;
-//            
-//        }
         const TargetModuleContextDescriptor<InProcess> * module = descriptor->getModuleContext();
         if (module == nullptr) {
             continue;
@@ -395,7 +380,7 @@ unordered_map<TargetClassDescriptor<InProcess>*, swift_class*> swiftDescriptorTo
 //    int32_t fieldOffset =  fieldmd && typeref ? *(int32_t *)&payload::data[fieldmd->offset]  -  *(int32_t *)&payload::data[typeref->offset] : 0;
 
 
-//    int32_t fieldOffset = fieldmd && typeref ? (fieldmd->size) - ( typeref->size) : 0;
+    int32_t fieldOffset = fieldmd && typeref ? (fieldmd->addr + fieldmd->size) - (typeref->addr + typeref->size) : 0;
 //    int32_t fieldOffset =  fieldmd && typeref ? *(int32_t *)&payload::data[fieldmd->offset]  -  *(int32_t *)&payload::data[typeref->offset] : 0;
     
     
@@ -410,8 +395,6 @@ unordered_map<TargetClassDescriptor<InProcess>*, swift_class*> swiftDescriptorTo
 
         auto mangledTypeName = pt.MangledTypeName.get();
         auto fieldName = pt.FieldName.get();
-        
-        
 
         std::string str;
         auto mangledName = pt.getMangledTypeName(0);
@@ -420,10 +403,13 @@ unordered_map<TargetClassDescriptor<InProcess>*, swift_class*> swiftDescriptorTo
         if (mangledTypeName) {
             // Check if a symbolic reference (visible in properties that reference classes in same module)
             if (mangledTypeName[0] >= '\x01' && mangledTypeName[0] <= '\x17') {
-                const char *step = (const char *)mangledName.data() + 1;
+                
                 int32_t symbolReference = *(int32_t*)&mangledTypeName[1];
-                int32_t gg  = *(int32_t*)&pt.MangledTypeName;
-                resolvedSymbolicReference = (const char*)((intptr_t)&pt + symbolReference + gg - mangledName.size());
+                auto resolvedTypeDescriptor = (uintptr_t)&mangledTypeName[1] + (uintptr_t)symbolReference;
+                
+                payload::LoadToDiskTranslator<TypeContextDescriptor>* resolvedDescriptor = reinterpret_cast<payload::LoadToDiskTranslator<TypeContextDescriptor> *>(resolvedTypeDescriptor);
+                resolvedSymbolicReference = resolvedDescriptor->disk()->Name.get();
+
             } else {
                 resolvedSymbolicReference = dshelpers::simple_type(mangledTypeName, str);
             }

@@ -113,11 +113,11 @@
          </CommandLineArgument>
          <CommandLineArgument
             argument = "  $(TARGET_BUILD_DIR)/dsdump  -vUvv --swift "
-            isEnabled = "NO">
+            isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
             argument = "/Volumes/YukonSeed17A5492t.N71DeveloperOS/Applications/Health.app/Health --swift"
-            isEnabled = "YES">
+            isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
             argument = "/bin/ls"
