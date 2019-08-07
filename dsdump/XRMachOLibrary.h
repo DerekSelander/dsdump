@@ -63,7 +63,7 @@ extern "C" {
 #endif
     
 
-@interface XRMachOLibrary : NSObject {
+@interface XRMachOLibrary : NSObject <NSMutableCopying> {
     size_t _instructions_count;
 }
 
@@ -71,7 +71,7 @@ extern "C" {
 /// Library dependencies
 @property (nonatomic, strong) NSMutableArray <NSString *>*depdencies;
 @property (nonatomic, copy) NSString *path;
-@property NSString *testFUCK;
+
 
 
 //#define ARM64e_PTRMASK(data)  (data)
@@ -97,7 +97,7 @@ extern "C" {
 /// Offsets into each load command struct section
 @property (nonatomic, strong) NSMutableArray <NSNumber *>* sectionCommandsArray;
 @property (nonatomic, strong) NSMutableArray <NSNumber *>* segmentCommandsArray;
-@property (nonatomic, strong) NSMutableDictionary <NSString *, NSNumber *>* sectionCommandsDictionary;
+
 @property (nonatomic, strong) NSMutableDictionary <NSString *, NSNumber *>* segmentCommandsDictionary;
 
 

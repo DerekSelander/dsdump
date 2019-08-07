@@ -14,12 +14,13 @@
 #import <stddef.h>
 #import "XRSymbolEntry.h"
 
-
+#pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Weverything"
     #import "swift/Demangling/Demangler.h"
     #import "XRMachOLibraryCplusHelpers.h"
 #pragma clang diagnostic pop
 
+//using namespace payload;
 
 // Swift uses offset references for ivars when referencing methods
 static NSMutableDictionary *__ivarsDictionary = nil;
@@ -77,6 +78,8 @@ static NSDictionary <NSString*, NSNumber*> *blacklistedSelectors = nil;
   
 }
 
+
+
 /********************************************************************************
  // Properties
  ********************************************************************************/
@@ -104,6 +107,9 @@ static NSDictionary <NSString*, NSNumber*> *blacklistedSelectors = nil;
         const char* propertyAttributes = (const char *)DATABUF(propertyAttributes_FO);
         
         printf("\t%s@property %s%s %s%s%s\n", dcolor(DSCOLOR_GREEN), propertyAttributes, color_end(), dcolor(DSCOLOR_BOLD), propertyName, color_end());
+    }
+    if (propertyCount) {
+        putchar('\n');
     }
 }
 
@@ -146,133 +152,124 @@ static NSDictionary <NSString*, NSNumber*> *blacklistedSelectors = nil;
 
 }
 
+
 - (void)dumpObjectiveCClasses {
     // Defined symbols, will go after the __DATA.__objc_classlist pointers
     if (xref_options.defined || !(xref_options.undefined || xref_options.defined)) {
         
-        struct section_64* class_list = (struct section_64* )[self.sectionCommandsDictionary[@"__DATA.__objc_classlist"]
-                                         pointerValue];
-        
-        if (!class_list) {
-            class_list = (struct section_64* )[self.sectionCommandsDictionary[@"__DATA_CONST.__objc_classlist"]
-                                               pointerValue];
+        struct section_64* classList = payload::sectionsDict["__DATA.__objc_classlist"];
+        if (classList == nullptr) { // iOS 13 ARM64E has some changes...
+            classList = payload::sectionsDict["__DATA_CONST.__objc_classlist"];
+        }
+        if (classList == nullptr) {
+            return;
         }
         
-        if (class_list) {
-            uintptr_t offset = [self translateLoadAddressToFileOffset:class_list->addr useFatOffset:NO] + self.file_offset;
-            uintptr_t *buff = (uintptr_t *)&self.data[offset];
-            char modname[1024];
-            for (int i = 0; i < class_list->size / PTR_SIZE; i++) {
-                if (xref_options.swift_mode && ![self isSwiftClass:buff[i]]) {
-                    continue;
-                }
-                
-                uintptr_t resolvedAddress = ARM64e_PTRMASK(buff[i]);
-                const char *name = [self nameForObjCClass:buff[i]];
-                
-                d_offsets off;
-                if (xref_options.swift_mode) {
+        
+//        uintptr_t offsets = [self translateLoadAddressToFileOffset:classList->addr useFatOffset:NO] + self.file_offset;
+//        uintptr_t *buffs = (uintptr_t *)&self.data[offsets];
+        
+        uintptr_t offset; // = [self translateLoadAddressToFileOffset:class_list->addr useFatOffset:NO] + self.file_offset;
+        
+//        auto buff = payload::LoadToDiskTranslator<uintptr_t>::Cast(classList->addr)->disk();
+        auto buff = payload::LoadToDiskTranslator<uintptr_t>::Cast(classList->addr);
+        char modname[1024];
+        for (int i = 0; i < classList->size / PTR_SIZE; i++) {
+            
+            auto resolvedAddress = buff->Get(i);
+//            auto meh = buff->GetDisk(i);
+//            auto test = meh->disk();
+            if (xref_options.swift_mode && ![self isSwiftClass:resolvedAddress]) {
+                continue;
+            }
+            
+//            auto resolvedAddress = buff->AtIndex(i);
 
-                    std::string str;
-                    const char *n = dshelpers::simple_demangle(name, str);
-                    printf("0x%011lx %s%s%s", resolvedAddress,  dcolor(DSCOLOR_CYAN), dshelpers::simple_demangle(name, str), color_end());
+            const char *name = [self nameForObjCClass:resolvedAddress];
+            
+            d_offsets off;
+            if (xref_options.swift_mode) {
+                
+                std::string str;
+                const char *n = dshelpers::simple_demangle(name, str);
+                printf("0x%011lx %s%s%s", resolvedAddress,  dcolor(DSCOLOR_CYAN), dshelpers::simple_demangle(name, str), color_end());
+                
+            } else {
+                printf("0x%011lx %s%s%s", resolvedAddress,  dcolor(DSCOLOR_CYAN), name, color_end());
+            }
+            
+            XRBindSymbol *objcReference = nil;
+            char *color = dcolor(DSCOLOR_GREEN);
+            
+            // Print out the superclass if any verbose level
+            if (xref_options.verbose > VERBOSE_NONE) {
+                // Check if it's a local symbol first via the dylds binding opcodes....
+                objcReference = self.addressObjCDictionary[@((resolvedAddress + offsetof(ds_objc_class, superclass)))];
+                const char *superclassName = objcReference.shortName.UTF8String;
+                
+                if (!superclassName) {
+                    uintptr_t superClassAddress = ARM64e_PTRMASK(resolvedAddress + offsetof(ds_objc_class, superclass));
                     
+                    offset = [self translateLoadAddressToFileOffset:superClassAddress useFatOffset:YES];
+                    uintptr_t supercls = ARM64e_PTRMASK(*(uintptr_t *)&payload::data[offset]);
+                    
+                    if (supercls) {
+                        superclassName = [self nameForObjCClass:supercls];
+                        color = dcolor(DSCOLOR_MAGENTA);
+                    }
+                }
+                color = superclassName ? color : dcolor(DSCOLOR_RED);
+                std::string str;
+                dshelpers::simple_demangle(superclassName, str);
+                if (xref_options.swift_mode &&  demangleSwiftName(superclassName, &off)) {
+                    printf(" : %s%s%s%s", color, modname, superclassName, color_end());
                 } else {
-                    printf("0x%011lx %s%s%s", resolvedAddress,  dcolor(DSCOLOR_CYAN), name, color_end());
-                }
-                
-                XRBindSymbol *objcReference = nil;
-                
-                // Print out the superclass if any verbose level
-                if (xref_options.verbose > VERBOSE_NONE) {
-                    // Check if it's a local symbol first via the dylds binding opcodes....
-                    objcReference = self.addressObjCDictionary[@((resolvedAddress + offsetof(ds_objc_class, superclass)))];
-                    const char *supercls_name = objcReference.shortName.UTF8String;
-                    
-                    char *color = dcolor(DSCOLOR_GREEN);
-                    if (!supercls_name) {
-                        uintptr_t superClassAddress = ARM64e_PTRMASK(resolvedAddress + offsetof(ds_objc_class, superclass));
-                        
-                        offset = [self translateLoadAddressToFileOffset:superClassAddress useFatOffset:YES];
-                        uintptr_t supercls = ARM64e_PTRMASK(*(uintptr_t *)&self.data[offset]);
-                        
-                        if (supercls) {
-                            supercls_name = [self nameForObjCClass:supercls];
-                            color = dcolor(DSCOLOR_MAGENTA);
-                        }
+                    uintptr_t roAddress = [self ROOffsetAddressForObjCClass:resolvedAddress];
+                    class_ro_t *ro = payload::GetData<class_ro_t>(roAddress);
+                    if (!superclassName && (ro->flags & RO_ROOT) == 0) {
+                        printf(" %sbug! \"%s\" shouldn't be ROOT (report this to Derek) (0x%lu) %s", dcolor(DSCOLOR_RED), name,  resolvedAddress, color_end());
                     }
-                    color = supercls_name ? color : dcolor(DSCOLOR_RED);
-                    if (xref_options.swift_mode &&  demangleSwiftName(supercls_name, &off)) {
-//                        strncpy(modname, &supercls_name[off.mod_off], off.mod_len);
-//                        modname[off.mod_len] = '\00';
-//                        auto context = Context();
-//                        auto str = StringRef( &supercls_name[off.cls_off]);
-//
-//                        ;
-                        printf(" : %s%s%s%s", color, modname, supercls_name, color_end());
-                    } else {
-                        class_ro_t *ro = (class_ro_t *)DATABUF([self ROOffsetAddressForObjCClass:buff[i]]);
-                        if (!supercls_name && (ro->flags & RO_ROOT) == 0) {
-                            printf(" %sbug! \"%s\" shouldn't be ROOT (report this to Derek) (0x%lu) %s", dcolor(DSCOLOR_RED), name,  resolvedAddress, color_end());
-                        }
-                        auto context = Context();
-                        auto str = StringRef( supercls_name);
-                        printf(" : %s%s%s", color, supercls_name ? context.demangleSymbolAsString(str).c_str() : "<ROOT>", color_end());
-                    }
-                }
-                
-                // Print the libraries if verbose 4
-                if (xref_options.verbose > VERBOSE_3) {
-                    char *libName = objcReference && objcReference.libOrdinal ? (char*)self.depdencies[objcReference.libOrdinal].UTF8String : NULL;
-                    if (libName) {
-                        printf(" %s%s%s", dcolor(DSCOLOR_YELLOW), libName, color_end());
-                    }
-                }
-                
-                putchar('\n');
-                // property then method dumping logic dumbing logic
-                if (xref_options.verbose > VERBOSE_2) {
-                    
-                    intptr_t metacls_offset = [self translateLoadAddressToFileOffset:resolvedAddress useFatOffset:YES];
-                    intptr_t resolvedMetaAddress = *(intptr_t *)DATABUF(metacls_offset);
-                
-                    // Dump properties...
-                    [self dumpObjCInstanceVariablesWithResolvedAddress:resolvedAddress];
-                    
-                    [self dumpObjCPropertiesWithResolvedAddress:resolvedAddress];
-                    
-                    // Dumps class methods first...
-                    [self dumpObjCClassInfo:name resolvedAddress:resolvedMetaAddress];
-                    
-                    // Then instance methods
-                    [self dumpObjCClassInfo:name resolvedAddress:resolvedAddress];
-                    
-                    putchar('\n');
-                    
-                    swift_class *s = (swift_class *)resolvedAddress;
-                    swift_class *meta = (swift_class *)resolvedMetaAddress;
-                    
-                    
-                    printf("HI");
-//                    int32_t flags =  ResolveSwiftDescriptorAddress(s->description, flags);
-//                    int32_t parent =  ResolveSwiftDescriptorAddress(s->description, parentOffset);
-//                    intptr_t parentAddress = parent + (uintptr_t)&s->description->parentOffset;
-//                    int32_t nameOffset = ResolveSwiftDescriptorAddress(s->description, namedOffset);
-//                    char *name = (char *)(nameOffset + (uintptr_t)&s->description->namedOffset);
-//
-//                    int32_t property4Offset = ResolveSwiftDescriptorAddress(s->description, metadataAccessorOffset);
-//                    uintptr_t property4 = (uintptr_t)(property4Offset + (uintptr_t)&s->description->metadataAccessorOffset);
-//                    char * name = (char*)TEST(s->description,    namedOffset);
-//                    uintptr_t fields = TEST(s->description,    fieldsOffset);
-//                    uintptr_t reflection = TEST(s->description,    reflectionOffset);
-//                    uintptr_t fieldOffset = TEST(s->description,    fieldsOffset);
-                    
-                    
-                    
-//                    printf("hmmm");
+                    auto context = Context();
+                    auto str = StringRef( superclassName);
+                    printf(" : %s%s%s", color, superclassName ? context.demangleSymbolAsString(str).c_str() : "<ROOT>", color_end());
                 }
             }
+            
+            // Print the libraries if verbose 4
+            if (xref_options.verbose > VERBOSE_3) {
+                char *libName = objcReference && objcReference.libOrdinal ? (char*)self.depdencies[objcReference.libOrdinal].UTF8String : NULL;
+                if (libName) {
+                    printf(" %s%s%s", dcolor(DSCOLOR_YELLOW), libName, color_end());
+                }
+            }
+            
+            // Dump protocols...
+            if (![self printObjectiveCProtocols:resolvedAddress]) {
+                putchar('\n');
+            }
+            
+            
+            // property then method dumping logic dumbing logic
+            if (xref_options.verbose > VERBOSE_2) {
+                
+                // Dump ivars...
+                [self dumpObjCInstanceVariablesWithResolvedAddress:resolvedAddress];
+                
+                // Dump properties...
+                [self dumpObjCPropertiesWithResolvedAddress:resolvedAddress];
+                
+                // Dumps class methods first...
+                intptr_t metacls_offset = [self translateLoadAddressToFileOffset:resolvedAddress useFatOffset:YES];
+                intptr_t resolvedMetaAddress = *payload::GetData<intptr_t>(metacls_offset);
+                [self dumpObjCClassInfo:name resolvedAddress:resolvedMetaAddress];
+                
+                // Then Dump instance methods...
+                [self dumpObjCClassInfo:name resolvedAddress:resolvedAddress];
+                
+                putchar('\n');
+            }
         }
+        
     }
     
     // Undefined symbols, use the symbol table
@@ -290,6 +287,47 @@ static NSDictionary <NSString*, NSNumber*> *blacklistedSelectors = nil;
             print_symbol(self, &sym, NULL);
         }
     }
+}
+
+-(BOOL)printObjectiveCProtocols:(uintptr_t)resolvedAddress {
+    
+    if (xref_options.verbose == VERBOSE_NONE) {
+        return NO;
+    }
+    uintptr_t protocolOffset = [self offsetAddressForObjCClass:resolvedAddress forType:OffSetTypeProtocols];
+    if (FILE_OFFSET_UNKNOWN == protocolOffset) {
+        return NO;
+    }
+    protocol_list_t *protocolList = payload::GetData<protocol_list_t>(protocolOffset);
+    if (!protocolList) {
+        return NO;
+    }
+    uintptr_t count = protocolList->count;
+    if (protocolList->count == 0) {
+        return NO;
+    }
+    
+    printf("%s <", dcolor(DSCOLOR_YELLOW));
+    for (int i = 0; i < protocolList->count; i++) {
+    
+        protocol_t *prot = &protocolList->list[i];
+ 
+        
+//        prot->protocols->count
+//        prot->_demangledName;
+//        protocol_t p = protocolList->list[i];
+//
+//        printf("%s", p._demangledName ? p._demangledName : p.mangledName);
+        printf("%s", prot->mangledName ? prot->mangledName : "<unknown>");
+        if (i != count - 1) {
+            putchar(',');
+            putchar(' ');
+        }
+    }
+    
+    printf(">\n%s", color_end());
+
+    return YES;
 }
 
 -(const char *)nameForObjCClass:(uintptr_t)address {
@@ -353,7 +391,7 @@ static NSDictionary <NSString*, NSNumber*> *blacklistedSelectors = nil;
     intptr_t ro_offset = [self ROOffsetAddressForObjCClass:address];
     if (ro_offset == FILE_OFFSET_UNKNOWN) { return FILE_OFFSET_UNKNOWN; }
     
-    int32_t offset;
+    uintptr_t offset;
     switch (offsetType) {
         case OffSetTypeIvar:
             offset = offsetof(class_ro_t, ivars);
@@ -364,6 +402,9 @@ static NSDictionary <NSString*, NSNumber*> *blacklistedSelectors = nil;
         case OffSetTypeProperties:
             offset = offsetof(class_ro_t, baseProperties);
             break;
+        case OffSetTypeProtocols:
+            offset = offsetof(class_ro_t, baseProtocols);
+            break; 
             
         default:
             assert(0);

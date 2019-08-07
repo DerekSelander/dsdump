@@ -16,35 +16,48 @@
 
 
 #import "payload.hpp"
+
+#pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Weverything"
 
 #import "swift/ABI/MetadataValues.h"
 #import "swift/ABI/Metadata.h"
 
-#import  <typeinfo>
 #pragma clang diagnostic pop
 
+#import  <typeinfo>
+
+/*****************************************************************
+ protocol
+ *****************************************************************/
+
+struct protocol_t;
 /*****************************************************************
  methods
  *****************************************************************/
 
-typedef struct {
+typedef struct method : public payload::LoadToDiskTranslator<struct method> {
     char* name;
     const char *types;
     void* imp;
 } method_t;
 
-typedef struct {
+typedef struct method_list : public payload::LoadToDiskTranslator<struct method_list> {
     uint32_t entsizeAndFlags;
     uint32_t count;
     method_t *methods;
 } method_list_t;
 
+typedef struct protocol_list : public payload::LoadToDiskTranslator<struct protocol_list>  {
+    uintptr_t count;
+    protocol_t* list; // variable-size
+} protocol_list_t;
+
 /*****************************************************************
  ivars
  *****************************************************************/
 
-typedef struct {
+typedef struct ivar : public payload::LoadToDiskTranslator<struct ivar> {
     int32_t *offset;
     const char *name;
     const char *type;
@@ -53,7 +66,7 @@ typedef struct {
     uint32_t size;
 } ivar_t;
 
-typedef struct {
+typedef struct ivar_list : public payload::LoadToDiskTranslator<struct ivar_list> {
     uint32_t entsizeAndFlags;
     uint32_t count;
     ivar_t *ivars;
@@ -63,12 +76,12 @@ typedef struct {
  properties
  *****************************************************************/
 
-typedef struct  {
+typedef struct property : public payload::LoadToDiskTranslator<struct property>  {
     const char *name;
     const char *attributes;
 } property_t;
 
-typedef struct {
+typedef struct property_list : public payload::LoadToDiskTranslator<struct property_list> {
     uint32_t entsizeAndFlags;
     uint32_t count;
     property_t *properties;
@@ -78,7 +91,7 @@ typedef struct {
  class stuff, ro/rw
  *****************************************************************/
 
-typedef struct class_ro  {
+typedef struct class_ro : public payload::LoadToDiskTranslator<struct class_ro>  {
     uint32_t flags;
     uint32_t instanceStart;
     uint32_t instanceSize;
@@ -89,7 +102,7 @@ typedef struct class_ro  {
 //    const char * name;
     payload::LoadToDiskTranslator<char>* name;
     method_list_t * baseMethodList;
-    void * baseProtocols; // protocol_list_t
+    protocol_t * baseProtocols; // protocol_list_t
     const ivar_list_t * ivars; // ivar_list_t
     
     const uint8_t * weakIvarLayout;
@@ -297,16 +310,59 @@ typedef struct   {
     
 } swift_descriptor;
 
+
+struct protocol_t : public payload::LoadToDiskTranslator<struct protocol_t >  {
+    void *isa; 
+    const char *mangledName;
+    protocol_list_t *protocols;
+    method_list_t *instanceMethods;
+    method_list_t *classMethods;
+    method_list_t *optionalInstanceMethods;
+    method_list_t *optionalClassMethods;
+    property_list_t *instanceProperties;
+    uint32_t size;   // sizeof(protocol_t)
+    uint32_t flags;
+    // Fields below this point are not always present on disk.
+    const char **_extendedMethodTypes;
+    const char *_demangledName;
+    property_list_t *_classProperties;
+    
+    
+//    bool isFixedUp() const;
+//    void setFixedUp();
+//
+//#   define HAS_FIELD(f) (size >= offsetof(protocol_t, f) + sizeof(f))
+//
+//    bool hasExtendedMethodTypesField() const {
+//        return HAS_FIELD(_extendedMethodTypes);
+//    }
+//    bool hasDemangledNameField() const {
+//        return HAS_FIELD(_demangledName);
+//    }
+//    bool hasClassPropertiesField() const {
+//        return HAS_FIELD(_classProperties);
+//    }
+//
+//#   undef HAS_FIELD
+//
+//    const char **extendedMethodTypes() const {
+//        return hasExtendedMethodTypesField() ? _extendedMethodTypes : nil;
+//    }
+//
+//    property_list_t *classProperties() const {
+//        return hasClassPropertiesField() ? _classProperties : nil;
+//    }
+};
+
 #define ResolveSwiftDescriptorAddress(addr, name) *(uint32_t *)(DATABUF((uintptr_t)[self translateLoadAddressToFileOffset:(uintptr_t)addr useFatOffset:YES] + offsetof(swift_descriptor, name)))
 
 
-#define TEST(addr, name)  ((uintptr_t)addr + offsetof(swift_descriptor, name) + addr->name)
 
 
 // ObjC class heeeeeeeeeeeeeeeereeeeeeeee
 typedef struct ds_objc_class {
-    payload::VirtualDiskPointer<struct ds_objc_class> isa_cls;
-    payload::VirtualDiskPointer<struct ds_objc_class> superclass;
+    struct ds_objc_class* isa_cls;
+    struct ds_objc_class* superclass;
     void *_buckets;
     uint32_t _mask;
     uint32_t _occupied;

@@ -12,8 +12,11 @@
 #import "XRMachOLibrary.h"
 #import "payload.hpp"
 
+#pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Weverything"
+
 #import "swift/Demangling/Demangler.h"
+
 #pragma clang diagnostic pop
 
 

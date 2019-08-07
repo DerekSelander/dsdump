@@ -12,8 +12,13 @@
 NS_ASSUME_NONNULL_BEGIN
 @class XRMachOLibrary;
 
+@protocol TestProto <NSObject>
+@property (nonatomic, assign) uint64_t address;
+
+@end
+
 // Used to reference symbols by address, originates from the symbol table
-@interface XRSymbolEntry : NSObject { }
+@interface XRSymbolEntry : NSObject <TestProto>
 
 @property (nonatomic, assign) const char* name;
 @property (nonatomic, assign) uint64_t address;
@@ -22,7 +27,8 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, assign) const char* importName;
 @property (nonatomic, assign) BOOL visited;
 
--(instancetype)initWithSymbol:(struct nlist_64 *)symbol machoLibrary:(XRMachOLibrary*)lib;
+- (instancetype)initWithSymbol:(struct nlist_64 *)symbol machoLibrary:(XRMachOLibrary*)lib;
+
 @end
 
 NS_ASSUME_NONNULL_END

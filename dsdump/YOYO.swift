@@ -79,9 +79,33 @@ import Cocoa
 //    }
 //}
 
-class YOYO : classTest {
+protocol YOYOTestYO {
+    func yoyo()
+    func bobo();
+}
+
+
+class YOBO : YOYOTestYO {
+    func yoyo() {
+        
+    }
+    
+    func bobo() {
+        
+    }
+}
+
+class YOYO : NSObject, YOYOTestYO, NSMutableCopying  {
+    func mutableCopy(with zone: NSZone? = nil) -> Any {
+        yoyo()
+        return "HI"
+    }
+    func yoyo() {  }
+    
+    func bobo() {
+        print("yay")
+    }
 //    let test : String! = "HI"
-    var daFuck : classTest? = nil
     var normala : NSArray!
     var hmmmm : classTest!
 }

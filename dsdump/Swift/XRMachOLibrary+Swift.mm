@@ -27,7 +27,6 @@
 #pragma clang diagnostic pop
 #import "XRMachOLibraryCplusHelpers.h"
 
-#import <Kernel/ptrauth.h>
 
 
 #define SWIFT_REFLECTION_METADATA_VERSION (uint16_t)(3)
@@ -47,14 +46,34 @@ static NSMutableDictionary * __ivarsDictionary = nil;
 
 
 // Used to sort all the type references by module
-using DescriptorDict =  unordered_map<const TargetModuleContextDescriptor<InProcess>*, vector<TypeContextDescriptor*>>;
+using DescriptorDict =  unordered_map<const TargetModuleContextDescriptor<InProcess>*, std::vector<TypeContextDescriptor*>>;
 static DescriptorDict moduleDescriptorDictionary;
+
+unordered_map<const ModuleContextDescriptor *, std::vector<ProtocolDescriptor*>> moduleProtocolDictionary;
+
+// Fast lookup from swift type which lists all the supported protocols
+static unordered_map<const ContextDescriptor*, std::vector<const ProtocolDescriptor*>> swiftProtocolsToTypesDictionary;
 
 /**
  Swift Type Descriptors currently don't give enough deets about the methods, so using objc, to get that missing info
  This will associate the type descriptor with the corresponding class found in the ObjC classes (__objc_classlist)
  */
-unordered_map<TargetClassDescriptor<InProcess>*, swift_class*> swiftDescriptorToClassDictionary;
+static unordered_map<TargetClassDescriptor<InProcess>*, swift_class*> swiftDescriptorToClassDictionary;
+
+char *GetProtocolFlagsDescription(ProtocolRequirementFlags *req) {
+    switch (req->getKind()) {
+        case ProtocolRequirementFlags::Kind::BaseProtocol:
+            
+            break;
+            
+        default:
+            break;
+    }
+    return NULL;
+    
+}
+
+//ProtocolRequirementFlags
 
 @implementation XRMachOLibrary (Swift)
 
@@ -70,9 +89,9 @@ unordered_map<TargetClassDescriptor<InProcess>*, swift_class*> swiftDescriptorTo
   If the type descriptor is a Swift class. This is stored in swiftDescriptorToClassDictionary
  */
 - (BOOL)preparseSwiftTypes {
-    struct section_64* swiftTypes = (struct section_64*)[self.sectionCommandsDictionary[@"__TEXT.__swift5_types"] pointerValue];
+    struct section_64* swiftTypes = payload::sectionsDict["__TEXT.__swift5_types"];
     if (!swiftTypes) {
-        if ([self.sectionCommandsDictionary[@"__TEXT.__swift4_types"] pointerValue]) {
+        if (payload::sectionsDict["__TEXT.__swift4_types"]) {
             printf("%sdsdump only supports swift5 :[\n%s", dcolor(DSCOLOR_RED), color_end());
         }
         return NO;
@@ -95,21 +114,17 @@ unordered_map<TargetClassDescriptor<InProcess>*, swift_class*> swiftDescriptorTo
     ///////////////////////
     // swiftDescriptorToClassDictionary logic
     //////////////////////////
-    struct section_64* class_list = (struct section_64* )[self.sectionCommandsDictionary[@"__DATA.__objc_classlist"] pointerValue];
-    if (!class_list) { class_list = (struct section_64* )[self.sectionCommandsDictionary[@"__DATA_CONST.__objc_classlist"] pointerValue]; }
+    struct section_64* class_list = payload::sectionsDict["__DATA.__objc_classlist"];
+    if (!class_list) {
+        class_list = payload::sectionsDict["__DATA_CONST.__objc_classlist"];
+    }
     if (!class_list) {
         perror("Couldn't find __objc_classlist segment?!\n");
         return YES;
     }
 
     swift_class **classes = TODISK(reinterpret_cast<swift_class**>(class_list->addr));
-    int numClasses = class_list->size / PTR_SIZE;
-  
-#define FAST_IS_SWIFT_LEGACY 1 // f'ing swift devs changing their minds every 3 seconds...
-#define FAST_IS_SWIFT_STABLE 2
-    
-    
-    
+    int numClasses = (int)(class_list->size / PTR_SIZE);
     for (int i = 0; i < numClasses; i++) {
 
         auto swiftClassDiskPointer = classes[i]->load()->disk();
@@ -117,104 +132,118 @@ unordered_map<TargetClassDescriptor<InProcess>*, swift_class*> swiftDescriptorTo
             continue;
         }
         
-//        auto &swiftClassLoad = *swiftClassLoadPointer;
-//        auto swiftClassDiskPointer = swiftClassLoadPointer->disk();
-//        auto &swiftClassDisk = *swiftClassDiskPointer;
-        
-//        swiftClassLoad->disk()->descriptor;
         auto &swiftClassDisk  = *swiftClassDiskPointer;
         auto descriptor = swiftClassDisk->descriptor->disk();
-
-
-        
-      
-        
         swiftDescriptorToClassDictionary[descriptor] = classes[i]->load();
         
     }
-    
+
     return YES;
 }
 
-
-
-/*
- 
- SWIFT_PART:
- if (xref_options.swift_mode && [self isSwiftClass:resolvedAddress]) {
- uintptr_t classSizeOffset_FO = [self translateLoadAddressToFileOffset:resolvedAddress + offsetof(swift_class, classSize) useFatOffset:YES];
- uint32_t classSize = *(uint32_t *)DATABUF(classSizeOffset_FO);
- uintptr_t classAddressOffset_FO = [self translateLoadAddressToFileOffset:(resolvedAddress + offsetof(struct swift_class_t, classAddressOffset)) useFatOffset:YES];
- uint32_t classAddressOffset = *(uint32_t *)DATABUF(classAddressOffset_FO);
- 
- 
- uintptr_t description_FO = [self translateLoadAddressToFileOffset:(resolvedAddress + offsetof(struct swift_class_t, swiftMethods)) useFatOffset:YES];
- uintptr_t *curSwiftMethod = (uintptr_t *)DATABUF(description_FO);
- 
- int swiftMethodCount = (classSize - classAddressOffset - offsetof(struct swift_class_t, swiftMethods)) / PTR_SIZE;
- for (int i = 1; i < swiftMethodCount; i++) {
- //            if (!curSwiftMethod[i]) { continue; }
- XRSymbolEntry *entry = self.symbolEntry[@(curSwiftMethod[i])];
- NSString *resolvedSwiftProperty = __ivarsDictionary[@(curSwiftMethod[i])];
- if (!entry.name && resolvedSwiftProperty) {
- continue;
- }
- std::string str;
- printf("\t%s0x%011lx%s %s%s%s\n", dcolor(DSCOLOR_GRAY), (long)curSwiftMethod[i], color_end(), dcolor(DSCOLOR_CYANISH), dshelpers::simple_demangle(entry.name, str), color_end());
- }
- }
-
- */
-
-- (void)dumpSwiftTypes {
-    
-    struct section_64* swiftTypes = (struct section_64*)[self.sectionCommandsDictionary[@"__TEXT.__swift5_types"] pointerValue];
+- (void)dumpSwiftProtocols {
+    struct section_64* swiftTypes = payload::sectionsDict["__TEXT.__swift5_protos"];
     if (!swiftTypes) {
-        if ([self.sectionCommandsDictionary[@"__TEXT.__swift4_types"] pointerValue]) {
+        if (payload::sectionsDict["__TEXT.__swift4_protos"]) {
             printf("%sdsdump only supports swift5 :[\n%s", dcolor(DSCOLOR_RED), color_end());
         }
         return;
     }
     
+    auto protoOffsets = payload::DiskWrapper<int32_t>::Cast(swiftTypes->addr);
+    for (int i = 0; i < swiftTypes->size / sizeof(uint32_t); i++) {
+        auto resolvedTypedOffset = (intptr_t)protoOffsets[i].disk() + *protoOffsets[i].disk();
+        auto protocol = reinterpret_cast<ProtocolDescriptor *>(resolvedTypedOffset);
+        auto requirements = protocol->getRequirements();
+        for (auto __unused &req : requirements) {
 
-    for ( auto ptr = moduleDescriptorDictionary.begin(); ptr != moduleDescriptorDictionary.end(); ++ptr ) {
+#warning implement me hopefully by Swift 5.2?
+            // TODO: https://github.com/apple/swift/blob/659c49766be5e5cfa850713f43acc4a86f347fd8/include/swift/ABI/Metadata.h#L1717
+        }
+    }
+//    [self preparseSwiftProtocols];
+    return;
+}
+
+- (void)preparseSwiftProtocols  {
+    struct section_64* swiftTypes = payload::sectionsDict["__TEXT.__swift5_proto"];
+    if (!swiftTypes) {
+        if (payload::sectionsDict["__TEXT.__swift4_proto"]) {
+            printf("%sdsdump only supports swift5 :[\n%s", dcolor(DSCOLOR_RED), color_end());
+        }
+        return;
+    }
+    
+    auto protoOffsets = payload::DiskWrapper<int32_t>::Cast(swiftTypes->addr);
+    for (int i = 0; i < swiftTypes->size / sizeof(int32_t); i++) {
+        
+        auto resolvedTypedOffset = (uintptr_t)((intptr_t)(protoOffsets[i].disk()) + *protoOffsets[i].disk());
+        auto protocolConformance = reinterpret_cast<ProtocolConformanceDescriptor *>(resolvedTypedOffset);
+        auto typeDescriptor = protocolConformance->getTypeDescriptor();
+        auto protocol = protocolConformance->getProtocol();
+        auto recast = static_cast<const ContextDescriptor*>(typeDescriptor);
+        swiftProtocolsToTypesDictionary.emplace(recast, std::vector<const ProtocolDescriptor*>());
+        swiftProtocolsToTypesDictionary.at(recast).push_back(protocol);
+        
+    }
+    
+    return;
+}
+
+- (void)dumpProtocolsForTypeContextDescriptor:(TypeContextDescriptor*)descriptor {
+    auto found = swiftProtocolsToTypesDictionary.find(descriptor);
+    if (found == swiftProtocolsToTypesDictionary.end()) { return; }
+    putchar(',');
+    auto supportedProtocols = found->second;
+    auto count = supportedProtocols.size();
+    for (int i = 0; i< count; i++) {
+        auto protocol = supportedProtocols[i];
+        printf(" %s", protocol->Name.get());
+        if (i != count - 1) {
+            putchar(',');
+            putchar(' ');
+        }
+    }
+}
+
+- (void)dumpSwiftTypes {
+    
+    // Iterate all Swift descriptors in swift5_types
+    for (auto ptr = moduleDescriptorDictionary.begin(); ptr != moduleDescriptorDictionary.end(); ++ptr ) {
         
         auto module = ptr->first;
         if ((module->Name.isNull() || module->isCImportedContext()) && xref_options.verbose < VERBOSE_4) {
             continue;
         }
         printf("module %s%s%s {\n", dcolor(DSCOLOR_GREEN), module->Name.get(), color_end());
+        
         auto descriptors = ptr->second;
         
         for (auto &descriptor : descriptors) {
 
-            
             ContextDescriptorKind kind = descriptor->Flags.getKind();
             const char* name = descriptor->Name.get();
             printf(" %s %s%s%s", getKindString(kind), dcolor(DSCOLOR_CYAN), name, color_end());
-
+            
             switch (kind) {
                 case ContextDescriptorKind::Struct: {
                     
                     auto structDescriptor = static_cast<TargetStructDescriptor<InProcess> *>(descriptor);
                     putchar(' ');
                     putchar('{');
-//                    structDescriptor->
                     [self dumpTargetTypeContextDescriptorFields:structDescriptor];
                     
                     break;
                 } case ContextDescriptorKind::Class: {
                     auto classDescriptorDisk = static_cast<TargetClassDescriptor<InProcess> *>(descriptor);
-
                     classDescriptorDisk->Parent.get();
+                    
+                    classDescriptorDisk->getTypeContextDescriptorFlags();
                     auto it = swiftDescriptorToClassDictionary.find(classDescriptorDisk);
                     if (it == swiftDescriptorToClassDictionary.end()) { continue; }
                     auto swiftClassLoad = it->second; // Load
                     auto &swiftClassDisk = *swiftClassLoad->disk(); // Disk
-                    
-//                    auto rodataDisk = swiftClassDisk->rodata()->disk();
-                    
-  
+
                     DSCOLOR color;
                     const char *demangledName = NULL;
                     auto superclass_ptr = swiftClassDisk->superclass;
@@ -240,14 +269,20 @@ unordered_map<TargetClassDescriptor<InProcess>*, swift_class*> swiftDescriptorTo
                         color = DSCOLOR_GREEN;
                     }
 
-                    printf(" : %s%s%s \n", dcolor(color), demangledName, color_end());
+                    printf(" : %s%s%s", dcolor(color), demangledName, color_end());
+                    [self dumpProtocolsForTypeContextDescriptor:descriptor];
+                    
                     putchar(' ');
                     putchar('{');
+
                     [self dumpTargetTypeContextDescriptorFields:classDescriptorDisk];
+                    
+                    // Methods
                     [self dumpSwiftMethods:classDescriptorDisk];
                     break;
                     
                 } case ContextDescriptorKind::Protocol:
+                    NSLog(@"yoyoyo");
                     break;
                     
                 case ContextDescriptorKind::Enum: {
@@ -256,6 +291,7 @@ unordered_map<TargetClassDescriptor<InProcess>*, swift_class*> swiftDescriptorTo
                     [self dumpTargetTypeContextDescriptorFields:enumDescriptor];
                     break;
                 }
+                    
                 default:
                     break;
             }
@@ -278,7 +314,6 @@ unordered_map<TargetClassDescriptor<InProcess>*, swift_class*> swiftDescriptorTo
     if (xref_options.verbose >= VERBOSE_4 && methodDescriptors.size()) {
         printf("\n%s\t// Swift methods%s\n", dcolor(DSCOLOR_GRAY), color_end());
     }
-//    auto swiftDescriptorToClassDictionary.find(classDescriptor);
     
     auto it = swiftDescriptorToClassDictionary.find(classDescriptor);
     if (it == swiftDescriptorToClassDictionary.end()) {
@@ -286,38 +321,6 @@ unordered_map<TargetClassDescriptor<InProcess>*, swift_class*> swiftDescriptorTo
     }
     
     auto swiftClassLoad = it->second;
-//    auto swiftClass_disk = TODISK(swiftClass_load);
-//    auto rodata_disk = TODISK(swiftClass_disk->rodata());
-//    auto objcMethods = rodata_disk->baseMethodList;
-
-//    swiftClass_disk->classAddressOffset /
-    
-    
-//    swiftClass_disk->
-    
-//    uintptr_t classSizeOffset_FO = [self translateLoadAddressToFileOffset:resolvedAddress + offsetof(swift_class, classSize) useFatOffset:YES];
-//    uint32_t classSize = *(uint32_t *)DATABUF(classSizeOffset_FO);
-//    uintptr_t classAddressOffset_FO = [self translateLoadAddressToFileOffset:(resolvedAddress + offsetof(struct swift_class_t, classAddressOffset)) useFatOffset:YES];
-//    uint32_t classAddressOffset = *(uint32_t *)DATABUF(classAddressOffset_FO);
-//
-//
-//    uintptr_t description_FO = [self translateLoadAddressToFileOffset:(resolvedAddress + offsetof(struct swift_class_t, swiftMethods)) useFatOffset:YES];
-//    uintptr_t *curSwiftMethod = (uintptr_t *)DATABUF(description_FO);
-//
-//    int swiftMethodCount = (classSize - classAddressOffset - offsetof(struct swift_class_t, swiftMethods)) / PTR_SIZE;
-//    for (int i = 1; i < swiftMethodCount; i++) {
-//        //            if (!curSwiftMethod[i]) { continue; }
-//        XRSymbolEntry *entry = self.symbolEntry[@(curSwiftMethod[i])];
-//        NSString *resolvedSwiftProperty = __ivarsDictionary[@(curSwiftMethod[i])];
-//        if (!entry.name && resolvedSwiftProperty) {
-//            continue;
-//        }
-//        std::string str;
-//        printf("\t%s0x%011lx%s %s%s%s\n", dcolor(DSCOLOR_GRAY), (long)curSwiftMethod[i], color_end(), dcolor(DSCOLOR_CYANISH), dshelpers::simple_demangle(entry.name, str), color_end());
-//    }
-//    }
-    
-    
     char stripped[PATH_MAX];
     snprintf(stripped, PATH_MAX, "%s%s%s", dcolor(DSCOLOR_RED), "<stripped>", color_end());
     
@@ -371,19 +374,6 @@ unordered_map<TargetClassDescriptor<InProcess>*, swift_class*> swiftDescriptorTo
     auto fieldRecords = descriptorDisk->Fields.get()->getFields();
 
     
-//    auto contextDescriptor_load = FROMDISK(descriptorDisk);
-    
-//    int64_t *fieldOffsetPtr = (int64_t *)[self.sectionCommandsDictionary[@"__TEXT.__swift5_fieldmd"] pointerValue];
-    auto fieldmd = payload::sectionsDict["__TEXT.__swift5_fieldmd"];
-    auto typeref = payload::sectionsDict["__TEXT.__swift5_types"];
-//    int32_t fieldOffset = fieldmd && typeref ? fieldmd->addr - typeref->addr : 0;
-//    int32_t fieldOffset =  fieldmd && typeref ? *(int32_t *)&payload::data[fieldmd->offset]  -  *(int32_t *)&payload::data[typeref->offset] : 0;
-
-
-    int32_t fieldOffset = fieldmd && typeref ? (fieldmd->addr + fieldmd->size) - (typeref->addr + typeref->size) : 0;
-//    int32_t fieldOffset =  fieldmd && typeref ? *(int32_t *)&payload::data[fieldmd->offset]  -  *(int32_t *)&payload::data[typeref->offset] : 0;
-    
-    
     for (auto &pt : fieldRecords) {
         
         const char * declarationNameType;
@@ -396,8 +386,7 @@ unordered_map<TargetClassDescriptor<InProcess>*, swift_class*> swiftDescriptorTo
         auto mangledTypeName = pt.MangledTypeName.get();
         auto fieldName = pt.FieldName.get();
 
-        std::string str;
-        auto mangledName = pt.getMangledTypeName(0);
+//        auto mangledName = pt.getMangledTypeName(0);
         const char* resolvedSymbolicReference = "";
         
         if (mangledTypeName) {
@@ -411,6 +400,7 @@ unordered_map<TargetClassDescriptor<InProcess>*, swift_class*> swiftDescriptorTo
                 resolvedSymbolicReference = resolvedDescriptor->disk()->Name.get();
 
             } else {
+                std::string str;
                 resolvedSymbolicReference = dshelpers::simple_type(mangledTypeName, str);
             }
         }

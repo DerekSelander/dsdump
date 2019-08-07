@@ -14,10 +14,11 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (void)dumpSwiftTypes;
 - (BOOL)preparseSwiftTypes;
+- (void)dumpSwiftProtocols;
+- (void)preparseSwiftProtocols;
 @end
 
-#define Resolve32BitAddress(addr) *(uint32_t *)(DATABUF([self translateLoadAddressToFileOffset:(uintptr_t)(addr) useFatOffset:YES]))
-
-#define Resolve64BitAddress(addr) *(uint64_t *)(DATABUF([self translateLoadAddressToFileOffset:(uintptr_t)(addr) useFatOffset:YES]))
+#define FAST_IS_SWIFT_LEGACY 1  // < 5
+#define FAST_IS_SWIFT_STABLE 2 // 5.X
 
 NS_ASSUME_NONNULL_END

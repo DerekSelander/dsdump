@@ -83,7 +83,7 @@ namespace dshelpers {
     if (self = [super init]) {
         self.path = path;
         
-        uintptr_t fatOffset = 0, fatSize = 0;
+        __unused uintptr_t fatOffset = 0, fatSize = 0;
         self.depdencies = [NSMutableArray array];
         [self.depdencies addObject:(NSString *)[NSNull null]];
         
@@ -91,7 +91,6 @@ namespace dshelpers {
         [self.sectionCommandsArray addObject:(NSNumber*)[NSNull null]];
         
         self.segmentCommandsArray = [NSMutableArray array];
-        self.sectionCommandsDictionary = [NSMutableDictionary dictionary];
         self.segmentCommandsDictionary = [NSMutableDictionary dictionary];
         
         self.file_offset = 0;
@@ -257,7 +256,7 @@ namespace dshelpers {
                         
                         uintptr_t sec_ptr = (uintptr_t)&sections[j];
                         payload::sectionsDict.emplace(std::string(sectionKey.UTF8String), &sections[j]);
-                        self.sectionCommandsDictionary[sectionKey] = @(sec_ptr);
+                      
                         [self.sectionCommandsArray addObject:@(sec_ptr)];
                         payload::sections.push_back(&sections[j]);
                         

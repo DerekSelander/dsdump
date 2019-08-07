@@ -16,7 +16,8 @@ NS_ASSUME_NONNULL_BEGIN
 typedef enum {
     OffSetTypeIvar,
     OffSetTypeMethods,
-    OffSetTypeProperties
+    OffSetTypeProperties,
+    OffSetTypeProtocols
 } OffSetType;
 
 
@@ -31,10 +32,11 @@ typedef struct  {
 BOOL demangleSwiftName(const char *name, d_offsets *f);
 
 @interface XRMachOLibrary (ObjectiveC)
-- (void)dumpObjectiveCClasses;
--(const char*)nameForObjCClass:(uintptr_t)address;
 
--(intptr_t)offsetAddressForObjCClass:(uintptr_t)address forType:(OffSetType)offsetType;
+- (void)dumpObjectiveCClasses;
+- (const char*)nameForObjCClass:(uintptr_t)address;
+- (intptr_t)offsetAddressForObjCClass:(uintptr_t)address forType:(OffSetType)offsetType;
+
 @end
 
 NS_ASSUME_NONNULL_END

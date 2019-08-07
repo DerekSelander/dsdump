@@ -18,6 +18,7 @@
     
 
     if (xref_options.swift_mode && [self preparseSwiftTypes]) {
+        [self preparseSwiftProtocols];
         [self dumpSwiftTypes];
         return;
     }
