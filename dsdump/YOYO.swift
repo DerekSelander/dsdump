@@ -79,7 +79,7 @@ import Cocoa
 //    }
 //}
 
-protocol YOYOTestYO {
+@objc protocol YOYOTestYO {
     func yoyo()
     func bobo();
 }
