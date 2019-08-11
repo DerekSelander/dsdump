@@ -135,7 +135,7 @@ namespace payload {
     // IF there's a concrete type, then 
     template <class T>
     struct DiskWrapper : payload::LoadToDiskTranslator<T> {
-        T *val;
+        T val;
         
         template <class C>
         static payload::DiskWrapper<T>* Cast(C val) {

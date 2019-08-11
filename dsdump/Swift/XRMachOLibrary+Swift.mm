@@ -97,16 +97,28 @@ char *GetProtocolFlagsDescription(ProtocolRequirementFlags *req) {
         return NO;
     }
     
-    int32_t *typeOffsets = (int32_t*)swiftTypes->addr;
+    int32_t *ztypeOffsets = (int32_t*)swiftTypes->addr;
+    auto typeOffsets = payload::DiskWrapper<int32_t>::Cast(swiftTypes->addr);
+
     for (int i = 0; i < swiftTypes->size / sizeof(uint32_t); i++) {
-        int32_t typeOffset = TODISKDEREF(&typeOffsets[i]);
-        uintptr_t resolvedTypedOffset = (uintptr_t)(&typeOffsets[i]) + typeOffset;
-        TypeContextDescriptor* descriptor = TODISK(reinterpret_cast<TypeContextDescriptor*>(resolvedTypedOffset));
+        auto resolvedTypedOffset = (intptr_t)typeOffsets[i].disk() + *typeOffsets[i].disk();
+        auto descriptor = reinterpret_cast<TypeContextDescriptor *>(resolvedTypedOffset);
         
-        const TargetModuleContextDescriptor<InProcess> * module = descriptor->getModuleContext();
+        
+        
+        int32_t ztypeOffset = TODISKDEREF(&ztypeOffsets[i]);
+        uintptr_t zresolvedTypedOffset = (uintptr_t)(&ztypeOffsets[i]) + ztypeOffset;
+        TypeContextDescriptor* zdescriptor = TODISK(reinterpret_cast<TypeContextDescriptor*>(zresolvedTypedOffset));
+        
+        assert(zdescriptor == descriptor);
+        auto module = descriptor->getModuleContext();
+        
+        const TargetModuleContextDescriptor<InProcess> * zmodule = zdescriptor->getModuleContext();
         if (module == nullptr) {
             continue;
         }
+        assert(module == zmodule);
+        
         moduleDescriptorDictionary.emplace(module, vector<TypeContextDescriptor*>());
         moduleDescriptorDictionary.at(module).push_back(descriptor);
     }

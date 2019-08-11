@@ -191,7 +191,7 @@ static NSDictionary <NSString*, NSNumber*> *blacklistedSelectors = nil;
             if (xref_options.swift_mode) {
                 
                 std::string str;
-                const char *n = dshelpers::simple_demangle(name, str);
+                dshelpers::simple_demangle(name, str);
                 printf("0x%011lx %s%s%s", resolvedAddress,  dcolor(DSCOLOR_CYAN), dshelpers::simple_demangle(name, str), color_end());
                 
             } else {
