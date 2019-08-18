@@ -6,6 +6,14 @@
 //  Copyright © 2019 Selander. All rights reserved.
 //
 
+// Knock out objc/runtime.h so I can use the actual headers
+#ifndef _OBJC_RUNTIME_H
+#define _OBJC_RUNTIME_H
+
+//#import "objc-runtime-new.h"
+
+#endif // OBJC_RUNTIME
+
 #import <dlfcn.h>
 #import "XRMachOLibrary+Swift.h"
 #import "XRSymbolEntry.h"
@@ -15,18 +23,29 @@
 #import <unordered_map>
 #import <iostream>
 #import <vector>
+#import "XRMachOLibraryCplusHelpers.h"
 
+/////////////////////////////////////////////////////////
+// muwahahahahahaha going to hell for this...
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Weverything"
+
+#define protected public
+#define private public
+#define class struct
 
 #import "swift/ABI/MetadataValues.h"
 #import "swift/ABI/Metadata.h"
 #import "swift/Reflection/Records.h"
 #import "swift/Demangling/Demangler.h"
 
-#pragma clang diagnostic pop
-#import "XRMachOLibraryCplusHelpers.h"
+#undef protected
+#undef private
+#undef class
 
+#pragma clang diagnostic pop
+// </muwahahahahahaha going to hell for this...>
+/////////////////////////////////////////////////////////
 
 
 #define SWIFT_REFLECTION_METADATA_VERSION (uint16_t)(3)
@@ -34,46 +53,30 @@
 /// declarations
 const char *getKindString(swift::ContextDescriptorKind kind);
 const char *getKindMethodString(swift::MethodDescriptorFlags::Kind kind);
-static char *demangledName(const char* mangledTypeName);
 
 using namespace std;
 using namespace swift;
+using namespace payload;
 
-
-int testShit () {return 4;}
-
+/// Used to correlate getter/setter methods to offsets of ivars
 static NSMutableDictionary * __ivarsDictionary = nil;
 
+// Used to group all the Swift type references by module,
+static unordered_map<const ModuleContextDescriptor*, std::vector<TypeContextDescriptor*>> moduleDescriptorDictionary;
 
-// Used to sort all the type references by module
-using DescriptorDict =  unordered_map<const TargetModuleContextDescriptor<InProcess>*, std::vector<TypeContextDescriptor*>>;
-static DescriptorDict moduleDescriptorDictionary;
-
+/// Used to group the Swift protocols by module
 unordered_map<const ModuleContextDescriptor *, std::vector<ProtocolDescriptor*>> moduleProtocolDictionary;
 
-// Fast lookup from swift type which lists all the supported protocols
+/// Fast lookup from swift type which lists all the supported protocols
 static unordered_map<const ContextDescriptor*, std::vector<const ProtocolDescriptor*>> swiftProtocolsToTypesDictionary;
 
-/**
+/***
  Swift Type Descriptors currently don't give enough deets about the methods, so using objc, to get that missing info
  This will associate the type descriptor with the corresponding class found in the ObjC classes (__objc_classlist)
  */
 static unordered_map<TargetClassDescriptor<InProcess>*, swift_class*> swiftDescriptorToClassDictionary;
 
-char *GetProtocolFlagsDescription(ProtocolRequirementFlags *req) {
-    switch (req->getKind()) {
-        case ProtocolRequirementFlags::Kind::BaseProtocol:
-            
-            break;
-            
-        default:
-            break;
-    }
-    return NULL;
-    
-}
 
-//ProtocolRequirementFlags
 
 @implementation XRMachOLibrary (Swift)
 
@@ -173,7 +176,6 @@ char *GetProtocolFlagsDescription(ProtocolRequirementFlags *req) {
             // TODO: https://github.com/apple/swift/blob/659c49766be5e5cfa850713f43acc4a86f347fd8/include/swift/ABI/Metadata.h#L1717
         }
     }
-//    [self preparseSwiftProtocols];
     return;
 }
 
@@ -204,7 +206,9 @@ char *GetProtocolFlagsDescription(ProtocolRequirementFlags *req) {
 
 - (void)dumpProtocolsForTypeContextDescriptor:(TypeContextDescriptor*)descriptor {
     auto found = swiftProtocolsToTypesDictionary.find(descriptor);
-    if (found == swiftProtocolsToTypesDictionary.end()) { return; }
+    if (found == swiftProtocolsToTypesDictionary.end()) {
+        return;
+    }
     putchar(',');
     auto supportedProtocols = found->second;
     auto count = supportedProtocols.size();
@@ -218,88 +222,128 @@ char *GetProtocolFlagsDescription(ProtocolRequirementFlags *req) {
     }
 }
 
+- (void)dumpSwiftClassType:(ClassDescriptor *)classDescriptorDisk descriptor:(swift::TargetTypeContextDescriptor<swift::InProcess> *&)descriptor {
+//    classDescriptorDisk->Parent.get();
+    
+    auto it = swiftDescriptorToClassDictionary.find(classDescriptorDisk);
+    if (it == swiftDescriptorToClassDictionary.end()) {
+        putchar('{');
+        return;
+    }
+    auto swiftClassLoad = it->second; // Load
+    auto &swiftClassDisk = *swiftClassLoad->disk(); // Disk
+    
+    DSCOLOR color;
+    const char *demangledName = NULL;
+    auto superclass_ptr = swiftClassDisk->superclass;
+    std::string outDemangledstring;
+    
+    // Print out parent
+#warning ARM64e tmp hack
+    if (reinterpret_cast<uintptr_t>(superclass_ptr) & 0x0000000FFFFFFFF0UL) {
+        auto &superclass = *superclass_ptr; // Needed fo the overloaded -> operator
+        auto &rodata = *superclass->rodata();
+        auto mangledName = rodata->name->disk();
+        dshelpers::simple_demangle(mangledName, outDemangledstring);
+        demangledName = outDemangledstring.c_str();
+        color = DSCOLOR_MAGENTA;
+    } else {
+        XRBindSymbol *bindSymbol = self.addressObjCDictionary[@((uintptr_t)&swiftClassLoad->superclass)];
+        auto name = bindSymbol.name.UTF8String;
+        if (name && strnstr(name, "_OBJC_CLASS_$_", strlen("_OBJC_CLASS_$_"))) {
+            name = &name[strlen("_OBJC_CLASS_$_")];
+        }
+        dshelpers::simple_demangle(name, outDemangledstring);
+        demangledName = outDemangledstring.c_str();
+        color = DSCOLOR_GREEN;
+    }
+    
+    printf(" : %s%s%s", dcolor(color), demangledName, color_end());
+    [self dumpProtocolsForTypeContextDescriptor:descriptor];
+    
+    putchar(' ');
+    putchar('{');
+    
+    // propteries
+    [self dumpTargetTypeContextDescriptorFields:classDescriptorDisk];
+    
+    // Methods
+    [self dumpSwiftMethods:classDescriptorDisk];
+}
+
+- (void)printParentIfApplicable:(ContextDescriptor*)descriptor {
+//    descriptor
+    auto parent = descriptor->Parent.get();
+    if (parent == nullptr) {
+        return;
+    }
+    
+    auto parentKind = parent->getKind();
+    switch (parentKind) {
+        case ContextDescriptorKind::Struct: {
+            
+            auto recast = reinterpret_cast<const StructDescriptor *>(parent);
+            auto name = recast->Name.get();
+            printf(": %s", name);
+            break;
+        } case ContextDescriptorKind::Class: {
+            auto recast = reinterpret_cast<const ClassDescriptor *>(parent);
+            auto name = recast->Name.get();
+            printf(": %s", name);
+
+            break;
+        } case ContextDescriptorKind::Protocol: {
+            auto recast = reinterpret_cast<const ProtocolDescriptor *>(parent);
+            auto name = recast->Name.get();
+            printf(": %s", name);
+            
+            break;
+        } case ContextDescriptorKind::Enum: {
+            auto recast = reinterpret_cast<const EnumDescriptor *>(parent);
+            auto name = recast->Name.get();
+            printf(": %s", name);
+            
+            break;
+        }
+        default:
+            break;
+    }
+}
+
 - (void)dumpSwiftTypes {
     
     // Iterate all Swift descriptors in swift5_types
     for (auto ptr = moduleDescriptorDictionary.begin(); ptr != moduleDescriptorDictionary.end(); ++ptr ) {
-        
         auto module = ptr->first;
+        auto descriptors = ptr->second;
+        
         if ((module->Name.isNull() || module->isCImportedContext()) && xref_options.verbose < VERBOSE_4) {
             continue;
         }
         printf("module %s%s%s {\n", dcolor(DSCOLOR_GREEN), module->Name.get(), color_end());
-        
-        auto descriptors = ptr->second;
-        
         for (auto &descriptor : descriptors) {
 
+            
             ContextDescriptorKind kind = descriptor->Flags.getKind();
             const char* name = descriptor->Name.get();
             printf(" %s %s%s%s", getKindString(kind), dcolor(DSCOLOR_CYAN), name, color_end());
-            
+            [self printParentIfApplicable:descriptor];
             switch (kind) {
                 case ContextDescriptorKind::Struct: {
-                    
-                    auto structDescriptor = static_cast<TargetStructDescriptor<InProcess> *>(descriptor);
+                    auto structDescriptor = static_cast<StructDescriptor *>(descriptor);
                     putchar(' ');
                     putchar('{');
                     [self dumpTargetTypeContextDescriptorFields:structDescriptor];
-                    
                     break;
                 } case ContextDescriptorKind::Class: {
-                    auto classDescriptorDisk = static_cast<TargetClassDescriptor<InProcess> *>(descriptor);
-                    classDescriptorDisk->Parent.get();
-                    
-                    classDescriptorDisk->getTypeContextDescriptorFlags();
-                    auto it = swiftDescriptorToClassDictionary.find(classDescriptorDisk);
-                    if (it == swiftDescriptorToClassDictionary.end()) { continue; }
-                    auto swiftClassLoad = it->second; // Load
-                    auto &swiftClassDisk = *swiftClassLoad->disk(); // Disk
-
-                    DSCOLOR color;
-                    const char *demangledName = NULL;
-                    auto superclass_ptr = swiftClassDisk->superclass;
-                    std::string outDemangledstring;
-            
-                    // Print out parent
-#warning ARM64e tmp hack
-                    if (reinterpret_cast<uintptr_t>(superclass_ptr) & 0x0000000FFFFFFFF0UL) {
-                        auto &superclass = *superclass_ptr; // Needed fo the overloaded -> operator
-                        auto &rodata = *superclass->rodata();
-                        auto mangledName = rodata->name->disk();
-                        dshelpers::simple_demangle(mangledName, outDemangledstring);
-                        demangledName = outDemangledstring.c_str();
-                        color = DSCOLOR_MAGENTA;
-                    } else {
-                        XRBindSymbol *bindSymbol = self.addressObjCDictionary[@((uintptr_t)&swiftClassLoad->superclass)];
-                        auto name = bindSymbol.name.UTF8String;
-                        if (name && strnstr(name, "_OBJC_CLASS_$_", strlen("_OBJC_CLASS_$_"))) {
-                            name = &name[strlen("_OBJC_CLASS_$_")];
-                        }
-                        dshelpers::simple_demangle(name, outDemangledstring);
-                        demangledName = outDemangledstring.c_str();
-                        color = DSCOLOR_GREEN;
-                    }
-
-                    printf(" : %s%s%s", dcolor(color), demangledName, color_end());
-                    [self dumpProtocolsForTypeContextDescriptor:descriptor];
-                    
-                    putchar(' ');
-                    putchar('{');
-
-                    [self dumpTargetTypeContextDescriptorFields:classDescriptorDisk];
-                    
-                    // Methods
-                    [self dumpSwiftMethods:classDescriptorDisk];
+                    auto classDescriptorDisk = static_cast<ClassDescriptor *>(descriptor);
+                    [self dumpSwiftClassType:classDescriptorDisk descriptor:descriptor];
                     break;
-                    
                 } case ContextDescriptorKind::Protocol:
-                    NSLog(@"yoyoyo");
+                    printf("TODO Protocol\n");
                     break;
-                    
                 case ContextDescriptorKind::Enum: {
-                    TargetEnumDescriptor<InProcess>* enumDescriptor = static_cast<TargetEnumDescriptor<InProcess> *>(descriptor);
-                    
+                    auto enumDescriptor = static_cast<EnumDescriptor*>(descriptor);
                     [self dumpTargetTypeContextDescriptorFields:enumDescriptor];
                     break;
                 }
@@ -307,20 +351,17 @@ char *GetProtocolFlagsDescription(ProtocolRequirementFlags *req) {
                 default:
                     break;
             }
-            putchar(' ');
-            putchar('}');
-            putchar('\n');
-            putchar('\n');
-            
+            printf(" }\n\n");
         }
-        putchar('}');
+//        putchar('}');
+        printf("}\n");
     }
     
     putchar('\n');
 }
 
 
-- (void)dumpSwiftMethods:(TargetClassDescriptor<InProcess>*)classDescriptor {
+- (void)dumpSwiftMethods:(ClassDescriptor*)classDescriptor {
     
     auto methodDescriptors = classDescriptor->getMethodDescriptors();
     if (xref_options.verbose >= VERBOSE_4 && methodDescriptors.size()) {
@@ -332,7 +373,6 @@ char *GetProtocolFlagsDescription(ProtocolRequirementFlags *req) {
         return;
     }
     
-    auto swiftClassLoad = it->second;
     char stripped[PATH_MAX];
     snprintf(stripped, PATH_MAX, "%s%s%s", dcolor(DSCOLOR_RED), "<stripped>", color_end());
     
@@ -341,20 +381,17 @@ char *GetProtocolFlagsDescription(ProtocolRequirementFlags *req) {
             continue;
         }
      
-        auto flags = pt.Flags;
-        auto methodAddress = reinterpret_cast<uintptr_t>(FROMDISK(pt.Impl.get()));
-        auto entry = self.symbolEntry[@(methodAddress)];
+        auto resolvedMethodAddress = reinterpret_cast<uintptr_t>(FROMDISK(pt.Impl.get()));
+        auto entry = self.symbolEntry[@(resolvedMethodAddress)];
         
         std::string outDemangledString;
         dshelpers::simple_demangle(entry.name, outDemangledString);
         
-    
-        bool isInstanceMethod = pt.Flags.isInstance();
+        auto flags = pt.Flags;
+        bool isInstanceMethod = flags.isInstance();
 
-        
-        
         const char *resolvedMethodName = outDemangledString.length() == 0 ? stripped : outDemangledString.c_str();
-        printf("\t%s%p%s%s %s func %s%s", dcolor(DSCOLOR_GRAY), methodAddress, color_end(), dcolor(DSCOLOR_BOLD), isInstanceMethod ? "" : " class", resolvedMethodName, color_end());
+        printf("\t%s%p%s%s %s func %s%s", dcolor(DSCOLOR_GRAY), (void*)resolvedMethodAddress, color_end(), dcolor(DSCOLOR_BOLD), isInstanceMethod ? "" : " class", resolvedMethodName, color_end());
         if (xref_options.verbose >= VERBOSE_3) {
             printf(" %s// %s %s", dcolor(DSCOLOR_GRAY), getKindMethodString(flags.getKind()), color_end());
         }
@@ -365,8 +402,9 @@ char *GetProtocolFlagsDescription(ProtocolRequirementFlags *req) {
 
 /// AKA properties
 - (void)dumpTargetTypeContextDescriptorFields:(TypeContextDescriptor*)descriptorDisk {
+
+
     auto fields = descriptorDisk->Fields.get();
-    
     if (!fields) {
         return;
     }
@@ -385,9 +423,7 @@ char *GetProtocolFlagsDescription(ProtocolRequirementFlags *req) {
     ContextDescriptorKind kind = descriptorDisk->Flags.getKind();
     auto fieldRecords = descriptorDisk->Fields.get()->getFields();
 
-    
     for (auto &pt : fieldRecords) {
-        
         const char * declarationNameType;
         if (kind ==  ContextDescriptorKind::Enum) {
             declarationNameType = "case";
@@ -395,20 +431,19 @@ char *GetProtocolFlagsDescription(ProtocolRequirementFlags *req) {
             declarationNameType = pt.Flags.isVar() ? "var" : "let";
         }
 
-        auto mangledTypeName = pt.MangledTypeName.get();
+        auto mangledTypeName = pt.getMangledTypeName(0);
         auto fieldName = pt.FieldName.get();
-
-//        auto mangledName = pt.getMangledTypeName(0);
         const char* resolvedSymbolicReference = "";
         
-        if (mangledTypeName) {
+        if (!mangledTypeName.empty()) {
             // Check if a symbolic reference (visible in properties that reference classes in same module)
+            # warning https://twitter.com/jckarter/status/1151207129992192000
             if (mangledTypeName[0] >= '\x01' && mangledTypeName[0] <= '\x17') {
-                
-                int32_t symbolReference = *(int32_t*)&mangledTypeName[1];
-                auto resolvedTypeDescriptor = (uintptr_t)&mangledTypeName[1] + (uintptr_t)symbolReference;
-                
-                payload::LoadToDiskTranslator<TypeContextDescriptor>* resolvedDescriptor = reinterpret_cast<payload::LoadToDiskTranslator<TypeContextDescriptor> *>(resolvedTypeDescriptor);
+
+                int32_t symbolReference = *(int32_t*)&mangledTypeName.data()[1];
+                auto resolvedTypeDescriptor = (uintptr_t)&mangledTypeName.data()[1] + (uintptr_t)symbolReference;
+
+                payload::LoadToDiskTranslator<TypeContextDescriptor>* resolvedDescriptor = LoadToDiskTranslator<TypeContextDescriptor>::Cast(resolvedTypeDescriptor);
                 resolvedSymbolicReference = resolvedDescriptor->disk()->Name.get();
 
             } else {
@@ -420,9 +455,9 @@ char *GetProtocolFlagsDescription(ProtocolRequirementFlags *req) {
         printf("\t%s%s %s %s %s%s\n", dcolor(DSCOLOR_GREEN),
                                            declarationNameType,
                                            fieldName,
-                                           mangledTypeName ? ":" : "",
+                                           !mangledTypeName.empty() ? ":" : "",
                                            resolvedSymbolicReference,
-                                           //mangledName[0] & '\x01' ? resolvedSymbolicReference : demangledName,
+//                                           mangledName[0] & '\x01' ? resolvedSymbolicReference : demangledName,
                                            color_end());
  
         
@@ -463,7 +498,6 @@ char *GetProtocolFlagsDescription(ProtocolRequirementFlags *req) {
         putchar('}');
         putchar('\n');
     }
-    
 }
 
 @end
@@ -476,7 +510,6 @@ const char *getKindString(swift::ContextDescriptorKind kind) {
             return "module";
         case swift::ContextDescriptorKind::Extension:
             return "extension";
-
         case swift::ContextDescriptorKind::Anonymous:
             return "anonymous";
         case swift::ContextDescriptorKind::OpaqueType:
@@ -492,10 +525,8 @@ const char *getKindString(swift::ContextDescriptorKind kind) {
         case swift::ContextDescriptorKind::Type_Last:
             return "last<unknown>";
     }
-    
     return "<unknown>";
 }
-
 
 const char *getKindMethodString(swift::MethodDescriptorFlags::Kind kind) {
     switch (kind) {

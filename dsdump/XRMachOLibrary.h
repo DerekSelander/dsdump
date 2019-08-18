@@ -91,7 +91,7 @@ extern "C" {
 @property (nonatomic, strong) NSMutableDictionary <NSString*, NSNumber*> *externalObjectiveClassesDict;
 
 /// The initial MachO command to dictate the file, other ivars will reference offsets of this
-@property (nonatomic, assign) void *load_cmd_buffer;
+//@property (nonatomic, assign) void *load_cmd_buffer;
 
 
 /// Offsets into each load command struct section

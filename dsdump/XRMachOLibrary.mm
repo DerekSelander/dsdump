@@ -75,6 +75,8 @@ namespace dshelpers {
     
 }
 
+using namespace payload;
+
 ////////////////////////////////////////////////////////////////////////////////
 
 @implementation XRMachOLibrary
@@ -146,8 +148,8 @@ namespace dshelpers {
         } else if (magic == MH_MAGIC_64 || magic == MH_CIGAM_64) {
 
             _header = *(struct mach_header_64 *)&_data[_file_offset];
-            _load_cmd_buffer = DATABUF(sizeof(struct mach_header_64) + _file_offset);
-            uintptr_t cur = (uintptr_t)_load_cmd_buffer;
+            
+            uintptr_t cur = (uintptr_t)DATABUF(sizeof(struct mach_header_64) + _file_offset);
             
             for (int i = 0; i < _header.ncmds; i++) {
                 struct load_command *load_cmd = (struct load_command *)cur;
@@ -211,8 +213,12 @@ namespace dshelpers {
                     
                     self.symtab = (struct symtab_command *)load_cmd;
                     
-                    self.symbols = static_cast<struct nlist_64 *>(DATABUF(_file_offset + self.symtab->symoff)); //(struct nlist_64 *)&_data[_file_offset + self.symtab->symoff];
-                    self.str_symbols = static_cast<char *>(DATABUF(_file_offset + self.symtab->stroff)); // (char *)&_data[_file_offset + self.symtab->stroff];
+                    self.symbols = GetData<struct nlist_64>(_file_offset + self.symtab->symoff);
+//                    self.symbols = static_cast<struct nlist_64 *>(DATABUF(_file_offset + self.symtab->symoff)); //(struct nlist_64 *)&_data[_file_offset + self.symtab->symoff];
+                    
+//                    payload::
+                    self.str_symbols = GetData<char>(_file_offset + self.symtab->stroff);
+                    // static_cast<char *>(DATABUF(_file_offset + self.symtab->stroff)); // (char *)&_data[_file_offset + self.symtab->stroff];
      
 //                    char f = calloc(1000, 5);
 //                    fread(<#void *__ptr#>, <#size_t __size#>, <#size_t __nitems#>, <#FILE *__stream#>)
@@ -443,7 +449,7 @@ namespace dshelpers {
     return 0;
 }
 
-- (uintptr_t)translateOffsetToLoadAddress:(intptr_t)offset {
+- (uintptr_t)translateOffsetToLoadAddress:(uintptr_t)offset {
     uintptr_t f = -self.file_offset;
     for (int i = 1; i < self.sectionCommandsArray.count; i++) {
         NSNumber *sectionNumber = self.sectionCommandsArray[i];

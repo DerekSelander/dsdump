@@ -68,6 +68,10 @@
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
+            argument = "/Volumes/YukonPreSeed17A5565b.J81J82J96J97DeveloperOS//usr/libexec/tzd --swift  -U -vvv"
+            isEnabled = "YES">
+         </CommandLineArgument>
+         <CommandLineArgument
             argument = "/Volumes/YukonSeed17A5492t.J98aJ99aDeveloperOS//Applications/Diagnostics.app/Diagnostics -vvU --swift"
             isEnabled = "NO">
          </CommandLineArgument>
@@ -105,7 +109,7 @@
          </CommandLineArgument>
          <CommandLineArgument
             argument = "/Volumes/YukonSeed17A5534f.N71DeveloperOS/Applications/AppStore.app/AppStore --swift"
-            isEnabled = "YES">
+            isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
             argument = "/tmp/fuck_this --swift"

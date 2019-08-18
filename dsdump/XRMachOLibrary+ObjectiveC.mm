@@ -6,6 +6,15 @@
 //  Copyright © 2019 Selander. All rights reserved.
 //
 
+// Knock out objc/runtime.h so I can use the actual headers
+//#ifndef _OBJC_RUNTIME_H
+//#define _OBJC_RUNTIME_H
+//
+////#import "objc-runtime-new.h"
+//
+//#endif // OBJC_RUNTIME
+
+
 #import "XRMachOLibrary+ObjectiveC.h"
 #import "XRMachOLibrary+SymbolDumper.h"
 #import <libgen.h>
@@ -310,15 +319,9 @@ static NSDictionary <NSString*, NSNumber*> *blacklistedSelectors = nil;
     printf("%s <", dcolor(DSCOLOR_YELLOW));
     for (int i = 0; i < protocolList->count; i++) {
     
-        protocol_t *prot = &protocolList->list[i];
- 
-        
-//        prot->protocols->count
-//        prot->_demangledName;
-//        protocol_t p = protocolList->list[i];
-//
-//        printf("%s", p._demangledName ? p._demangledName : p.mangledName);
-        printf("%s", prot->mangledName ? prot->mangledName : "<unknown>");
+        auto prot = payload::LoadToDiskTranslator<protocol_t>::Cast( &protocolList->list[i]);
+        auto mangledName = prot->disk()->mangledName->disk();
+        printf("%s", mangledName ? mangledName : "<unknown>");
         if (i != count - 1) {
             putchar(',');
             putchar(' ');
@@ -429,7 +432,7 @@ static NSDictionary <NSString*, NSNumber*> *blacklistedSelectors = nil;
         return NO;
     }
     
-#define FAST_IS_SWIFT_LEGACY 1 // f'ing swift devs changing their minds every 3 seconds...
+#define FAST_IS_SWIFT_LEGACY 1 // swift devs changing their minds every 3 seconds...
 #define FAST_IS_SWIFT_STABLE 2
     uintptr_t buff = (*(uintptr_t *)DATABUF(offset +  offsetof(ds_objc_class, bits)));
     return buff & (FAST_IS_SWIFT_LEGACY|FAST_IS_SWIFT_STABLE) ? YES : NO;

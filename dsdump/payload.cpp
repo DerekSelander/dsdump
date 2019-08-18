@@ -9,6 +9,11 @@
 #include "payload.hpp"
 
 
+// Likely from LLVM cmake
+namespace llvm {
+    int DisableABIBreakingChecks = 0;
+};
+
 // Holds the executable data
 namespace payload {
     uint8_t *data;

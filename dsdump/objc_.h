@@ -14,7 +14,6 @@
 #define RO_META               (1<<0)
 #define RO_ROOT               (1<<1)
 
-
 #import "payload.hpp"
 
 #pragma clang diagnostic push
@@ -313,7 +312,7 @@ typedef struct   {
 
 struct protocol_t : public payload::LoadToDiskTranslator<struct protocol_t >  {
     void *isa; 
-    const char *mangledName;
+    payload::LoadToDiskTranslator<const char> *mangledName;
     protocol_list_t *protocols;
     method_list_t *instanceMethods;
     method_list_t *classMethods;
