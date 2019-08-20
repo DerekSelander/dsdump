@@ -23,6 +23,7 @@
 #import <unordered_map>
 #import <iostream>
 #import <vector>
+#import <type_traits>
 #import "XRMachOLibraryCplusHelpers.h"
 
 /////////////////////////////////////////////////////////
@@ -61,8 +62,11 @@ using namespace payload;
 /// Used to correlate getter/setter methods to offsets of ivars
 static NSMutableDictionary * __ivarsDictionary = nil;
 
-// Used to group all the Swift type references by module,
+/// Used to group all the Swift type references by module,
 static unordered_map<const ModuleContextDescriptor*, std::vector<TypeContextDescriptor*>> moduleDescriptorDictionary;
+
+/// They say that all descriptors will have a module, but that doesn't seem to be the case in iOS 13's apps
+static std::vector<TypeContextDescriptor*> descriptorsWithNoModule;
 
 /// Used to group the Swift protocols by module
 unordered_map<const ModuleContextDescriptor *, std::vector<ProtocolDescriptor*>> moduleProtocolDictionary;
@@ -111,16 +115,34 @@ static unordered_map<TargetClassDescriptor<InProcess>*, swift_class*> swiftDescr
         
         int32_t ztypeOffset = TODISKDEREF(&ztypeOffsets[i]);
         uintptr_t zresolvedTypedOffset = (uintptr_t)(&ztypeOffsets[i]) + ztypeOffset;
-        TypeContextDescriptor* zdescriptor = TODISK(reinterpret_cast<TypeContextDescriptor*>(zresolvedTypedOffset));
+//        TypeContextDescriptor* zdescriptor = TODISK(reinterpret_cast<TypeContextDescriptor*>(zresolvedTypedOffset));
         
-        assert(zdescriptor == descriptor);
-        auto module = descriptor->getModuleContext();
+//        assert(zdescriptor == descriptor);
+
+     
+//        for (auto cur = this; true; cur = cur->Parent.get()) {
+//            if (auto module = dyn_cast<TargetModuleContextDescriptor<Runtime>>(cur))
+//                return module;
+//        }
         
-        const TargetModuleContextDescriptor<InProcess> * zmodule = zdescriptor->getModuleContext();
+//        const ContextDescriptor* cur = LoadToDiskTranslator::Cast(descriptor);
+        
+        LoadToDiskTranslator<ContextDescriptor>* cur = payload::CastToDisk<ContextDescriptor>(descriptor);
+
+        while (cur->disk()->Parent.get() != nullptr) {
+//            cur = payload::LoadToDiskTranslator::Cast(cur->Parent.get());
+            auto parent = const_cast<ContextDescriptor*>(cur->disk()->Parent.get());
+            cur = payload::CastToDisk<ContextDescriptor>(parent);
+        }
+        
+        //        this throws an error assert!
+//        auto module = descriptor->getModuleContext();
+        auto module = dyn_cast<TargetModuleContextDescriptor<InProcess>>(cur->disk());
         if (module == nullptr) {
+            descriptorsWithNoModule.push_back(descriptor);
             continue;
         }
-        assert(module == zmodule);
+        
         
         moduleDescriptorDictionary.emplace(module, vector<TypeContextDescriptor*>());
         moduleDescriptorDictionary.at(module).push_back(descriptor);
@@ -212,9 +234,14 @@ static unordered_map<TargetClassDescriptor<InProcess>*, swift_class*> swiftDescr
     putchar(',');
     auto supportedProtocols = found->second;
     auto count = supportedProtocols.size();
-    for (int i = 0; i< count; i++) {
-        auto protocol = supportedProtocols[i];
-        printf(" %s", protocol->Name.get());
+    for (int i = 0; i < count; i++) {
+        
+        auto prot = const_cast<ProtocolDescriptor*>(supportedProtocols[i]);
+        if (prot == nullptr) {
+            continue;
+        }
+        auto protocol = payload::CastToDisk<ProtocolDescriptor>(prot);
+        printf(" %s", protocol->disk()->Name.get());
         if (i != count - 1) {
             putchar(',');
             putchar(' ');
@@ -222,22 +249,63 @@ static unordered_map<TargetClassDescriptor<InProcess>*, swift_class*> swiftDescr
     }
 }
 
-- (void)dumpSwiftClassType:(ClassDescriptor *)classDescriptorDisk descriptor:(swift::TargetTypeContextDescriptor<swift::InProcess> *&)descriptor {
-//    classDescriptorDisk->Parent.get();
+
+- (void)dumpSwiftStructType:(StructDescriptor *)descriptor {
+//    descriptor->
+//    descriptor->
+    auto params = descriptor->getGenericParams();
+    auto gg = descriptor->hasFieldOffsetVector();
+    auto ff = descriptor->getGenericArgumentOffset();
+//    auto &yy = descriptor->getSingletonMetadataInitialization();
+    auto hh = descriptor->NumFields;
+    auto jj = descriptor->FieldOffsetVectorOffset;
     
-    auto it = swiftDescriptorToClassDictionary.find(classDescriptorDisk);
+//    descriptor->
+//    descriptor->fieldof
+    descriptor->Name;
+    auto gen = descriptor->getGenericArgumentOffset();
+    auto yay = descriptor->getGenericContext();
+//    auto nay = descriptor->getGenericContextHeader();
+//    descriptor->getGenericArgumentOffset();
+    
+//    descriptor->field
+    auto g = descriptor->getAccessFunction();
+    auto wtf = descriptor->getAccessFunction();
+    
+//    auto h = descriptor->getGenericParams()
+    printf("");
+    
+}
+
+
+- (void)dumpSwiftClass:(ClassDescriptor *)descriptor {
+
+    auto it = swiftDescriptorToClassDictionary.find(descriptor);
     if (it == swiftDescriptorToClassDictionary.end()) {
-        putchar('{');
+        printf(" {");
         return;
     }
-    auto swiftClassLoad = it->second; // Load
-    auto &swiftClassDisk = *swiftClassLoad->disk(); // Disk
+
+    // print Parent class
+    [self printParentClassIfApplicable:it->second];
     
+    // print Protocols
+    [self dumpProtocolsForTypeContextDescriptor:descriptor];
+    printf(" {");
+    
+    // print Propteries
+    [self dumpTargetTypeContextDescriptorFields:descriptor];
+    
+    // print Methods
+    [self dumpSwiftMethods:descriptor];
+}
+
+- (void)printParentClassIfApplicable:(swift_class*)swiftClassLoad {
+    auto swiftClassDisk = swiftClassLoad->disk();
     DSCOLOR color;
     const char *demangledName = NULL;
     auto superclass_ptr = swiftClassDisk->superclass;
     std::string outDemangledstring;
-    
     // Print out parent
 #warning ARM64e tmp hack
     if (reinterpret_cast<uintptr_t>(superclass_ptr) & 0x0000000FFFFFFFF0UL) {
@@ -259,55 +327,7 @@ static unordered_map<TargetClassDescriptor<InProcess>*, swift_class*> swiftDescr
     }
     
     printf(" : %s%s%s", dcolor(color), demangledName, color_end());
-    [self dumpProtocolsForTypeContextDescriptor:descriptor];
-    
-    putchar(' ');
-    putchar('{');
-    
-    // propteries
-    [self dumpTargetTypeContextDescriptorFields:classDescriptorDisk];
-    
-    // Methods
-    [self dumpSwiftMethods:classDescriptorDisk];
-}
-
-- (void)printParentIfApplicable:(ContextDescriptor*)descriptor {
-//    descriptor
-    auto parent = descriptor->Parent.get();
-    if (parent == nullptr) {
-        return;
-    }
-    
-    auto parentKind = parent->getKind();
-    switch (parentKind) {
-        case ContextDescriptorKind::Struct: {
-            
-            auto recast = reinterpret_cast<const StructDescriptor *>(parent);
-            auto name = recast->Name.get();
-            printf(": %s", name);
-            break;
-        } case ContextDescriptorKind::Class: {
-            auto recast = reinterpret_cast<const ClassDescriptor *>(parent);
-            auto name = recast->Name.get();
-            printf(": %s", name);
-
-            break;
-        } case ContextDescriptorKind::Protocol: {
-            auto recast = reinterpret_cast<const ProtocolDescriptor *>(parent);
-            auto name = recast->Name.get();
-            printf(": %s", name);
-            
-            break;
-        } case ContextDescriptorKind::Enum: {
-            auto recast = reinterpret_cast<const EnumDescriptor *>(parent);
-            auto name = recast->Name.get();
-            printf(": %s", name);
-            
-            break;
-        }
-        default:
-            break;
-    }
+   
 }
 
 - (void)dumpSwiftTypes {
@@ -327,22 +347,22 @@ static unordered_map<TargetClassDescriptor<InProcess>*, swift_class*> swiftDescr
             ContextDescriptorKind kind = descriptor->Flags.getKind();
             const char* name = descriptor->Name.get();
             printf(" %s %s%s%s", getKindString(kind), dcolor(DSCOLOR_CYAN), name, color_end());
-            [self printParentIfApplicable:descriptor];
             switch (kind) {
                 case ContextDescriptorKind::Struct: {
                     auto structDescriptor = static_cast<StructDescriptor *>(descriptor);
-                    putchar(' ');
-                    putchar('{');
+                    printf(" {");
+                    [self dumpSwiftStructType:structDescriptor];
                     [self dumpTargetTypeContextDescriptorFields:structDescriptor];
                     break;
                 } case ContextDescriptorKind::Class: {
                     auto classDescriptorDisk = static_cast<ClassDescriptor *>(descriptor);
-                    [self dumpSwiftClassType:classDescriptorDisk descriptor:descriptor];
+                    [self dumpSwiftClass:classDescriptorDisk];
                     break;
                 } case ContextDescriptorKind::Protocol:
                     printf("TODO Protocol\n");
                     break;
                 case ContextDescriptorKind::Enum: {
+                    printf(" {");
                     auto enumDescriptor = static_cast<EnumDescriptor*>(descriptor);
                     [self dumpTargetTypeContextDescriptorFields:enumDescriptor];
                     break;
@@ -425,39 +445,21 @@ static unordered_map<TargetClassDescriptor<InProcess>*, swift_class*> swiftDescr
 
     for (auto &pt : fieldRecords) {
         const char * declarationNameType;
-        if (kind ==  ContextDescriptorKind::Enum) {
-            declarationNameType = "case";
-        } else {
-            declarationNameType = pt.Flags.isVar() ? "var" : "let";
-        }
-
-        auto mangledTypeName = pt.getMangledTypeName(0);
-        auto fieldName = pt.FieldName.get();
-        const char* resolvedSymbolicReference = "";
         
-        if (!mangledTypeName.empty()) {
-            // Check if a symbolic reference (visible in properties that reference classes in same module)
-            # warning https://twitter.com/jckarter/status/1151207129992192000
-            if (mangledTypeName[0] >= '\x01' && mangledTypeName[0] <= '\x17') {
-
-                int32_t symbolReference = *(int32_t*)&mangledTypeName.data()[1];
-                auto resolvedTypeDescriptor = (uintptr_t)&mangledTypeName.data()[1] + (uintptr_t)symbolReference;
-
-                payload::LoadToDiskTranslator<TypeContextDescriptor>* resolvedDescriptor = LoadToDiskTranslator<TypeContextDescriptor>::Cast(resolvedTypeDescriptor);
-                resolvedSymbolicReference = resolvedDescriptor->disk()->Name.get();
-
-            } else {
-                std::string str;
-                resolvedSymbolicReference = dshelpers::simple_type(mangledTypeName, str);
-            }
-        }
+        declarationNameType = kind == ContextDescriptorKind::Enum ? "case" : pt.Flags.isVar() ? "var" : "let";
+        auto mangledNameBase = pt.MangledTypeName.get();
+        StringRef mangledName = (mangledNameBase == nullptr) ? StringRef("") : makeSymbolicMangledNameStringRef(pt.MangledTypeName.get());
+        auto fieldName = pt.FieldName.get();
+        
+        std::string str;
+        const char* resolvedSymbolicReference = dshelpers::simple_type(mangledName, str);
+        
         
         printf("\t%s%s %s %s %s%s\n", dcolor(DSCOLOR_GREEN),
                                            declarationNameType,
                                            fieldName,
-                                           !mangledTypeName.empty() ? ":" : "",
+                                           !mangledName.empty() ? ":" : "",
                                            resolvedSymbolicReference,
-//                                           mangledName[0] & '\x01' ? resolvedSymbolicReference : demangledName,
                                            color_end());
  
         

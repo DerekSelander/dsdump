@@ -49,7 +49,6 @@ namespace payload {
         
         
     };
- 
    
     
 
@@ -144,5 +143,10 @@ namespace payload {
     };
     
     
+    template <typename T, typename C>
+    static payload::LoadToDiskTranslator<T>* CastToDisk(C val) {
+        
+        return reinterpret_cast<payload::LoadToDiskTranslator<T>*>(val);
+    }
 }
 #endif /* payload_hpp */

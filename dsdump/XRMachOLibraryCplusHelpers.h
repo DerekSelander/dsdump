@@ -25,9 +25,11 @@
      extern Context context;
      
      const char *simple_demangle(const char *mangled, std::string &strout_ref, swift::Demangle::DemangleOptions options = dshelpers::simplifiedOptions);
+     bool canDemangle(StringRef mangled);
      const char *simple_demangle(char *mangled, std::string &strout_ref, swift::Demangle::DemangleOptions options = dshelpers::simplifiedOptions);
      const char *simple_demangle(StringRef mangled, std::string &strout_ref, swift::Demangle::DemangleOptions options = dshelpers::simplifiedOptions);
      
+//     const char *simple_type(StringRef type);
      const char *simple_type(StringRef type, std::string &strout_ref);
      const char *simple_type(char* type, std::string &strout_ref);
      const char *simple_type(const char* type, std::string &strout_ref);

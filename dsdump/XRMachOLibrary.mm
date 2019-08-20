@@ -54,9 +54,18 @@ namespace dshelpers {
         return strout_ref.c_str();
     }
     
-    const char *simple_type(StringRef type, std::string &strout_ref) {
+    const char *simple_type(StringRef type, std::string &strout_ref ) {
         strout_ref = context.demangleTypeAsString(type, simplifiedOptions);
         return strout_ref.c_str();
+    }
+    
+    const char *simple_type(StringRef type) {
+        std::string strout_ref = context.demangleTypeAsString(type, simplifiedOptions);
+        return strout_ref.c_str();
+    }
+    
+    bool canDemangle(StringRef mangled) {
+        return context.hasSwiftCallingConvention(mangled);
     }
     
     const char *simple_type(char* type, std::string &strout_ref) {
