@@ -116,7 +116,7 @@
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = "  $(TARGET_BUILD_DIR)/dsdump  -vUvv --swift"
+            argument = "  $(TARGET_BUILD_DIR)/dsdump  -vUvv --objc "
             isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument

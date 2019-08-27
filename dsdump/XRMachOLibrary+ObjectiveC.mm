@@ -15,12 +15,13 @@
 //#endif // OBJC_RUNTIME
 
 
+#import <libgen.h>
+#import <stddef.h>
+
 #import "XRMachOLibrary+ObjectiveC.h"
 #import "XRMachOLibrary+SymbolDumper.h"
-#import <libgen.h>
 #import "objc_.h"
 #import "XRMachOLibrary+Swift.h"
-#import <stddef.h>
 #import "XRSymbolEntry.h"
 
 #pragma clang diagnostic push
@@ -29,7 +30,6 @@
     #import "XRMachOLibraryCplusHelpers.h"
 #pragma clang diagnostic pop
 
-//using namespace payload;
 
 // Swift uses offset references for ivars when referencing methods
 static NSMutableDictionary *__ivarsDictionary = nil;
@@ -82,8 +82,6 @@ static NSDictionary <NSString*, NSNumber*> *blacklistedSelectors = nil;
         uintptr_t methodAddress = ARM64e_PTRMASK(*(uintptr_t *)(DATABUF(methodsList_FO + PTR_SIZE * 3 + (sizeof(method_t) * j))));
         printf("%s0x%011lx%s %s%c[%s %s]%s\n", dcolor(DSCOLOR_GRAY), methodAddress, color_end(), dcolor(DSCOLOR_BOLD), "-+"[isMeta], name, methodName, color_end());
     }
-    
-//SWIFT_PART:
   
 }
 
@@ -174,35 +172,25 @@ static NSDictionary <NSString*, NSNumber*> *blacklistedSelectors = nil;
             return;
         }
         
-        
-//        uintptr_t offsets = [self translateLoadAddressToFileOffset:classList->addr useFatOffset:NO] + self.file_offset;
-//        uintptr_t *buffs = (uintptr_t *)&self.data[offsets];
-        
         uintptr_t offset; // = [self translateLoadAddressToFileOffset:class_list->addr useFatOffset:NO] + self.file_offset;
-        
-//        auto buff = payload::LoadToDiskTranslator<uintptr_t>::Cast(classList->addr)->disk();
         auto buff = payload::LoadToDiskTranslator<uintptr_t>::Cast(classList->addr);
         char modname[1024];
         for (int i = 0; i < classList->size / PTR_SIZE; i++) {
             
             auto resolvedAddress = buff->Get(i);
-//            auto meh = buff->GetDisk(i);
-//            auto test = meh->disk();
+
             if (xref_options.swift_mode && ![self isSwiftClass:resolvedAddress]) {
                 continue;
             }
-            
-//            auto resolvedAddress = buff->AtIndex(i);
+
 
             const char *name = [self nameForObjCClass:resolvedAddress];
             
             d_offsets off;
             if (xref_options.swift_mode) {
-                
                 std::string str;
                 dshelpers::simple_demangle(name, str);
                 printf("0x%011lx %s%s%s", resolvedAddress,  dcolor(DSCOLOR_CYAN), dshelpers::simple_demangle(name, str), color_end());
-                
             } else {
                 printf("0x%011lx %s%s%s", resolvedAddress,  dcolor(DSCOLOR_CYAN), name, color_end());
             }
@@ -244,7 +232,7 @@ static NSDictionary <NSString*, NSNumber*> *blacklistedSelectors = nil;
                 }
             }
             
-            // Print the libraries if verbose 4
+            // Print the libraries of Objc classes if verbose 4
             if (xref_options.verbose > VERBOSE_3) {
                 char *libName = objcReference && objcReference.libOrdinal ? (char*)self.depdencies[objcReference.libOrdinal].UTF8String : NULL;
                 if (libName) {
@@ -278,7 +266,6 @@ static NSDictionary <NSString*, NSNumber*> *blacklistedSelectors = nil;
                 putchar('\n');
             }
         }
-        
     }
     
     // Undefined symbols, use the symbol table
@@ -291,8 +278,7 @@ static NSDictionary <NSString*, NSNumber*> *blacklistedSelectors = nil;
             if (!strnstr(chr, "_OBJC_CLASS_$_", OBJC_CLASS_LENGTH)) {
                 continue;
             }
-            //            NSString *name = [NSString stringWithUTF8String:chr];
-            //            uintptr_t addr = self.stringObjCDictionary[name].address.unsignedLongValue;
+
             print_symbol(self, &sym, NULL);
         }
     }

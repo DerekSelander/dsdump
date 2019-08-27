@@ -135,36 +135,32 @@ void wtf(uintptr_t address) {
         
         
         
-        int32_t ztypeOffset = TODISKDEREF(&ztypeOffsets[i]);
-        uintptr_t zresolvedTypedOffset = (uintptr_t)(&ztypeOffsets[i]) + ztypeOffset;
-//        TypeContextDescriptor* zdescriptor = TODISK(reinterpret_cast<TypeContextDescriptor*>(zresolvedTypedOffset));
-        
-//        assert(zdescriptor == descriptor);
-
-     
-//        for (auto cur = this; true; cur = cur->Parent.get()) {
-//            if (auto module = dyn_cast<TargetModuleContextDescriptor<Runtime>>(cur))
-//                return module;
-//        }
-        
-//        const ContextDescriptor* cur = LoadToDiskTranslator::Cast(descriptor);
+//        int32_t ztypeOffset = TODISKDEREF(&ztypeOffsets[i]);
+//        uintptr_t zresolvedTypedOffset = (uintptr_t)(&ztypeOffsets[i]) + ztypeOffset;
+////        TypeContextDescriptor* zdescriptor = TODISK(reinterpret_cast<TypeContextDescriptor*>(zresolvedTypedOffset));
+//
+////        assert(zdescriptor == descriptor);
+//
+//
+////        for (auto cur = this; true; cur = cur->Parent.get()) {
+////            if (auto module = dyn_cast<TargetModuleContextDescriptor<Runtime>>(cur))
+////                return module;
+////        }
+//
+////        const ContextDescriptor* cur = LoadToDiskTranslator::Cast(descriptor);
         
         LoadToDiskTranslator<ContextDescriptor>* cur = payload::CastToDisk<ContextDescriptor>(descriptor);
 
         while (cur->disk()->Parent.get() != nullptr) {
-//            cur = payload::LoadToDiskTranslator::Cast(cur->Parent.get());
             auto parent = const_cast<ContextDescriptor*>(cur->disk()->Parent.get());
             cur = payload::CastToDisk<ContextDescriptor>(parent);
         }
         
-        //        this throws an error assert!
-//        auto module = descriptor->getModuleContext();
         auto module = dyn_cast<TargetModuleContextDescriptor<InProcess>>(cur->disk());
         if (module == nullptr) {
             descriptorsWithNoModule.push_back(descriptor);
             continue;
         }
-        
         
         moduleDescriptorDictionary.emplace(module, vector<TypeContextDescriptor*>());
         moduleDescriptorDictionary.at(module).push_back(descriptor);

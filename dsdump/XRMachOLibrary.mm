@@ -361,10 +361,10 @@ using namespace payload;
         struct _tmp { uintptr_t yoloolololollolo; };
         auto addrs = reinterpret_cast<payload::LoadToDiskTranslator<_tmp> *> (xref_options.virtual_address);
         auto diskAddr = addrs->disk();
-        printf("Virtual %012p -> Offset %012p\n", xref_options.virtual_address, (uintptr_t)diskAddr - (uintptr_t)payload::data);;
+        printf("Virtual 0x%012lx -> Offset 0x%012lx\n", xref_options.virtual_address, (uintptr_t)diskAddr - (uintptr_t)payload::data);
         for (int i = 0; i < xref_options.virtual_address_count; i++) {
-            auto addr = &diskAddr[i];
-            printf("  %s%012p%s:   %s%018p  %s%s%014p%s\n", dcolor(DSCOLOR_CYAN), xref_options.virtual_address + (i * PTR_SIZE), color_end(), dcolor(DSCOLOR_YELLOW), *addr, color_end(), dcolor(DSCOLOR_RED), *reinterpret_cast<uintptr_t*>(addr) & 0x000000ffffffffff, color_end());
+//            auto addr = &diskAddr[i];
+//            printf("  %s0x%012lx%s:   %s0x%018lx  %s%s0x%014lx%s\n", dcolor(DSCOLOR_CYAN), xref_options.virtual_address + (i * PTR_SIZE), color_end(), dcolor(DSCOLOR_YELLOW), *addr, color_end(), dcolor(DSCOLOR_RED), *reinterpret_cast<uintptr_t*>(addr) & 0x000000ffffffffff, color_end());
         }
         exit(0);
     }
@@ -388,9 +388,8 @@ using namespace payload;
 }
 
 - (void)parseLocalSymbolsInSymbolTable {
-    // Only goes after local and external symbols
     
-    char *strings = self.str_symbols;
+    // Only goes after local and external symbols
     for (int i = self.dysymtab->ilocalsym; i < self.dysymtab->ilocalsym + self.dysymtab->nlocalsym; i++) {
         struct nlist_64 *symbol = &self.symbols[i];
         
