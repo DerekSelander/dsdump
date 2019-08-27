@@ -462,6 +462,7 @@ typedef struct swift_class_t  : public payload::LoadToDiskTranslator<struct swif
     uintptr_t *swiftMethods;
     
 
+    
     inline payload::LoadToDiskTranslator<class_ro_t> *rodata() {
         auto resolved = bits & FAST_DATA_MASK;
         auto rodata = reinterpret_cast<payload::LoadToDiskTranslator<class_ro_t>*>(resolved);

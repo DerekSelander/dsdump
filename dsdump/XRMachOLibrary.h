@@ -63,15 +63,13 @@ extern "C" {
 #endif
     
 
-@interface XRMachOLibrary : NSObject <NSMutableCopying> {
+@interface XRMachOLibrary : NSObject {
     size_t _instructions_count;
 }
-
 
 /// Library dependencies
 @property (nonatomic, strong) NSMutableArray <NSString *>*depdencies;
 @property (nonatomic, copy) NSString *path;
-
 
 
 //#define ARM64e_PTRMASK(data)  (data)

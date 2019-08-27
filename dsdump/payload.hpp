@@ -96,7 +96,7 @@ namespace payload {
         
         ///
         inline T* disk() {
-            if (isDisk()) { return reinterpret_cast<T*>((uintptr_t)this); }
+            if (isDisk()) { return reinterpret_cast<T*>((uintptr_t)this&0x000007FFFFFFFFFFUL); }
             
             auto loadAddress = reinterpret_cast<uintptr_t>(strip_PAC()) + payload::offset;
             for (auto &sec : payload::sections) {

@@ -6,3 +6,4 @@
 *.xcbkptlist
 Breakpoints_v2.xcbkptlist
 /swift-source/*
+/.DS_Store

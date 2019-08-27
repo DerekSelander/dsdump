@@ -15,8 +15,11 @@
 #import "XRSymbolEntry.h"
 #import "XRMachOLibraryCplusHelpers.h"
 #import "payload.hpp"
- #include <sys/mman.h>
-#include <unordered_map>
+
+
+#import <sys/mman.h>
+#import <mach/mach.h>
+#import <unordered_map>
 
 using namespace std;
 @interface XRMachOLibrary ()
@@ -30,6 +33,7 @@ namespace llvm {
     int EnableABIBreakingChecks = 0;
 }
 
+#define MMAP_POTENTIAL_START 0x0000000400000000UL
 
 namespace dshelpers {
     swift::Demangle::DemangleOptions simplifiedOptions = swift::Demangle::DemangleOptions::SimplifiedUIDemangleOptions();
@@ -84,6 +88,33 @@ namespace dshelpers {
     
 }
 
+
+/// Using mmap to specify an address that's not in dsdump's virtual memory and also not in inspected exectuables virtual memory
+static void ensureSafeAddressForMMap(size_t memory_size) {
+    vm_address_t address = MMAP_POTENTIAL_START;
+    vm_size_t vmsize = 0;
+    vm_region_basic_info_64 info = {};
+    mach_msg_type_number_t infoCount = VM_REGION_BASIC_INFO_COUNT_64;
+    memory_object_name_t object = {};
+    kern_return_t status = vm_region_64(mach_task_self(), &address, &vmsize, VM_REGION_BASIC_INFO_64, (vm_region_info_t)&info, &infoCount, &object);
+    
+    if (status) {
+        printf("Couldn't read own address space, exiting\n");
+        exit(1);
+    }
+    
+    if (info.protection != VM_PROT_NONE) {
+        printf("%p is mapped to existing memory, exiting\n", (void*)MMAP_POTENTIAL_START);
+        exit(1);
+    }
+
+    if (address - MMAP_POTENTIAL_START < memory_size) {
+        printf("%p region is not large enough, exiting\n", (void*)MMAP_POTENTIAL_START);
+        exit(1);
+    }
+
+}
+
 using namespace payload;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -123,8 +154,8 @@ using namespace payload;
         long fsize = ftell(f);
         fseek(f, 0, SEEK_SET);  /* same as rewind(f); */
         
-        // TODO fix this to figure out a memory window
-        void* buff = ::mmap((void*)0x0000000400000000, fsize, PROT_READ, MAP_PRIVATE, self.fd, 0);
+        ensureSafeAddressForMMap(fsize);
+        void* buff = ::mmap((void*)MMAP_POTENTIAL_START, fsize, PROT_READ, MAP_PRIVATE, self.fd, 0);
 
         payload::data = (uint8_t *)buff; // self.data;
         self.data = (uint8_t *)buff;
@@ -223,19 +254,9 @@ using namespace payload;
                     self.symtab = (struct symtab_command *)load_cmd;
                     
                     self.symbols = GetData<struct nlist_64>(_file_offset + self.symtab->symoff);
-//                    self.symbols = static_cast<struct nlist_64 *>(DATABUF(_file_offset + self.symtab->symoff)); //(struct nlist_64 *)&_data[_file_offset + self.symtab->symoff];
-                    
-//                    payload::
                     self.str_symbols = GetData<char>(_file_offset + self.symtab->stroff);
-                    // static_cast<char *>(DATABUF(_file_offset + self.symtab->stroff)); // (char *)&_data[_file_offset + self.symtab->stroff];
-     
-//                    char f = calloc(1000, 5);
-//                    fread(<#void *__ptr#>, <#size_t __size#>, <#size_t __nitems#>, <#FILE *__stream#>)
-
                     lseek(self.fd, self.symtab->symoff, SEEK_SET);
-                    
-//                    frea
-                    int a = 4;
+
                 } else if (load_cmd->cmd == LC_DYLD_INFO || load_cmd->cmd == LC_DYLD_INFO_ONLY) {
                     
                     self.dyldInfo = (struct dyld_info_command *)load_cmd;

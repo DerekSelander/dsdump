@@ -25,6 +25,7 @@
 #import <vector>
 #import <type_traits>
 #import "XRMachOLibraryCplusHelpers.h"
+#import <mach-o/getsect.h>
 
 /////////////////////////////////////////////////////////
 // muwahahahahahaha going to hell for this...
@@ -37,6 +38,7 @@
 
 #import "swift/ABI/MetadataValues.h"
 #import "swift/ABI/Metadata.h"
+#import "swift/ABI/TrailingObjects.h"
 #import "swift/Reflection/Records.h"
 #import "swift/Demangling/Demangler.h"
 
@@ -80,6 +82,26 @@ static unordered_map<const ContextDescriptor*, std::vector<const ProtocolDescrip
  */
 static unordered_map<TargetClassDescriptor<InProcess>*, swift_class*> swiftDescriptorToClassDictionary;
 
+
+void wtf(uintptr_t address) {
+    
+    const struct segment_command_64 * seg = getsegbyname("__TEXT");
+    int32_t *cur = (int32_t*)seg->vmaddr;
+    for (int i = 0; i < seg->vmsize / 4; i ++) {
+        uintptr_t addr = (uintptr_t)cur[i] + (uintptr_t)&cur[i];
+        if (addr == address) {
+            printf("Found address at %p\n", &cur[i]);
+        }
+    }
+    
+    uintptr_t *c = (uintptr_t*)seg->vmaddr;
+    for (int i = 0; i < seg->vmsize / 8; i ++) {
+        uintptr_t addr = (uintptr_t)c[i];
+        if (addr == address) {
+            printf("(64) Found address at %p\n", &cur[i]);
+        }
+    }
+}
 
 
 @implementation XRMachOLibrary (Swift)
@@ -250,31 +272,9 @@ static unordered_map<TargetClassDescriptor<InProcess>*, swift_class*> swiftDescr
 }
 
 
+
 - (void)dumpSwiftStructType:(StructDescriptor *)descriptor {
-//    descriptor->
-//    descriptor->
-    auto params = descriptor->getGenericParams();
-    auto gg = descriptor->hasFieldOffsetVector();
-    auto ff = descriptor->getGenericArgumentOffset();
-//    auto &yy = descriptor->getSingletonMetadataInitialization();
-    auto hh = descriptor->NumFields;
-    auto jj = descriptor->FieldOffsetVectorOffset;
-    
-//    descriptor->
-//    descriptor->fieldof
-    descriptor->Name;
-    auto gen = descriptor->getGenericArgumentOffset();
-    auto yay = descriptor->getGenericContext();
-//    auto nay = descriptor->getGenericContextHeader();
-//    descriptor->getGenericArgumentOffset();
-    
-//    descriptor->field
-    auto g = descriptor->getAccessFunction();
-    auto wtf = descriptor->getAccessFunction();
-    
-//    auto h = descriptor->getGenericParams()
-    printf("");
-    
+    // Not available till a later version of Swift reflection
 }
 
 
@@ -306,9 +306,9 @@ static unordered_map<TargetClassDescriptor<InProcess>*, swift_class*> swiftDescr
     const char *demangledName = NULL;
     auto superclass_ptr = swiftClassDisk->superclass;
     std::string outDemangledstring;
-    // Print out parent
-#warning ARM64e tmp hack
-    if (reinterpret_cast<uintptr_t>(superclass_ptr) & 0x0000000FFFFFFFF0UL) {
+    
+    // Print out parent, is there a parent class and is it locally implemented?
+    if (reinterpret_cast<uintptr_t>(superclass_ptr) & 0x0000000FFFFFFFF0UL /* ARM64e check */) {
         auto &superclass = *superclass_ptr; // Needed fo the overloaded -> operator
         auto &rodata = *superclass->rodata();
         auto mangledName = rodata->name->disk();
@@ -316,6 +316,7 @@ static unordered_map<TargetClassDescriptor<InProcess>*, swift_class*> swiftDescr
         demangledName = outDemangledstring.c_str();
         color = DSCOLOR_MAGENTA;
     } else {
+        // If we're here, the superclass was nil, meanining there could be no parent or could be referenced externally
         XRBindSymbol *bindSymbol = self.addressObjCDictionary[@((uintptr_t)&swiftClassLoad->superclass)];
         auto name = bindSymbol.name.UTF8String;
         if (name && strnstr(name, "_OBJC_CLASS_$_", strlen("_OBJC_CLASS_$_"))) {
@@ -327,7 +328,6 @@ static unordered_map<TargetClassDescriptor<InProcess>*, swift_class*> swiftDescr
     }
     
     printf(" : %s%s%s", dcolor(color), demangledName, color_end());
-   
 }
 
 - (void)dumpSwiftTypes {
@@ -343,7 +343,6 @@ static unordered_map<TargetClassDescriptor<InProcess>*, swift_class*> swiftDescr
         printf("module %s%s%s {\n", dcolor(DSCOLOR_GREEN), module->Name.get(), color_end());
         for (auto &descriptor : descriptors) {
 
-            
             ContextDescriptorKind kind = descriptor->Flags.getKind();
             const char* name = descriptor->Name.get();
             printf(" %s %s%s%s", getKindString(kind), dcolor(DSCOLOR_CYAN), name, color_end());
@@ -373,7 +372,6 @@ static unordered_map<TargetClassDescriptor<InProcess>*, swift_class*> swiftDescr
             }
             printf(" }\n\n");
         }
-//        putchar('}');
         printf("}\n");
     }
     
@@ -392,7 +390,7 @@ static unordered_map<TargetClassDescriptor<InProcess>*, swift_class*> swiftDescr
     if (it == swiftDescriptorToClassDictionary.end()) {
         return;
     }
-    
+
     char stripped[PATH_MAX];
     snprintf(stripped, PATH_MAX, "%s%s%s", dcolor(DSCOLOR_RED), "<stripped>", color_end());
     
@@ -422,7 +420,6 @@ static unordered_map<TargetClassDescriptor<InProcess>*, swift_class*> swiftDescr
 
 /// AKA properties
 - (void)dumpTargetTypeContextDescriptorFields:(TypeContextDescriptor*)descriptorDisk {
-
 
     auto fields = descriptorDisk->Fields.get();
     if (!fields) {
@@ -461,46 +458,44 @@ static unordered_map<TargetClassDescriptor<InProcess>*, swift_class*> swiftDescr
                                            !mangledName.empty() ? ":" : "",
                                            resolvedSymbolicReference,
                                            color_end());
- 
-        
     }
     
     putchar('\n');
 }
 
-- (void)dumpSwiftInstanceVariablesWithResolvedAddress:(uintptr_t)resolvedAddress {
-    resolvedAddress = ARM64e_PTRMASK(resolvedAddress);
-    intptr_t ivarList_FO = [self offsetAddressForObjCClass:resolvedAddress forType:OffSetTypeIvar];
-    
-    ivar_list_t *ivarList = (ivar_list_t *)DATABUF(ivarList_FO);
-    ivarList = (ivar_list_t *)ARM64e_PTRMASK((uintptr_t)ivarList);
-    
-    
-    uint32_t ivarCount = *(uint32_t *)DATABUF(ivarList_FO + offsetof(ivar_list_t, count));
-    
-     __ivarsDictionary = [NSMutableDictionary dictionaryWithCapacity:ivarCount];
-    ivar_t *ivars = (ivar_t *)DATABUF(ivarList_FO + offsetof(ivar_list_t, ivars));
-    if (ivarCount && ivarList_FO != FILE_OFFSET_UNKNOWN) {
-        putchar('{');
-        putchar('\n');
-    }
-    for (int i = 0; ivarList_FO != FILE_OFFSET_UNKNOWN && i < ivarCount; i++) {
-        ivar_t ivar = ivars[i];
-        uintptr_t ivarOffset_FO = [self translateLoadAddressToFileOffset:(uintptr_t)ivar.offset useFatOffset:YES];
-        uint32_t ivarOffset = *(uint32_t*)DATABUF(ivarOffset_FO);
-        
-        uintptr_t ivarName_FO = [self translateLoadAddressToFileOffset:(uintptr_t)ivar.name useFatOffset:YES];
-        char* ivarName = (char *)DATABUF(ivarName_FO);
-        
-        __ivarsDictionary[@(ivarOffset)] = [NSString stringWithUTF8String:ivarName];
-        printf("\t+0x%04x %s (0x%x)\n", ivarOffset, ivarName, ivar.size);
-    }
-    
-    if (ivarCount && ivarList_FO != FILE_OFFSET_UNKNOWN) {
-        putchar('}');
-        putchar('\n');
-    }
-}
+//- (void)dumpSwiftInstanceVariablesWithResolvedAddress:(uintptr_t)resolvedAddress {
+//    resolvedAddress = ARM64e_PTRMASK(resolvedAddress);
+//    intptr_t ivarList_FO = [self offsetAddressForObjCClass:resolvedAddress forType:OffSetTypeIvar];
+//    
+//    ivar_list_t *ivarList = (ivar_list_t *)DATABUF(ivarList_FO);
+//    ivarList = (ivar_list_t *)ARM64e_PTRMASK((uintptr_t)ivarList);
+//    
+//    
+//    uint32_t ivarCount = *(uint32_t *)DATABUF(ivarList_FO + offsetof(ivar_list_t, count));
+//    
+//     __ivarsDictionary = [NSMutableDictionary dictionaryWithCapacity:ivarCount];
+//    ivar_t *ivars = (ivar_t *)DATABUF(ivarList_FO + offsetof(ivar_list_t, ivars));
+//    if (ivarCount && ivarList_FO != FILE_OFFSET_UNKNOWN) {
+//        putchar('{');
+//        putchar('\n');
+//    }
+//    for (int i = 0; ivarList_FO != FILE_OFFSET_UNKNOWN && i < ivarCount; i++) {
+//        ivar_t ivar = ivars[i];
+//        uintptr_t ivarOffset_FO = [self translateLoadAddressToFileOffset:(uintptr_t)ivar.offset useFatOffset:YES];
+//        uint32_t ivarOffset = *(uint32_t*)DATABUF(ivarOffset_FO);
+//        
+//        uintptr_t ivarName_FO = [self translateLoadAddressToFileOffset:(uintptr_t)ivar.name useFatOffset:YES];
+//        char* ivarName = (char *)DATABUF(ivarName_FO);
+//        
+//        __ivarsDictionary[@(ivarOffset)] = [NSString stringWithUTF8String:ivarName];
+//        printf("\t+0x%04x %s (0x%x)\n", ivarOffset, ivarName, ivar.size);
+//    }
+//    
+//    if (ivarCount && ivarList_FO != FILE_OFFSET_UNKNOWN) {
+//        putchar('}');
+//        putchar('\n');
+//    }
+//}
 
 @end
 

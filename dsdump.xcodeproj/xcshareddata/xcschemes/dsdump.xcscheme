@@ -109,7 +109,7 @@
          </CommandLineArgument>
          <CommandLineArgument
             argument = "/Volumes/YukonPreSeed17A5565b.J81J82J96J97DeveloperOS//usr/libexec/remindd --swift"
-            isEnabled = "YES">
+            isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
             argument = "/tmp/fuck_this --swift"
@@ -117,7 +117,7 @@
          </CommandLineArgument>
          <CommandLineArgument
             argument = "  $(TARGET_BUILD_DIR)/dsdump  -vUvv --swift"
-            isEnabled = "NO">
+            isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
             argument = "/Volumes/YukonSeed17A5492t.N71DeveloperOS/Applications/Health.app/Health --swift"
