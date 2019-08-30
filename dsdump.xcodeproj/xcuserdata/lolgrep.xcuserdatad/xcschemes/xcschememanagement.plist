@@ -4,10 +4,10 @@
 <dict>
 	<key>SchemeUserState</key>
 	<dict>
-		<key>Build Stuff.xcscheme_^#shared#^_</key>
+		<key>Generate Build.xcscheme_^#shared#^_</key>
 		<dict>
 			<key>orderHint</key>
-			<integer>1</integer>
+			<integer>2</integer>
 		</dict>
 		<key>dsdump.xcscheme_^#shared#^_</key>
 		<dict>
@@ -17,6 +17,11 @@
 	</dict>
 	<key>SuppressBuildableAutocreation</key>
 	<dict>
+		<key>3F50D7802315765B0017A20A</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
 		<key>3FDE7B992314BF6800715685</key>
 		<dict>
 			<key>primary</key>

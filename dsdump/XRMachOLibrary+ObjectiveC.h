@@ -12,13 +12,7 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-// OffsetType used in
-typedef enum {
-    OffSetTypeIvar,
-    OffSetTypeMethods,
-    OffSetTypeProperties,
-    OffSetTypeProtocols
-} OffSetType;
+
 
 
 typedef struct  {
@@ -29,13 +23,18 @@ typedef struct  {
     BOOL success : 1;
 } d_offsets;
 
+// https://github.com/RetVal/objc-runtime/blob/master/runtime/objc-runtime-new.h#L478
+#define FAST_IS_SWIFT_LEGACY 1
+#define FAST_IS_SWIFT_STABLE 2
+
 BOOL demangleSwiftName(const char *name, d_offsets *f);
 
 @interface XRMachOLibrary (ObjectiveC)
 
 - (void)dumpObjectiveCClasses;
-- (const char*)nameForObjCClass:(uintptr_t)address;
-- (intptr_t)offsetAddressForObjCClass:(uintptr_t)address forType:(OffSetType)offsetType;
+
+
+
 
 @end
 

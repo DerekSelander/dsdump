@@ -117,6 +117,10 @@
          </CommandLineArgument>
          <CommandLineArgument
             argument = "  $(TARGET_BUILD_DIR)/dsdump  -vUvv --objc "
+            isEnabled = "NO">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "/Volumes/YukonPreSeed17A5572a.D321D331DeveloperOS/Applications/AppStore.app/AppStore --objc -vvv"
             isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument

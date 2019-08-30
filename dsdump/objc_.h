@@ -10,7 +10,7 @@
 #define objc__h
 
 #define FAST_DATA_MASK          0x00007ffffffffff8UL
-#define ARM64e_MASK             0x000007FFFFFFFFFFUL
+
 #define RO_META               (1<<0)
 #define RO_ROOT               (1<<1)
 
@@ -27,39 +27,59 @@
 #import  <typeinfo>
 
 /*****************************************************************
- protocol
+ protocols
  *****************************************************************/
 
-struct protocol_t;
+typedef struct method_list method_list_t;
+typedef struct property_list property_list_t;
+typedef struct protocol_list protocol_list_t;
+
+struct protocol_t : public payload::LoadToDiskTranslator<struct protocol_t >  {
+    void *isa;
+    payload::LoadToDiskTranslator<const char> *mangledName;
+    protocol_list_t *protocols;
+    method_list_t *instanceMethods;
+    method_list_t *classMethods;
+    method_list_t *optionalInstanceMethods;
+    method_list_t *optionalClassMethods;
+    property_list_t *instanceProperties;
+    uint32_t size;   // sizeof(protocol_t)
+    uint32_t flags;
+    // Fields below this point are not always present on disk.
+    const char **_extendedMethodTypes;
+    const char *_demangledName;
+    property_list_t *_classProperties;
+};
+
+typedef struct protocol_list : public payload::LoadToDiskTranslator<struct protocol_list>  {
+    uintptr_t count;
+    protocol_t *first_protocol; // variable-size
+} protocol_list_t;
+
 /*****************************************************************
  methods
  *****************************************************************/
 
 typedef struct method : public payload::LoadToDiskTranslator<struct method> {
-    char* name;
-    const char *types;
+    payload::LoadToDiskTranslator<const char>* name;
+    payload::LoadToDiskTranslator<const char> *types;
     void* imp;
 } method_t;
 
 typedef struct method_list : public payload::LoadToDiskTranslator<struct method_list> {
     uint32_t entsizeAndFlags;
     uint32_t count;
-    method_t *methods;
+    method_t first_method;
 } method_list_t;
-
-typedef struct protocol_list : public payload::LoadToDiskTranslator<struct protocol_list>  {
-    uintptr_t count;
-    protocol_t* list; // variable-size
-} protocol_list_t;
 
 /*****************************************************************
  ivars
  *****************************************************************/
 
 typedef struct ivar : public payload::LoadToDiskTranslator<struct ivar> {
-    int32_t *offset;
-    const char *name;
-    const char *type;
+    payload::LoadToDiskTranslator<int32_t> *offset;
+    payload::LoadToDiskTranslator<const char> *name;
+    payload::LoadToDiskTranslator<const char> *type;
     // alignment is sometimes -1; use alignment() instead
     uint32_t alignment_raw;
     uint32_t size;
@@ -68,7 +88,7 @@ typedef struct ivar : public payload::LoadToDiskTranslator<struct ivar> {
 typedef struct ivar_list : public payload::LoadToDiskTranslator<struct ivar_list> {
     uint32_t entsizeAndFlags;
     uint32_t count;
-    ivar_t *ivars;
+    payload::LoadToDiskTranslator<ivar_t> first_ivar;
 } ivar_list_t;
 
 /*****************************************************************
@@ -76,14 +96,14 @@ typedef struct ivar_list : public payload::LoadToDiskTranslator<struct ivar_list
  *****************************************************************/
 
 typedef struct property : public payload::LoadToDiskTranslator<struct property>  {
-    const char *name;
-    const char *attributes;
+    payload::LoadToDiskTranslator<const char> *name;
+    payload::LoadToDiskTranslator<const char> *attributes;
 } property_t;
 
 typedef struct property_list : public payload::LoadToDiskTranslator<struct property_list> {
     uint32_t entsizeAndFlags;
     uint32_t count;
-    property_t *properties;
+    property_t first_property;
 } property_list_t;
 
 /*****************************************************************
@@ -98,20 +118,15 @@ typedef struct class_ro : public payload::LoadToDiskTranslator<struct class_ro> 
     
     const uint8_t * ivarLayout;
     
-//    const char * name;
+
     payload::LoadToDiskTranslator<char>* name;
     method_list_t * baseMethodList;
-    protocol_t * baseProtocols; // protocol_list_t
-    const ivar_list_t * ivars; // ivar_list_t
-    
+    protocol_list_t * baseProtocols;
+    ivar_list_t* ivarList;
     const uint8_t * weakIvarLayout;
-    void *baseProperties; // property_list_t
+    property_list_t *baseProperties;
     
-//    char * disk_name() {
-//        return this->name->disk()->unwrap();
-//    }
-    
-} class_ro_t; // The structure when on disk or before first call
+} class_ro_t; // The structure when on disk or before "realized" in memory
 
 typedef struct {
     uint32_t flags;
@@ -122,48 +137,13 @@ typedef struct {
     void* methods; // method_array_t
     void* properties; // property_array_t
     void* protocols; // protocol_array_t
-    
     void* firstSubclass; // Class
     void* nextSiblingClass; // Class
-    
     char *demangledName;
     
-} class_rw_t; // The structure when loaded into memory
+} class_rw_t; // The structure when realize in memory
 
 
-/*
- class TargetClassDescriptor final
- : public TargetTypeContextDescriptor<Runtime>,
- public TrailingGenericContextObjects<TargetClassDescriptor<Runtime>,
- TargetTypeGenericContextDescriptorHeader,
- // additional trailing objects:
- TargetResilientSuperclass<Runtime>,
- TargetForeignMetadataInitialization<Runtime>,
- TargetSingletonMetadataInitialization<Runtime>,
- TargetVTableDescriptorHeader<Runtime>,
- TargetMethodDescriptor<Runtime>,
- TargetOverrideTableHeader<Runtime>,
- TargetMethodOverrideDescriptor<Runtime>,
- TargetObjCResilientClassStubInfo<Runtime>> {
- private:
- using TrailingGenericContextObjects =
- TrailingGenericContextObjects<TargetClassDescriptor<Runtime>,
- TargetTypeGenericContextDescriptorHeader,
- TargetResilientSuperclass<Runtime>,
- TargetForeignMetadataInitialization<Runtime>,
- TargetSingletonMetadataInitialization<Runtime>,
- TargetVTableDescriptorHeader<Runtime>,
- TargetMethodDescriptor<Runtime>,
- TargetOverrideTableHeader<Runtime>,
- TargetMethodOverrideDescriptor<Runtime>,
- TargetObjCResilientClassStubInfo<Runtime>>;
- */
-
-/*
- 
- 
- 
- */
 
 
 typedef enum __attribute__((packed)) {
@@ -310,145 +290,16 @@ typedef struct   {
 } swift_descriptor;
 
 
-struct protocol_t : public payload::LoadToDiskTranslator<struct protocol_t >  {
-    void *isa; 
-    payload::LoadToDiskTranslator<const char> *mangledName;
-    protocol_list_t *protocols;
-    method_list_t *instanceMethods;
-    method_list_t *classMethods;
-    method_list_t *optionalInstanceMethods;
-    method_list_t *optionalClassMethods;
-    property_list_t *instanceProperties;
-    uint32_t size;   // sizeof(protocol_t)
-    uint32_t flags;
-    // Fields below this point are not always present on disk.
-    const char **_extendedMethodTypes;
-    const char *_demangledName;
-    property_list_t *_classProperties;
-    
-    
-//    bool isFixedUp() const;
-//    void setFixedUp();
-//
-//#   define HAS_FIELD(f) (size >= offsetof(protocol_t, f) + sizeof(f))
-//
-//    bool hasExtendedMethodTypesField() const {
-//        return HAS_FIELD(_extendedMethodTypes);
-//    }
-//    bool hasDemangledNameField() const {
-//        return HAS_FIELD(_demangledName);
-//    }
-//    bool hasClassPropertiesField() const {
-//        return HAS_FIELD(_classProperties);
-//    }
-//
-//#   undef HAS_FIELD
-//
-//    const char **extendedMethodTypes() const {
-//        return hasExtendedMethodTypesField() ? _extendedMethodTypes : nil;
-//    }
-//
-//    property_list_t *classProperties() const {
-//        return hasClassPropertiesField() ? _classProperties : nil;
-//    }
-};
-
-#define ResolveSwiftDescriptorAddress(addr, name) *(uint32_t *)(DATABUF((uintptr_t)[self translateLoadAddressToFileOffset:(uintptr_t)addr useFatOffset:YES] + offsetof(swift_descriptor, name)))
-
-
-
-
-// ObjC class heeeeeeeeeeeeeeeereeeeeeeee
-typedef struct ds_objc_class {
-    struct ds_objc_class* isa_cls;
-    struct ds_objc_class* superclass;
-    void *_buckets;
-    uint32_t _mask;
-    uint32_t _occupied;
-    uintptr_t bits; //(class_ro_t* before access (and on disk), class_rw_t * after access) &= FAST_DATA_MASK
-} ds_objc_class_t;
-
-// class ModuleDecl : public DeclContext, public TypeDecl {
-typedef struct {
-    unsigned DeclContextKind; // various types, from DeclContext
-    
-    
-} ModuleDecl;
-
-
-
-
-//typedef  class FieldDescriptorKind : uint16_t {
-//    // Swift nominal types.
-//    Struct,
-//    Class,
-//    Enum,
-//
-//    // Fixed-size multi-payload enums have a special descriptor format that
-//    // encodes spare bits.
-//    //
-//    // FIXME: Actually implement this. For now, a descriptor with this kind
-//    // just means we also have a builtin descriptor from which we get the
-//    // size and alignment.
-//    MultiPayloadEnum,
-//
-//    // A Swift opaque protocol. There are no fields, just a record for the
-//    // type itself.
-//    Protocol,
-//
-//    // A Swift class-bound protocol.
-//    ClassProtocol,
-//
-//    // An Objective-C protocol, which may be imported or defined in Swift.
-//    ObjCProtocol,
-//
-//    // An Objective-C class, which may be imported or defined in Swift.
-//    // In the former case, field type metadata is not emitted, and
-//    // must be obtained from the Objective-C runtime.
-//    ObjCClass
-//};
-//
-
-template<typename T>
-struct PtrCheck : public T {
-    static const bool isPtr(){ return false; }
-    
-};
-
-template<typename T>
-struct PtrCheck<T*> : public T {
-    static const bool isPtr(){ return true; }
-    
-};
-
-template<typename T>
-void func(const std::vector<T>& v) {
-//    std::cout << "is it a pointer? " << is_pointer<T>::value << std::endl;
-}
-
-typedef struct {
-
-    int32_t mangledTypeName;
-    int32_t superclass;
-    int16_t kind;
-//    FieldDescriptorKind kind;
-    uint16_t FieldRecordSize;
-    uint32_t NumFields;
-
-} FieldDescriptor;
-
 // Swift class heeeeeeeeeeeeeeeereeeeeeeee
 typedef struct swift_class_t  : public payload::LoadToDiskTranslator<struct swift_class_t >  {
     using SwiftClassDescriptor = payload::LoadToDiskTranslator<swift::TargetClassDescriptor<swift::InProcess>>;
-    
-    
     
     struct swift_class_t *isa_cls;
     struct swift_class_t *superclass;
     void *_buckets;
     uint32_t _mask;
     uint32_t _occupied;
-    uintptr_t bits; //(class_ro_t* before access (and on disk), class_rw_t * after access) &= FAST_DATA_MASK
+    uintptr_t bits; // (class_ro_t* before access (and on disk), class_rw_t * after access) &= FAST_DATA_MASK
     uint32_t flags;
     uint32_t instanceAddressOffset;
     uint32_t instanceSize;
@@ -461,52 +312,44 @@ typedef struct swift_class_t  : public payload::LoadToDiskTranslator<struct swif
     void *ivar_destroyer;
     uintptr_t *swiftMethods;
     
-
-    
-    inline payload::LoadToDiskTranslator<class_ro_t> *rodata() {
-        auto resolved = bits & FAST_DATA_MASK;
-        auto rodata = reinterpret_cast<payload::LoadToDiskTranslator<class_ro_t>*>(resolved);
+    // Reutnrs the rowdata without the bit packing
+    inline class_ro_t *rodata() {
+        auto dataBits = this->disk()->bits;
+        auto resolved = dataBits & FAST_DATA_MASK;
+        auto rodata = reinterpret_cast<class_ro_t*>(resolved);
         return rodata;
     }
     
-
+    // Returns isa without the bit packing
+    inline struct swift_class_t* isa() {
+        auto isa = this->disk()->isa_cls;
+        auto addr = reinterpret_cast<uintptr_t>(isa);
+        
+        return reinterpret_cast<struct swift_class_t*>(addr & FAST_DATA_MASK & 0x000007FFFFFFFFFFUL);
+    }
     
+    /// Checks if the current class is a swift class, if NO swift members in swift_class are unavailable
+    inline bool isSwift() {
+        auto bits = this->disk()->bits;
+        return bits & (FAST_IS_SWIFT_LEGACY|FAST_IS_SWIFT_STABLE) ? true : false;
+    }
     
-//    inline swift_class_t* operator ->() {
-////        auto aa = typeid(this).name();
-//        
-////        if (std::is_pointer<typeid(this)>) {
-////            printf("yay");
-////        } else {
-////            printf("woo");
-////        }
-//        return this;
-//    }
-    
-    
-//    inline swift_class_t *disk_superclass() {
-//        return this->superclass->disk()->unwrap();
-//    }
-//    
-//    inline class_ro_t *disk_rodata() {
-////        if (!this->rodata)
-//        return this->rodata()->disk()->unwrap();
-//    }
-    
+    /// Returns the name of the class (works for both Objc & Swift classes)
+    const char * GetName() {
+        auto clsDisk = this->disk();
+        auto rodata = clsDisk->rodata();
+        if (rodata == nullptr) {
+            return NULL;
+        }
+        auto rodataDisk = rodata->disk();
+        auto name = rodataDisk->name;
+        if (name == nullptr) {
+            return NULL;
+        }
+        return name->disk();
+    }
 
 } swift_class;
-
-
-
-//
-//template <typename U, typename T>
-//struct  swift_class_t : payload::AddressTranslatorWrapper<T*> {
-//    swift_class_t * operator->() {
-//        return this;
-//    }
-//}
-
-
 
 
 #endif /* objc__h */

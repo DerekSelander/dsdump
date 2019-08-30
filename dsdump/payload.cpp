@@ -23,7 +23,7 @@ namespace payload {
     std::map<std::string, struct section_64 *> sectionsDict;
     
     uintptr_t Offset2Virtual(uintptr_t f) {
-        auto r = f & 0x0000000ffffffffUL;
+        auto r = ARM64E_POINTER(f);
         for (auto i = 1; i < payload::sections.size(); i++) {
             struct section_64 *sec  = payload::sections[i];
             if (sec->offset <= (r) && (r) < (sec->offset + sec->size)) {
