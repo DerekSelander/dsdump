@@ -1,3 +1,9 @@
+## dsdump 
+An improved nm + objc/swift class-dump
+
+[![img](media/vmmap.png)](https://store.raywenderlich.com/products/advanced-apple-debugging-and-reverse-engineering)
+
+
 ### man
 
 ```
