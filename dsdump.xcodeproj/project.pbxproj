@@ -6,6 +6,24 @@
 	objectVersion = 50;
 	objects = {
 
+/* Begin PBXAggregateTarget section */
+		3F50D7802315765B0017A20A /* Generate Build */ = {
+			isa = PBXAggregateTarget;
+			buildConfigurationList = 3F50D7812315765B0017A20A /* Build configuration list for PBXAggregateTarget "Generate Build" */;
+			buildPhases = (
+				3F50D786231577260017A20A /* Copy to /usr/local/bin */,
+				3F50D788231577560017A20A /* Copy to compiled directory in repo */,
+				3F50D78B231577C30017A20A /* Generate SHA1 */,
+				3F50D78C231577EE0017A20A /* Copy Man Page */,
+			);
+			dependencies = (
+				3F50D785231576730017A20A /* PBXTargetDependency */,
+			);
+			name = "Generate Build";
+			productName = "Generate README Stuff";
+		};
+/* End PBXAggregateTarget section */
+
 /* Begin PBXBuildFile section */
 		3F009ADA22AF695400EA38D3 /* payload.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3F009AD822AF695400EA38D3 /* payload.cpp */; };
 		3F18948923052263000738F5 /* libswiftDemangling.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 3F18948823052263000738F5 /* libswiftDemangling.a */; };
@@ -14,11 +32,13 @@
 		3F40275823010DB5007B3C25 /* XRMachOLibrary+Swift.mm in Sources */ = {isa = PBXBuildFile; fileRef = 3F40275723010DB5007B3C25 /* XRMachOLibrary+Swift.mm */; };
 		3F40275A2301106D007B3C25 /* libswiftAST.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 3F4027592301106D007B3C25 /* libswiftAST.a */; };
 		3F480806227A322E0078AE76 /* XRMachOLibrary+FAT.m in Sources */ = {isa = PBXBuildFile; fileRef = 3F480805227A322E0078AE76 /* XRMachOLibrary+FAT.m */; };
+		3F50D787231577410017A20A /* dsdump in Copy to /usr/local/bin */ = {isa = PBXBuildFile; fileRef = A66A9CBB22316CF3006602AB /* dsdump */; };
+		3F50D789231577620017A20A /* dsdump in Copy to compiled directory in repo */ = {isa = PBXBuildFile; fileRef = A66A9CBB22316CF3006602AB /* dsdump */; };
+		3F50D78E23160E730017A20A /* dsdump.1 in Copy Man Page */ = {isa = PBXBuildFile; fileRef = 3F50D78D23160E630017A20A /* dsdump.1 */; };
 		3F5F41AB226EA3A800D3DCB1 /* XRMachOLibrary+SymbolDumper.m in Sources */ = {isa = PBXBuildFile; fileRef = 3F5F41AA226EA3A800D3DCB1 /* XRMachOLibrary+SymbolDumper.m */; };
 		3F5F41B1226EC1FC00D3DCB1 /* XRBindSymbol.m in Sources */ = {isa = PBXBuildFile; fileRef = 3F5F41B0226EC1FC00D3DCB1 /* XRBindSymbol.m */; };
 		3F7C9AB12295BBD50070F2B1 /* XRSymbolEntry.m in Sources */ = {isa = PBXBuildFile; fileRef = 3F7C9AB02295BBD50070F2B1 /* XRSymbolEntry.m */; };
 		3F98C3B3225F06E900606F97 /* XRMachOLibrary+FileManagement.m in Sources */ = {isa = PBXBuildFile; fileRef = 3F98C3B2225F06E900606F97 /* XRMachOLibrary+FileManagement.m */; };
-		3FDE7B8A2314AED600715685 /* dsdump in CopyFiles */ = {isa = PBXBuildFile; fileRef = A66A9CBB22316CF3006602AB /* dsdump */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		3FDE7B982314BDE800715685 /* TestSwift.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3FDE7B972314BDE800715685 /* TestSwift.swift */; };
 		3FEAB9D8226D0C0E00ED706A /* XRMachOLibrary+Opcode.mm in Sources */ = {isa = PBXBuildFile; fileRef = 3FEAB9D7226D0C0E00ED706A /* XRMachOLibrary+Opcode.mm */; };
 		3FEBCB60227C98D200D3AD07 /* DSXRLibrary+PID_Info.m in Sources */ = {isa = PBXBuildFile; fileRef = 3FEBCB5F227C98D200D3AD07 /* DSXRLibrary+PID_Info.m */; };
@@ -26,11 +46,10 @@
 		A66A9CBF22316CF3006602AB /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = A66A9CBE22316CF3006602AB /* main.m */; };
 		A66A9CC922316D7F006602AB /* miscellaneous.m in Sources */ = {isa = PBXBuildFile; fileRef = A66A9CC822316D7F006602AB /* miscellaneous.m */; };
 		A66A9CCC22316EA5006602AB /* XRMachOLibrary.mm in Sources */ = {isa = PBXBuildFile; fileRef = A66A9CCB22316EA5006602AB /* XRMachOLibrary.mm */; };
-		A674F3EA2231DD0E0005BD40 /* dsdump in Copy File */ = {isa = PBXBuildFile; fileRef = A66A9CBB22316CF3006602AB /* dsdump */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
-		3FDE7B9D2314BF7000715685 /* PBXContainerItemProxy */ = {
+		3F50D784231576730017A20A /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = A66A9CB322316CF3006602AB /* Project object */;
 			proxyType = 1;
@@ -40,35 +59,37 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
-		3FDE7B892314AECE00715685 /* CopyFiles */ = {
+		3F50D786231577260017A20A /* Copy to /usr/local/bin */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
-			dstPath = "$(SRCROOT)/compiled";
-			dstSubfolderSpec = 0;
-			files = (
-				3FDE7B8A2314AED600715685 /* dsdump in CopyFiles */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		A66A9CB922316CF3006602AB /* Copy Man Page */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = /usr/share/man/man1/;
-			dstSubfolderSpec = 0;
-			files = (
-			);
-			name = "Copy Man Page";
-			runOnlyForDeploymentPostprocessing = 1;
-		};
-		A674F3E92231DC9D0005BD40 /* Copy File */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 12;
 			dstPath = /usr/local/bin;
 			dstSubfolderSpec = 0;
 			files = (
-				A674F3EA2231DD0E0005BD40 /* dsdump in Copy File */,
+				3F50D787231577410017A20A /* dsdump in Copy to /usr/local/bin */,
 			);
-			name = "Copy File";
+			name = "Copy to /usr/local/bin";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		3F50D788231577560017A20A /* Copy to compiled directory in repo */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(SRCROOT)/compiled";
+			dstSubfolderSpec = 16;
+			files = (
+				3F50D789231577620017A20A /* dsdump in Copy to compiled directory in repo */,
+			);
+			name = "Copy to compiled directory in repo";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		3F50D78C231577EE0017A20A /* Copy Man Page */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 12;
+			dstPath = /usr/local/share/man/man1;
+			dstSubfolderSpec = 0;
+			files = (
+				3F50D78E23160E730017A20A /* dsdump.1 in Copy Man Page */,
+			);
+			name = "Copy Man Page";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXCopyFilesBuildPhase section */
@@ -90,6 +111,7 @@
 		3F40275B23012C6F007B3C25 /* objc-runtime-new.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "objc-runtime-new.h"; sourceTree = "<group>"; };
 		3F480804227A322E0078AE76 /* XRMachOLibrary+FAT.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "XRMachOLibrary+FAT.h"; sourceTree = "<group>"; };
 		3F480805227A322E0078AE76 /* XRMachOLibrary+FAT.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = "XRMachOLibrary+FAT.m"; sourceTree = "<group>"; };
+		3F50D78D23160E630017A20A /* dsdump.1 */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.man; path = dsdump.1; sourceTree = "<group>"; };
 		3F5F41A9226EA3A800D3DCB1 /* XRMachOLibrary+SymbolDumper.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "XRMachOLibrary+SymbolDumper.h"; sourceTree = "<group>"; };
 		3F5F41AA226EA3A800D3DCB1 /* XRMachOLibrary+SymbolDumper.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = "XRMachOLibrary+SymbolDumper.m"; sourceTree = "<group>"; };
 		3F5F41AF226EC1FC00D3DCB1 /* XRBindSymbol.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = XRBindSymbol.h; sourceTree = "<group>"; };
@@ -164,6 +186,7 @@
 		A66A9CBD22316CF3006602AB /* dsdump */ = {
 			isa = PBXGroup;
 			children = (
+				3F50D78D23160E630017A20A /* dsdump.1 */,
 				3F4027592301106D007B3C25 /* libswiftAST.a */,
 				3F18948823052263000738F5 /* libswiftDemangling.a */,
 				A66A9CBE22316CF3006602AB /* main.m */,
@@ -201,23 +224,6 @@
 		};
 /* End PBXGroup section */
 
-/* Begin PBXLegacyTarget section */
-		3FDE7B992314BF6800715685 /* Build Stuff */ = {
-			isa = PBXLegacyTarget;
-			buildArgumentsString = "$(ACTION)";
-			buildConfigurationList = 3FDE7B9A2314BF6800715685 /* Build configuration list for PBXLegacyTarget "Build Stuff" */;
-			buildPhases = (
-			);
-			buildToolPath = /usr/bin/make;
-			dependencies = (
-				3FDE7B9E2314BF7000715685 /* PBXTargetDependency */,
-			);
-			name = "Build Stuff";
-			passBuildSettingsInEnvironment = 1;
-			productName = "Build Stuff";
-		};
-/* End PBXLegacyTarget section */
-
 /* Begin PBXNativeTarget section */
 		A66A9CBA22316CF3006602AB /* dsdump */ = {
 			isa = PBXNativeTarget;
@@ -225,10 +231,6 @@
 			buildPhases = (
 				A66A9CB722316CF3006602AB /* Sources */,
 				A66A9CB822316CF3006602AB /* Frameworks */,
-				A66A9CB922316CF3006602AB /* Copy Man Page */,
-				A674F3E92231DC9D0005BD40 /* Copy File */,
-				3FDE7B892314AECE00715685 /* CopyFiles */,
-				3FDE7B8B2314B02800715685 /* Generate SHA1 */,
 			);
 			buildRules = (
 			);
@@ -248,7 +250,7 @@
 				LastUpgradeCheck = 1020;
 				ORGANIZATIONNAME = Selander;
 				TargetAttributes = {
-					3FDE7B992314BF6800715685 = {
+					3F50D7802315765B0017A20A = {
 						CreatedOnToolsVersion = 10.2;
 					};
 					A66A9CBA22316CF3006602AB = {
@@ -271,13 +273,13 @@
 			projectRoot = "";
 			targets = (
 				A66A9CBA22316CF3006602AB /* dsdump */,
-				3FDE7B992314BF6800715685 /* Build Stuff */,
+				3F50D7802315765B0017A20A /* Generate Build */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		3FDE7B8B2314B02800715685 /* Generate SHA1 */ = {
+		3F50D78B231577C30017A20A /* Generate SHA1 */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -294,6 +296,7 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "# Type a script or drag a script file from your workspace to insert its path.\nSHAVAL=$(/usr/bin/shasum ${SRCROOT}/compiled/dsdump | awk '{print $1}')\n/usr/bin/sed -i '' \"s/SHA1: .*/SHA1: $SHAVAL/g\" ${SRCROOT}/README.md\n\n";
+			showEnvVarsInLog = 0;
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -324,35 +327,26 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
-		3FDE7B9E2314BF7000715685 /* PBXTargetDependency */ = {
+		3F50D785231576730017A20A /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = A66A9CBA22316CF3006602AB /* dsdump */;
-			targetProxy = 3FDE7B9D2314BF7000715685 /* PBXContainerItemProxy */;
+			targetProxy = 3F50D784231576730017A20A /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
-		3FDE7B9B2314BF6800715685 /* Debug */ = {
+		3F50D7822315765B0017A20A /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				DEBUGGING_SYMBOLS = YES;
-				DEBUG_INFORMATION_FORMAT = dwarf;
-				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
-				GCC_OPTIMIZATION_LEVEL = 0;
-				OTHER_CFLAGS = "";
-				OTHER_LDFLAGS = "";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Debug;
 		};
-		3FDE7B9C2314BF6800715685 /* Release */ = {
+		3F50D7832315765B0017A20A /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				OTHER_CFLAGS = "";
-				OTHER_LDFLAGS = "";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Release;
@@ -533,11 +527,11 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		3FDE7B9A2314BF6800715685 /* Build configuration list for PBXLegacyTarget "Build Stuff" */ = {
+		3F50D7812315765B0017A20A /* Build configuration list for PBXAggregateTarget "Generate Build" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				3FDE7B9B2314BF6800715685 /* Debug */,
-				3FDE7B9C2314BF6800715685 /* Release */,
+				3F50D7822315765B0017A20A /* Debug */,
+				3F50D7832315765B0017A20A /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

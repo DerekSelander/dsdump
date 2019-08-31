@@ -372,57 +372,6 @@ struct EntryWithOffset
     const uint8_t* end = &start[self.dyldInfo->export_size];
     std::vector<XRSymbolEntry*> list;
     [self parseTrie:start end:end output:list baseAddr:baseAddr];
-
-  
-    
-//    for (std::vector<SymbolEntry>::iterator it=list.begin(); it != list.end(); ++it) {
-//        const bool reExport = (it->flags & EXPORT_SYMBOL_FLAGS_REEXPORT);
-//        const bool weakDef = (it->flags & EXPORT_SYMBOL_FLAGS_WEAK_DEFINITION);
-//        const bool threadLocal = ((it->flags & EXPORT_SYMBOL_FLAGS_KIND_MASK) == EXPORT_SYMBOL_FLAGS_KIND_THREAD_LOCAL);
-//        const bool abs = ((it->flags & EXPORT_SYMBOL_FLAGS_KIND_MASK) == EXPORT_SYMBOL_FLAGS_KIND_ABSOLUTE);
-//        const bool resolver = (it->flags & EXPORT_SYMBOL_FLAGS_STUB_AND_RESOLVER);
-//        if ( reExport ) {
-//            printf("[re-export] ");
-//        } else {
-//            printf("0x%08llX  ", it->address);
-//        }
-//        printf("%s", it->name);
-//        if ( weakDef || threadLocal || resolver || abs ) {
-//            bool needComma = false;
-//            printf(" [");
-//            if ( weakDef ) {
-//                printf("weak_def");
-//                needComma = true;
-//            }
-//            if ( threadLocal ) {
-//                if ( needComma )
-//                    printf(", ");
-//                printf("per-thread");
-//                needComma = true;
-//            }
-//            if ( abs ) {
-//                if ( needComma )
-//                    printf(", ");
-//                printf("absolute");
-//                needComma = true;
-//            }
-//            if ( resolver ) {
-//                if ( needComma )
-//                    printf(", ");
-//                printf("resolver=0x%08llX", it->other);
-//                needComma = true;
-//            }
-//            printf("]");
-//        }
-////        if ( reExport ) {
-////            if ( it->importName[0] == '\0' )
-////                printf(" (from %s)", fDylibs[it->other - 1]);
-////            else
-////                printf(" (%s from %s)", it->importName, fDylibs[it->other - 1]);
-////        }
-//        printf("\n");
-//    }
-    
 }
 
 

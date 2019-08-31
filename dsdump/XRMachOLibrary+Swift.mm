@@ -126,7 +126,6 @@ void wtf(uintptr_t address) {
         return NO;
     }
     
-    int32_t *ztypeOffsets = (int32_t*)swiftTypes->addr;
     auto typeOffsets = payload::DiskWrapper<int32_t>::Cast(swiftTypes->addr);
 
     for (int i = 0; i < swiftTypes->size / sizeof(uint32_t); i++) {
@@ -459,39 +458,6 @@ void wtf(uintptr_t address) {
     putchar('\n');
 }
 
-//- (void)dumpSwiftInstanceVariablesWithResolvedAddress:(uintptr_t)resolvedAddress {
-//    resolvedAddress = ARM64e_PTRMASK(resolvedAddress);
-//    intptr_t ivarList_FO = [self offsetAddressForObjCClass:resolvedAddress forType:OffSetTypeIvar];
-//    
-//    ivar_list_t *ivarList = (ivar_list_t *)DATABUF(ivarList_FO);
-//    ivarList = (ivar_list_t *)ARM64e_PTRMASK((uintptr_t)ivarList);
-//    
-//    
-//    uint32_t ivarCount = *(uint32_t *)DATABUF(ivarList_FO + offsetof(ivar_list_t, count));
-//    
-//     __ivarsDictionary = [NSMutableDictionary dictionaryWithCapacity:ivarCount];
-//    ivar_t *ivars = (ivar_t *)DATABUF(ivarList_FO + offsetof(ivar_list_t, ivars));
-//    if (ivarCount && ivarList_FO != FILE_OFFSET_UNKNOWN) {
-//        putchar('{');
-//        putchar('\n');
-//    }
-//    for (int i = 0; ivarList_FO != FILE_OFFSET_UNKNOWN && i < ivarCount; i++) {
-//        ivar_t ivar = ivars[i];
-//        uintptr_t ivarOffset_FO = [self translateLoadAddressToFileOffset:(uintptr_t)ivar.offset useFatOffset:YES];
-//        uint32_t ivarOffset = *(uint32_t*)DATABUF(ivarOffset_FO);
-//        
-//        uintptr_t ivarName_FO = [self translateLoadAddressToFileOffset:(uintptr_t)ivar.name useFatOffset:YES];
-//        char* ivarName = (char *)DATABUF(ivarName_FO);
-//        
-//        __ivarsDictionary[@(ivarOffset)] = [NSString stringWithUTF8String:ivarName];
-//        printf("\t+0x%04x %s (0x%x)\n", ivarOffset, ivarName, ivar.size);
-//    }
-//    
-//    if (ivarCount && ivarList_FO != FILE_OFFSET_UNKNOWN) {
-//        putchar('}');
-//        putchar('\n');
-//    }
-//}
 
 @end
 

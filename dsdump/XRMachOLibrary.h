@@ -18,9 +18,6 @@
 
 #define DATABUF(offset) ((void*)&payload::data[(offset)])
 
-///
-#define ARM64e_PTRMASK(data)  (self.isARM64e ? ((data)&0x000007FFFFFFFFFFUL) : (data))
-
 NS_ASSUME_NONNULL_BEGIN
 
 extern NSMutableSet <NSString*> *pathsSet;
@@ -72,7 +69,6 @@ extern "C" {
 @property (nonatomic, copy) NSString *path;
 
 
-//#define ARM64e_PTRMASK(data)  (data)
 @property (nonatomic, readonly) BOOL isARM64e;
 
 /// File descriptor
