@@ -6,17 +6,55 @@
 .Nd An improved nm + objc/swift class-dump
 .Sh SYNOPSIS
 .Nm
-.Ar subcommand Op Ar option ... Ar filename
+.Op option...
+.Ar file
 .Sh DESCRIPTION
-.Nm dsdump
-Provides an "nm-improved" experience when working with Mach-O executables
-and can display
-.Nm C, Objective-C,
-and
-.Nm Swift
+Provides an "nm-improved" experience when working with Mach-O executables and can display C, Objective-C and Swift
 information
-.Sh SUBCOMMANDS
+.Sh OPTIONS
+.Bl -tag -width indent
+.It Fl c, -color
+Adds color to output
+.It Fl a, -arch Ar architecture
+Specify the arichtecture if file is FAT. Understands x86_64h, x86_64, arm64, arm64e
+.It Fl u, -undefined
+Only display undefined (externally referenced) symbols or classes
+.It Fl U, -defined
+Only display defined (internally implemented) symbols or classes
+.It Fl v, -verbose
+Specifies the verbosity level. The -v option can be used multiple times, while the long argument sets the exact level 0-5. Kind of like codesign(1)'s verbosity that everyone complains about...
+.It Fl -objc
+Dump the Objective-C classes
+.It Fl -swift
+Dump the Swift type descriptors (classes, structs, enums)
+.It Fl h, -help
+Print out this beautiful, helpful document
+.El
+.Sh EXAMPLES
+List the Objective-C internal and external classes called and implemented by vmmap:
+.Dl Cm Sy dsdump --objc $(which vmmap)
+.Pp
+List the Objective-C external classes called by vmmap:
+.Dl Cm Sy dsdump --objc $(which vmmap) -u
+.Pp
+List the Objective-C internal classes implemented by vmmap:
+.Dl Cm Sy dsdump --objc $(which vmmap) -U
+.Pp
+Thoroughly dump the Swift content in color in the Console app
+.Dl Cm Sy dsdump --swift /Applications/Utilities/Console.app/Contents/MacOS/Console  -cvvvv
+.Pp
+.Sh ENVIRONMENT
+.Bl -tag -width indent
+.It Ev Cm Sy DSCOLOR
+Enables color. Alternatively, use -c
+.It Ev Cm Sy ARCH No Em <arch>
+Specify the architecture if inspecting a FAT executable, Alternatively use --arch
+.Ev oioiuoiu
+.El
 .Sh SEE ALSO 
 .Xr nm 1 ,
 .Xr objdump 1 ,
 .Xr vmmap 1
+.Sh AUTHORS
+.An "Derek Selander"
+.Mt @LOLgrep
