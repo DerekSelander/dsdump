@@ -47,13 +47,8 @@ static NSDictionary <NSString*, NSNumber*> *blacklistedSelectors = nil;
                              };
 }
 
-- (void)dumpObjCClassInfo:(const char *)name resolvedAddress:(swift_class*)resolvedAddress {
-    auto cls = payload::Cast<swift_class*>(resolvedAddress);
-    if (cls == nullptr) {
-        return;
-    }
-    
-    auto rodata = cls->rodata();
+- (void)dumpObjCClassInfo:(const char *)name resolvedAddress:(swift_class*)cls {
+    auto rodata = cls->disk()->rodata();
     if (rodata == nullptr) {
         return;
     }
@@ -84,13 +79,8 @@ static NSDictionary <NSString*, NSNumber*> *blacklistedSelectors = nil;
 /********************************************************************************
  // Properties
  ********************************************************************************/
-- (void)dumpObjCPropertiesWithResolvedAddress:(uintptr_t)resolvedAddress {
-    
-    auto cls = payload::LoadToDiskTranslator<swift_class>::Cast(resolvedAddress);
-    if (cls == nullptr) {
-        return;
-    }
-    
+- (void)dumpObjCPropertiesWithResolvedAddress:(swift_class*)cls {
+  
     auto clsDisk = cls->disk();
     auto rodata = clsDisk->rodata();
     if (rodata == nullptr) {
@@ -273,14 +263,14 @@ static NSDictionary <NSString*, NSNumber*> *blacklistedSelectors = nil;
                 [self dumpObjCInstanceVariablesWithResolvedAddress:resolvedAddress];
                 
                 // Dump properties...
-                [self dumpObjCPropertiesWithResolvedAddress:resolvedAddress];
+                [self dumpObjCPropertiesWithResolvedAddress:cls];
                 
                 // Dumps class methods first...
-                auto metaCls = cls->isa();
+                auto metaCls = cls->disk()->isa();
                 [self dumpObjCClassInfo:name resolvedAddress:metaCls];
                 
                 // Then Dump instance methods...
-                [self dumpObjCClassInfo:name resolvedAddress:metaCls];
+                [self dumpObjCClassInfo:name resolvedAddress:cls];
                 
                 putchar('\n');
             }
