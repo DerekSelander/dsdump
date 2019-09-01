@@ -114,12 +114,7 @@ static NSDictionary <NSString*, NSNumber*> *blacklistedSelectors = nil;
 /********************************************************************************
  // ivars
  ********************************************************************************/
-- (void)dumpObjCInstanceVariablesWithResolvedAddress:(uintptr_t)resolvedAddress {
-
-    auto cls = payload::LoadToDiskTranslator<swift_class>::Cast(resolvedAddress);
-    if (cls == nullptr) {
-        return;
-    }
+- (void)dumpObjCInstanceVariablesWithResolvedAddress:(swift_class *)cls {
     
     auto clsDisk = cls->disk();
     auto rodata = clsDisk->rodata();
@@ -251,16 +246,15 @@ static NSDictionary <NSString*, NSNumber*> *blacklistedSelectors = nil;
             ///////////////////////
             // Dump protocols... //
             ///////////////////////
-            if (![self printObjectiveCProtocols:resolvedAddress]) {
+            if (![self printObjectiveCProtocols:cls]) {
                 putchar('\n');
             }
-            
             
             // property then method dumping logic dumbing logic
             if (xref_options.verbose > VERBOSE_2) {
                 
                 // Dump ivars...
-                [self dumpObjCInstanceVariablesWithResolvedAddress:resolvedAddress];
+                [self dumpObjCInstanceVariablesWithResolvedAddress:cls];
                 
                 // Dump properties...
                 [self dumpObjCPropertiesWithResolvedAddress:cls];
@@ -294,15 +288,66 @@ static NSDictionary <NSString*, NSNumber*> *blacklistedSelectors = nil;
 }
 
 /********************************************************************************
- // Protocols
+ // Categories
  ********************************************************************************/
--(BOOL)printObjectiveCProtocols:(uintptr_t)resolvedAddress {
-    if (xref_options.verbose == VERBOSE_NONE) {
-        return NO;
+
+- (void)dumpObjectiveCCategories {
+    struct section_64* categoriesSection = payload::sectionsDict["__DATA.__objc_catlist"];
+    if (!categoriesSection) {
+        categoriesSection = payload::sectionsDict["__DATA_CONST.__objc_catlist"];
+    }
+    if (!categoriesSection) {
+        return;
     }
     
-    auto cls = payload::Cast<swift_class*>(resolvedAddress);
-    if (cls == nullptr) {
+    auto categories = payload::LoadToDiskTranslator<uintptr_t*>::Cast(categoriesSection->addr);
+    // Cast<category_t**>(categoriesSection->addr);
+
+    auto categoriesDisk = categories->disk();
+    for (int i = 0; i < categoriesSection->size / PTR_SIZE; i++) {
+
+        auto category = payload::Cast<category_t*>(categoriesDisk[i]);
+        if (category == nullptr) {
+            continue;
+        }
+        auto categoryDisk = category->disk();
+        auto clsName = categoryDisk->cls ? category->cls->GetName() : "<TODO dsdump Error>";
+        auto categoryName = categoryDisk->name->disk();
+        
+        auto instanceMethods = categoryDisk->instanceMethods;
+        if (instanceMethods) {
+            auto instanceMethodsDisk = instanceMethods->disk();
+            auto count = instanceMethodsDisk->count;
+            auto methods = &instanceMethodsDisk->first_method;
+            for (int j = 0; j < count; j++) {
+                auto method = methods[j];
+                auto methodName = method.name->disk();
+                printf("%p -[%s(%s) %s]\n", method.imp, clsName, categoryName, methodName);
+                
+            }
+            
+        }
+        
+        auto classMethods = categoryDisk->classMethods;
+        if (classMethods) {
+            auto classMethodsDisk = classMethods->disk();
+            auto count = classMethodsDisk->count;
+            auto methods = &classMethodsDisk->first_method;
+            for (int j = 0; j < count; j++) {
+                auto method = methods[j];
+                auto methodName = method.name->disk();
+                printf("%p +[%s(%s) %s]\n", method.imp, clsName, categoryName, methodName);
+            }
+        }
+        
+    }
+}
+
+/********************************************************************************
+ // Protocols
+ ********************************************************************************/
+-(BOOL)printObjectiveCProtocols:(swift_class*)cls {
+    if (xref_options.verbose == VERBOSE_NONE) {
         return NO;
     }
     

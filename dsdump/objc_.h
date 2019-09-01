@@ -107,6 +107,31 @@ typedef struct property_list : public payload::LoadToDiskTranslator<struct prope
 } property_list_t;
 
 /*****************************************************************
+ categories
+ *****************************************************************/
+
+typedef struct swift_class_t swift_class;
+
+typedef struct category : public payload::LoadToDiskTranslator<struct category> {
+    payload::LoadToDiskTranslator<const char>* name;
+    swift_class *cls;
+    method_list_t *instanceMethods;
+    method_list_t *classMethods;
+    protocol_list_t *protocols;
+    property_list_t *instanceProperties;
+    // Fields below this point are not always present on disk.
+    property_list_t *_classProperties;
+    
+    method_list_t *methodsForMeta(bool isMeta) {
+        if (isMeta) return classMethods;
+        else return instanceMethods;
+    }
+    
+    property_list_t *propertiesForMeta(bool isMeta, struct header_info *hi);
+} category_t;
+
+
+/*****************************************************************
  class stuff, ro/rw
  *****************************************************************/
 

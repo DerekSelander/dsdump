@@ -25,6 +25,7 @@
     
     if (xref_options.objectiveC_mode) {
         [self dumpObjectiveCClasses];
+        [self dumpObjectiveCCategories];
         return;
     }
     
