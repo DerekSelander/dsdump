@@ -17,10 +17,22 @@
 				3F50D78C231577EE0017A20A /* Copy Man Page */,
 			);
 			dependencies = (
+				3FE4FD44231AFF6C00D4B77C /* PBXTargetDependency */,
 				3F50D785231576730017A20A /* PBXTargetDependency */,
 			);
 			name = "Generate Build";
 			productName = "Generate README Stuff";
+		};
+		3FE4FD3F231AFF6300D4B77C /* Generate Manpage */ = {
+			isa = PBXAggregateTarget;
+			buildConfigurationList = 3FE4FD40231AFF6300D4B77C /* Build configuration list for PBXAggregateTarget "Generate Manpage" */;
+			buildPhases = (
+				3FE4FD45231AFF7400D4B77C /* ShellScript */,
+			);
+			dependencies = (
+			);
+			name = "Generate Manpage";
+			productName = "Generate Manpage";
 		};
 /* End PBXAggregateTarget section */
 
@@ -40,6 +52,7 @@
 		3F7C9AB12295BBD50070F2B1 /* XRSymbolEntry.m in Sources */ = {isa = PBXBuildFile; fileRef = 3F7C9AB02295BBD50070F2B1 /* XRSymbolEntry.m */; };
 		3F98C3B3225F06E900606F97 /* XRMachOLibrary+FileManagement.m in Sources */ = {isa = PBXBuildFile; fileRef = 3F98C3B2225F06E900606F97 /* XRMachOLibrary+FileManagement.m */; };
 		3FDE7B982314BDE800715685 /* TestSwift.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3FDE7B972314BDE800715685 /* TestSwift.swift */; };
+		3FE4FD48231B3BC600D4B77C /* manpage.c in Sources */ = {isa = PBXBuildFile; fileRef = 3FE4FD46231B002400D4B77C /* manpage.c */; };
 		3FEAB9D8226D0C0E00ED706A /* XRMachOLibrary+Opcode.mm in Sources */ = {isa = PBXBuildFile; fileRef = 3FEAB9D7226D0C0E00ED706A /* XRMachOLibrary+Opcode.mm */; };
 		3FEBCB60227C98D200D3AD07 /* DSXRLibrary+PID_Info.m in Sources */ = {isa = PBXBuildFile; fileRef = 3FEBCB5F227C98D200D3AD07 /* DSXRLibrary+PID_Info.m */; };
 		3FF9AE0822777A9500F71FA5 /* XRMachOLibrary+ObjectiveC.mm in Sources */ = {isa = PBXBuildFile; fileRef = 3FF9AE0722777A9500F71FA5 /* XRMachOLibrary+ObjectiveC.mm */; };
@@ -55,6 +68,13 @@
 			proxyType = 1;
 			remoteGlobalIDString = A66A9CBA22316CF3006602AB;
 			remoteInfo = dsdump;
+		};
+		3FE4FD43231AFF6C00D4B77C /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A66A9CB322316CF3006602AB /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 3FE4FD3F231AFF6300D4B77C;
+			remoteInfo = "Generate Manpage";
 		};
 /* End PBXContainerItemProxy section */
 
@@ -74,7 +94,7 @@
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = "$(SRCROOT)/compiled";
-			dstSubfolderSpec = 16;
+			dstSubfolderSpec = 0;
 			files = (
 				3F50D789231577620017A20A /* dsdump in Copy to compiled directory in repo */,
 			);
@@ -120,6 +140,7 @@
 		3F7C9AB02295BBD50070F2B1 /* XRSymbolEntry.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = XRSymbolEntry.m; sourceTree = "<group>"; };
 		3F98C3B2225F06E900606F97 /* XRMachOLibrary+FileManagement.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = "XRMachOLibrary+FileManagement.m"; sourceTree = "<group>"; };
 		3FDE7B972314BDE800715685 /* TestSwift.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestSwift.swift; sourceTree = "<group>"; };
+		3FE4FD46231B002400D4B77C /* manpage.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = manpage.c; sourceTree = "<group>"; };
 		3FEAB9D6226D0C0E00ED706A /* XRMachOLibrary+Opcode.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "XRMachOLibrary+Opcode.h"; sourceTree = "<group>"; };
 		3FEAB9D7226D0C0E00ED706A /* XRMachOLibrary+Opcode.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = "XRMachOLibrary+Opcode.mm"; sourceTree = "<group>"; };
 		3FEBCB5E227C98D200D3AD07 /* XRMachOLibrary+PID_Info.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "XRMachOLibrary+PID_Info.h"; sourceTree = "<group>"; };
@@ -186,6 +207,7 @@
 		A66A9CBD22316CF3006602AB /* dsdump */ = {
 			isa = PBXGroup;
 			children = (
+				3FE4FD46231B002400D4B77C /* manpage.c */,
 				3F50D78D23160E630017A20A /* dsdump.1 */,
 				3F4027592301106D007B3C25 /* libswiftAST.a */,
 				3F18948823052263000738F5 /* libswiftDemangling.a */,
@@ -253,6 +275,9 @@
 					3F50D7802315765B0017A20A = {
 						CreatedOnToolsVersion = 10.2;
 					};
+					3FE4FD3F231AFF6300D4B77C = {
+						CreatedOnToolsVersion = 10.2;
+					};
 					A66A9CBA22316CF3006602AB = {
 						CreatedOnToolsVersion = 10.1;
 						LastSwiftMigration = 1020;
@@ -274,6 +299,7 @@
 			targets = (
 				A66A9CBA22316CF3006602AB /* dsdump */,
 				3F50D7802315765B0017A20A /* Generate Build */,
+				3FE4FD3F231AFF6300D4B77C /* Generate Manpage */,
 			);
 		};
 /* End PBXProject section */
@@ -298,6 +324,23 @@
 			shellScript = "# Type a script or drag a script file from your workspace to insert its path.\nSHAVAL=$(/usr/bin/shasum ${SRCROOT}/compiled/dsdump | awk '{print $1}')\n/usr/bin/sed -i '' \"s/SHA1: .*/SHA1: $SHAVAL/g\" ${SRCROOT}/README.md\n\n";
 			showEnvVarsInLog = 0;
 		};
+		3FE4FD45231AFF7400D4B77C /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 12;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# Type a script or drag a script file from your workspace to insert its path.\n\n/usr/bin/groff ${SRCROOT}/dsdump/dsdump.1 -man -Tascii $(ACTION) > ./manpage_deets\nxxd -i ./manpage_deets | sed 's/\\([0-9a-f]\\)$/\\0, 0x00/' > ${SRCROOT}/dsdump/manpage.c\nrm ./manpage_deets\n";
+		};
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -311,6 +354,7 @@
 				3FF9AE0822777A9500F71FA5 /* XRMachOLibrary+ObjectiveC.mm in Sources */,
 				3F5F41AB226EA3A800D3DCB1 /* XRMachOLibrary+SymbolDumper.m in Sources */,
 				3FEAB9D8226D0C0E00ED706A /* XRMachOLibrary+Opcode.mm in Sources */,
+				3FE4FD48231B3BC600D4B77C /* manpage.c in Sources */,
 				3FEBCB60227C98D200D3AD07 /* DSXRLibrary+PID_Info.m in Sources */,
 				3FDE7B982314BDE800715685 /* TestSwift.swift in Sources */,
 				3F29126322877648003C2BD7 /* XRMachOLibrary+Dump.m in Sources */,
@@ -332,6 +376,11 @@
 			target = A66A9CBA22316CF3006602AB /* dsdump */;
 			targetProxy = 3F50D784231576730017A20A /* PBXContainerItemProxy */;
 		};
+		3FE4FD44231AFF6C00D4B77C /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 3FE4FD3F231AFF6300D4B77C /* Generate Manpage */;
+			targetProxy = 3FE4FD43231AFF6C00D4B77C /* PBXContainerItemProxy */;
+		};
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
@@ -344,6 +393,22 @@
 			name = Debug;
 		};
 		3F50D7832315765B0017A20A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
+		3FE4FD41231AFF6300D4B77C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		3FE4FD42231AFF6300D4B77C /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
@@ -532,6 +597,15 @@
 			buildConfigurations = (
 				3F50D7822315765B0017A20A /* Debug */,
 				3F50D7832315765B0017A20A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		3FE4FD40231AFF6300D4B77C /* Build configuration list for PBXAggregateTarget "Generate Manpage" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3FE4FD41231AFF6300D4B77C /* Debug */,
+				3FE4FD42231AFF6300D4B77C /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

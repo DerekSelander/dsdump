@@ -34,7 +34,7 @@ int main(int argc, const char * argv[], const char*envp[]) {
     
     const char *_path = argv[optind++];
     if (!_path) {
-        print_usage();
+        print_manpage();
         exit(1);
     }
     char resolved_path[PATH_MAX];
@@ -104,7 +104,7 @@ static void handle_args(int argc, const char * argv[]) {
                 }  else if (strcmp(long_options[option_index].name, "arch") == 0) {
                     xref_options.arch = optarg;
                 } else if (strcmp(long_options[option_index].name, "help") == 0) {
-                    print_options();
+                    print_manpage();
                     exit(0);
                 }
                 break;
@@ -127,7 +127,7 @@ static void handle_args(int argc, const char * argv[]) {
                 xref_options.arch = optarg;
                 break;
             case 'h':
-                print_options();
+                print_manpage();
                 exit(0);
                 break;
                 

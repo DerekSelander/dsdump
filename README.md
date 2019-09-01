@@ -6,6 +6,7 @@ An improved nm + objc/swift class-dump
 
 ### man
 
+<!--man_start--->
 ```
 dsdump(1)                 BSD General Commands Manual                dsdump(1)
 
@@ -77,21 +78,13 @@ AUTHORS
 
 Darwin                          August 30, 2019                         Darwin
 ```
+<!--man_stop--->
 
 
 Compiled SHA1
 ```
-SHA1: b04d06520fb3ed5387117e5dcbc6d0d63c6b6ee7
+SHA1: fda640f8220276bcbfdd8deab91866a57ff7d8d5
 ```
-
-
-### Compiling
-
-I've intentially made this a bit of a pain in the ass to compile since I am tired of people taking credit for work wihtout proper citing/attribution. So...
-
-1. In the swift-source directory: download and install the Swift repo.
-2. Compile whatever static libraries are needed by Xcode
-
 
 ### Credits
 

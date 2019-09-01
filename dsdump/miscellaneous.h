@@ -19,10 +19,10 @@ extern "C" {
 #endif
 
 /// Usage deets
+void print_manpage(void);
 void print_usage(void);
-void print_options(void);
 
-
+__attribute__((weak)) unsigned char __manpage_deets;
 /********************************************************************************
  /// Globals for exploring multiple references
  ********************************************************************************/

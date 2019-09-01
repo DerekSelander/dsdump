@@ -7,10 +7,9 @@
 .Sh SYNOPSIS
 .Nm
 .Op option...
-.Ar file
+.Ar <mach-o-file>
 .Sh DESCRIPTION
-Provides an "nm-improved" experience when working with Mach-O executables and can display C, Objective-C and Swift
-information
+Provides an "nm-improved" experience when working with Mach-O executables and can display C, Objective-C and Swift "class-dump" information
 .Sh OPTIONS
 .Bl -tag -width indent
 .It Fl c, -color
@@ -31,25 +30,30 @@ Dump the Swift type descriptors (classes, structs, enums)
 Print out this beautiful, helpful document
 .El
 .Sh EXAMPLES
-List the Objective-C internal and external classes called and implemented by vmmap:
-.Dl Cm Sy dsdump --objc $(which vmmap)
+List ObjC internal/external classes referenced/implemented by vmmap:
+.Dl dsdump --objc $(which vmmap)
 .Pp
 List the Objective-C external classes called by vmmap:
-.Dl Cm Sy dsdump --objc $(which vmmap) -u
+.Dl dsdump --objc $(which vmmap) -u
 .Pp
 List the Objective-C internal classes implemented by vmmap:
-.Dl Cm Sy dsdump --objc $(which vmmap) -U
+.Dl dsdump --objc $(which vmmap) -U
+.Pp
+Perform an Objective-C "class-dump" in color of vmmap
+.Dl dsdump --objc $(which vmmap) -U -vvvc
 .Pp
 Thoroughly dump the Swift content in color in the Console app
-.Dl Cm Sy dsdump --swift /Applications/Utilities/Console.app/Contents/MacOS/Console  -cvvvv
+.Dl dsdump --swift /Applications/Utilities/Console.app/Contents/MacOS/Console  -cvvvv
 .Pp
 .Sh ENVIRONMENT
+.Pp
 .Bl -tag -width indent
-.It Ev Cm Sy DSCOLOR
+.Ev DSCOLOR
 Enables color. Alternatively, use -c
-.It Ev Cm Sy ARCH No Em <arch>
+.Pp
+.Ev ARCH
+.Ar <arch>
 Specify the architecture if inspecting a FAT executable, Alternatively use --arch
-.Ev oioiuoiu
 .El
 .Sh SEE ALSO 
 .Xr nm 1 ,
