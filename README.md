@@ -84,7 +84,7 @@ Darwin			       September 1, 2019			Darwin
 
 Compiled SHA1
 ```
-SHA1: 3660c0e7f83256eb2217151cf8cbb201a9511345
+SHA1: 28f531551e9b65b0d10152aacd1c02a974c8677c
 ```
 
 ### Credits
