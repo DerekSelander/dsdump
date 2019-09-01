@@ -271,6 +271,8 @@ static NSDictionary <NSString*, NSNumber*> *blacklistedSelectors = nil;
         }
     }
     
+    [self dumpObjectiveCCategories];
+    
     // Undefined symbols, use the symbol table
     struct nlist_64 *symbols = self.symbols;
     if (xref_options.undefined || !(xref_options.undefined || xref_options.defined)) {
@@ -292,6 +294,9 @@ static NSDictionary <NSString*, NSNumber*> *blacklistedSelectors = nil;
  ********************************************************************************/
 
 - (void)dumpObjectiveCCategories {
+    if (xref_options.undefined) {
+        return;
+    }
     struct section_64* categoriesSection = payload::sectionsDict["__DATA.__objc_catlist"];
     if (!categoriesSection) {
         categoriesSection = payload::sectionsDict["__DATA_CONST.__objc_catlist"];
@@ -300,45 +305,55 @@ static NSDictionary <NSString*, NSNumber*> *blacklistedSelectors = nil;
         return;
     }
     
-    auto categories = payload::LoadToDiskTranslator<uintptr_t*>::Cast(categoriesSection->addr);
-    // Cast<category_t**>(categoriesSection->addr);
-
-    auto categoriesDisk = categories->disk();
+    auto categoriesDisk = payload::LoadToDiskTranslator<uintptr_t*>::Cast(categoriesSection->addr)->disk();
     for (int i = 0; i < categoriesSection->size / PTR_SIZE; i++) {
-
         auto category = payload::Cast<category_t*>(categoriesDisk[i]);
         if (category == nullptr) {
             continue;
         }
         auto categoryDisk = category->disk();
-        auto clsName = categoryDisk->cls ? category->cls->GetName() : "<TODO dsdump Error>";
+        const char * clsName = categoryDisk->cls ? category->cls->GetName() : NULL;
+        
+        
+
+        if (!clsName) { // IF the class is implemented in a different module...
+            auto superClassAddress = payload::GetLoadAddress(&categoryDisk->cls);
+            XRBindSymbol *objcReference = self.addressObjCDictionary[@(superClassAddress)];
+            if (!objcReference) {
+                printf(" (Derek Bug Categories...) ");
+            }
+            clsName = objcReference.shortName.UTF8String;
+
+        }
         auto categoryName = categoryDisk->name->disk();
+        printf("0x%011lx %s%s(%s)%s\n", reinterpret_cast<uintptr_t>(category), dcolor(DSCOLOR_CYAN), clsName, categoryName, color_end());
         
-        auto instanceMethods = categoryDisk->instanceMethods;
-        if (instanceMethods) {
-            auto instanceMethodsDisk = instanceMethods->disk();
-            auto count = instanceMethodsDisk->count;
-            auto methods = &instanceMethodsDisk->first_method;
-            for (int j = 0; j < count; j++) {
-                auto method = methods[j];
-                auto methodName = method.name->disk();
-                printf("%p -[%s(%s) %s]\n", method.imp, clsName, categoryName, methodName);
-                
+        if (xref_options.verbose <= VERBOSE_2) {
+            continue;
+        }
+        
+        auto dumpCategoryMethods = [&](method_list* methodsList, bool isClassMethod) {
+            if (methodsList == nullptr) {
+                return;
             }
+            auto methodsListDisk = methodsList->disk();
+            auto count = methodsListDisk->count;
+            auto methods = &methodsListDisk->first_method;
+            auto c = isClassMethod ? '+' : '-';
             
-        }
-        
-        auto classMethods = categoryDisk->classMethods;
-        if (classMethods) {
-            auto classMethodsDisk = classMethods->disk();
-            auto count = classMethodsDisk->count;
-            auto methods = &classMethodsDisk->first_method;
+            if (xref_options.verbose > VERBOSE_2) {
+                printf("\t// %s methods\n", isClassMethod ? "class" : "instance");
+            }
             for (int j = 0; j < count; j++) {
                 auto method = methods[j];
                 auto methodName = method.name->disk();
-                printf("%p +[%s(%s) %s]\n", method.imp, clsName, categoryName, methodName);
+                printf("\t%s0x%011lx%s %s%c[%s(%s) %s]%s\n", dcolor(DSCOLOR_GRAY), (uintptr_t)method.imp, color_end(), dcolor(DSCOLOR_BOLD), c, clsName, categoryName, methodName, color_end());
             }
-        }
+            putchar('\n');
+        };
+        
+        dumpCategoryMethods(category->classMethods, true);
+        dumpCategoryMethods(category->instanceMethods, false);
         
     }
 }
@@ -415,3 +430,4 @@ BOOL demangleSwiftName(const char *name, d_offsets *f) {
     f->mod_off++;
     return YES;
 }
+

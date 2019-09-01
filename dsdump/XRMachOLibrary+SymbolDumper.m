@@ -25,7 +25,6 @@
     
     if (xref_options.objectiveC_mode) {
         [self dumpObjectiveCClasses];
-        [self dumpObjectiveCCategories];
         return;
     }
     
@@ -69,7 +68,6 @@
     // Enumerate the stripped symbols if all_symbols is set
     if (xref_options.all_symbols) {
         for (NSNumber *key in self.symbolEntry) {
-//        for (auto it = self.exports.begin(); it != self.exports.end(); ++it) {
             XRSymbolEntry *entry = self.symbolEntry[key];
             if (entry.visited) { continue; }
             printf("0x%011llx %s<stripped>%s\n", entry.address, dcolor(DSCOLOR_RED), color_end());
@@ -111,14 +109,11 @@
     
     // That buff is 0, then the class is defined elsewhere, use the opcode symbol bindings instead
     if (buff == 0) {
-//        ref = hash_get_objcref_addr(sym->n_value + PTR_SIZE);
       objcReference = self.addressObjCDictionary[@(sym->n_value + PTR_SIZE)];
     } else {
-//        ref = hash_get_objcref_addr(buff);
         objcReference = self.addressObjCDictionary[@(buff)];
     }
     
-//    return ref;
     return objcReference;
 }
 
@@ -130,7 +125,6 @@ void print_symbol(XRMachOLibrary *object, struct nlist_64 * _Nonnull sym, uintpt
     char * chr = &object.str_symbols[sym->n_un.n_strx];
     BOOL isObjC = NO;
     int output_len = 0;
-//    printf("%s\n", chr);
     if (xref_options.objectiveC_mode && !strnstr(chr, "_OBJC_CLASS_$_", OBJC_CLASS_LENGTH)) {
         return;
     }
@@ -162,9 +156,7 @@ void print_symbol(XRMachOLibrary *object, struct nlist_64 * _Nonnull sym, uintpt
     
     // If local ObjC class, print parent class
     if (isObjC && xref_options.objectiveC_mode && sym->n_value) {
-//        dsclass_ref_t objc_ref = [object objCSuperClassFromSymbol:sym];
         XRBindSymbol * objc_ref = [object objCSuperClassFromSymbol:sym];
-//        const char* superclassName =  ClassRefGetName(objc_ref);
         const char* superclassName =  [[objc_ref shortName] UTF8String];
         printf(": %s%s%s",dcolor(DSCOLOR_GREEN), superclassName?  superclassName : "<ROOT>", color_end());
     }

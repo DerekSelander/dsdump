@@ -115,9 +115,6 @@ namespace payload {
             auto loadAddress = reinterpret_cast<uintptr_t>(strip_PAC()) + payload::offset;
             for (auto &sec : payload::sections) {
                 if (sec->addr <= loadAddress && loadAddress < sec->addr + sec->size) {
-                    uintptr_t resolvedOffset = loadAddress - sec->addr  + sec->offset;
-                    uint8_t *resolvedAddress = &payload::data[resolvedOffset];
-                    auto payload = reinterpret_cast<T*>(ARM64E_POINTER(resolvedAddress));
                     return true;
                 }
             }
