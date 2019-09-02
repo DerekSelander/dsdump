@@ -123,7 +123,7 @@ static void handle_args(int argc, const char * argv[]) {
             case 'l':
                 xref_options.library = 1;
                 break;
-            case 'A':
+            case 'a':
                 xref_options.arch = optarg;
                 break;
             case 'h':
@@ -131,7 +131,7 @@ static void handle_args(int argc, const char * argv[]) {
                 exit(0);
                 break;
                 
-            case 'a': {
+            case 'A': {
                 char *end;
                 long address = strtoul(optarg, &end, 16);
                 if (!address) {

@@ -119,6 +119,8 @@ using namespace payload;
 
 ////////////////////////////////////////////////////////////////////////////////
 
+
+
 @implementation XRMachOLibrary
 
 - (instancetype)initWithPath:(NSString*)path {
@@ -134,9 +136,6 @@ using namespace payload;
         
         self.segmentCommandsArray = [NSMutableArray array];
         self.segmentCommandsDictionary = [NSMutableDictionary dictionary];
-        
-        self.file_offset = 0;
-        
 
         self.addressSymbolDictionary = [NSMutableDictionary dictionaryWithCapacity:800];
         self.externalObjectiveClassesDict = [NSMutableDictionary dictionaryWithCapacity:100];
@@ -158,7 +157,6 @@ using namespace payload;
         void* buff = ::mmap((void*)MMAP_POTENTIAL_START, fsize, PROT_READ, MAP_PRIVATE, self.fd, 0);
 
         payload::data = (uint8_t *)buff; // self.data;
-        self.data = (uint8_t *)buff;
         payload::size = fsize;
         
         if (fsize < 4) {
@@ -166,32 +164,38 @@ using namespace payload;
         }
         
         if (xref_options.arch) {
-            intptr_t offset = [self offsetForArchitecture:[NSString stringWithUTF8String:xref_options.arch]];
-            if (offset == FAT_OFFSET_BAD_NAME) {
+            size_t sz = 0;
+            payload::offset = [self offsetForArchitecture:[NSString stringWithUTF8String:xref_options.arch] size:&sz];
+            if (payload::offset == FAT_OFFSET_BAD_NAME) {
                 dprintf(STDERR_FILENO, "%sunknown architecture: \"%s\", available: %s, exiting...%s\n", dcolor(DSCOLOR_RED),xref_options.arch, [self printAllArchitectures].UTF8String, color_end());
                 exit(1);
             }
-            _file_offset += offset;
-            payload::offset = _file_offset;
+            ::munmap(buff, fsize);
+            payload::data = (uint8_t*)::mmap((void*)MMAP_POTENTIAL_START, sz, PROT_READ, MAP_PRIVATE, self.fd, payload::offset);
+
+            payload::offset = 0;
+            payload::size = sz;
+            
         }
         
    
-        uint32 magic = *(uint32_t *)&_data[_file_offset];
+        auto magic = *payload::GetData<uint32_t>(0); //*(uint32_t *)&_data[_file_offset];
         
         
     // If this is a fat executable, it'll go back here and try again
     LOL:
         
         if (magic == MH_MAGIC || magic == MH_MAGIC) {
-            dprintf(STDERR_FILENO, "%sxref doesn't support 32 bit architectures :[%s\n", dcolor(DSCOLOR_RED), color_end());
+            dprintf(STDERR_FILENO, "%sdsdump doesn't support 32 bit architectures :[%s\n", dcolor(DSCOLOR_RED), color_end());
             exit(1);
         } else if (magic == MH_MAGIC_64 || magic == MH_CIGAM_64) {
 
-            _header = *(struct mach_header_64 *)&_data[_file_offset];
+            //_header = *(struct mach_header_64 *)&_data[_file_offset];
+            _header = payload::GetData<struct mach_header_64>(0);
             
-            uintptr_t cur = (uintptr_t)DATABUF(sizeof(struct mach_header_64) + _file_offset);
+            uintptr_t cur = (uintptr_t)DATABUF(sizeof(struct mach_header_64));
             
-            for (int i = 0; i < _header.ncmds; i++) {
+            for (int i = 0; i < _header->ncmds; i++) {
                 struct load_command *load_cmd = (struct load_command *)cur;
                 
                 if (load_cmd->cmd == LC_LOAD_DYLIB || load_cmd->cmd == LC_LOAD_WEAK_DYLIB || load_cmd->cmd == LC_REEXPORT_DYLIB || load_cmd->cmd == LC_LOAD_UPWARD_DYLIB) {
@@ -219,7 +223,8 @@ using namespace payload;
                 } else if (load_cmd->cmd == LC_FUNCTION_STARTS) {
                     
                     self.function_starts_cmd = (struct linkedit_data_command *)cur;
-                    void * functions = &_data[_file_offset + self.function_starts_cmd->dataoff];
+//                    void * functions = &_data[self.function_starts_cmd->dataoff];
+                    auto functions = payload::GetData<uint8_t>(self.function_starts_cmd->dataoff);
                     
                     const uint8_t* infoStart = (uint8_t*)functions;
                     const uint8_t* infoEnd = ((const uint8_t* )functions) + self.function_starts_cmd->dataoff;
@@ -253,8 +258,8 @@ using namespace payload;
                     
                     self.symtab = (struct symtab_command *)load_cmd;
                     
-                    self.symbols = GetData<struct nlist_64>(_file_offset + self.symtab->symoff);
-                    self.str_symbols = GetData<char>(_file_offset + self.symtab->stroff);
+                    self.symbols = GetData<struct nlist_64>(self.symtab->symoff);
+                    self.str_symbols = payload::GetData<char>(self.symtab->stroff);
                     lseek(self.fd, self.symtab->symoff, SEEK_SET);
 
                 } else if (load_cmd->cmd == LC_DYLD_INFO || load_cmd->cmd == LC_DYLD_INFO_ONLY) {
@@ -315,35 +320,32 @@ using namespace payload;
             dprintf(STDERR_FILENO, "%sMultiple arches found: %s%s\n", dcolor(DSCOLOR_RED), [self printAllArchitectures].UTF8String, color_end());
             dprintf(STDERR_FILENO, "%sUse --arches (-A) (or ARCH env var) to specify arch, defaulting to: %s%s\n",  dcolor(DSCOLOR_RED), [self defaultArchitectureName].UTF8String, color_end());
             
-            intptr_t off = [self offsetForDefaultArchitecture];
-            assert(off >= 0);
-            _file_offset += off;
-            magic = *(uint32_t *)&_data[_file_offset];
+            payload::offset = [self offsetForDefaultArchitecture];
+            payload::data = &payload::data[payload::offset];
+            magic = *payload::GetData<uint32_t>(0);
             goto LOL;
             assert(0);
             
         } else if (magic == FAT_MAGIC_64 || magic == FAT_CIGAM_64) {
-            struct fat_arch_64 fatHeader;
-            fatHeader = *(struct fat_arch_64 *)_data;
             printf("FAT MAGIC 64 headers not implemented... tell Derek what module is using this\n");
             assert(0);
         }
         
         if (self.lazy_ptr_section && self.dysymtab) {
-            uintptr_t syms = (_file_offset + self.dysymtab->indirectsymoff);
+            uintptr_t syms = self.dysymtab->indirectsymoff;
             _indirect_symbols.count = self.dysymtab->nindirectsyms;
             _indirect_symbols.indirect_sym = (uint32_t *)calloc(self.indirect_symbols.count, sizeof(uint32_t));
-             pread(_fd, _indirect_symbols.indirect_sym, _indirect_symbols.count * sizeof(uint32_t), syms);
+             pread(_fd, _indirect_symbols.indirect_sym + payload::offset, _indirect_symbols.count * sizeof(uint32_t), syms);
         }
     }
     
     [exploredSet addObject:path];
     
 
-    if (!self.symtab) {
-        perror("Warning: no symbol table\n");
-        return nil;
-    }
+//    if (!self.symtab) {
+//        perror("Warning: no symbol table\n");
+//        return nil;
+//    }
     
     self.symbolEntry = [NSMutableDictionary dictionaryWithCapacity:self.dysymtab->nlocalsym + self.dysymtab->nextdefsym];
     
@@ -438,7 +440,7 @@ using namespace payload;
         if (strcmp(chr, searched_symbol) == 0 || strcmp(&chr[1], searched_symbol) == 0 ) {
             uintptr_t buf_stub_helper;
 
-            pread(self.fd, &buf_stub_helper, sizeof(uintptr_t), self.file_offset + self.lazy_ptr_section->offset + (PTR_SIZE * i));
+            pread(self.fd, &buf_stub_helper, sizeof(uintptr_t), payload::offset + self.lazy_ptr_section->offset + (PTR_SIZE * i));
             
     
             return self.lazy_ptr_section->addr + (PTR_SIZE * i);
@@ -465,12 +467,12 @@ using namespace payload;
  ********************************************************************************/
 
 - (uintptr_t)translateLoadAddressToFileOffset:(uintptr_t)loadAddress useFatOffset:(BOOL)useFatOffset {
-   __unused  uintptr_t f = useFatOffset ? self.file_offset : 0;
+//   __unused  uintptr_t f = useFatOffset ? self.file_offset : 0;
     for (int i = 1; i < self.sectionCommandsArray.count; i++) {
         NSNumber *sectionNumber = self.sectionCommandsArray[i];
         struct section_64 *sec = reinterpret_cast<struct section_64 *>(sectionNumber.pointerValue);
         if (sec->addr <= loadAddress && loadAddress < sec->addr + sec->size) {
-            return loadAddress - sec->addr  + sec->offset + f;
+            return loadAddress - sec->addr  + sec->offset;
         }
     }
     dprintf(STDERR_FILENO, "WARNING: couldn't find address 0x%lx in binary!\n", loadAddress);
@@ -479,35 +481,18 @@ using namespace payload;
 }
 
 - (uintptr_t)translateOffsetToLoadAddress:(uintptr_t)offset {
-    uintptr_t f = -self.file_offset;
-    for (int i = 1; i < self.sectionCommandsArray.count; i++) {
-        NSNumber *sectionNumber = self.sectionCommandsArray[i];
-        struct section_64 *sec = (struct section_64 *)sectionNumber.pointerValue;
-        
-        if (sec->offset <= (offset + f) && (offset + f) < (sec->offset + sec->size)) {
-            return offset - sec->offset + sec->addr + f;
-        }
-    }
-    dprintf(STDERR_FILENO, "WARNING: couldn't find offset 0x%lx in binary!\n", offset);
+    assert(0);
+//    uintptr_t f = -self.file_offset;
+//    for (int i = 1; i < self.sectionCommandsArray.count; i++) {
+//        NSNumber *sectionNumber = self.sectionCommandsArray[i];
+//        struct section_64 *sec = (struct section_64 *)sectionNumber.pointerValue;
+//
+//        if (sec->offset <= (offset + f) && (offset + f) < (sec->offset + sec->size)) {
+//            return offset - sec->offset + sec->addr + f;
+//        }
+//    }
+//    dprintf(STDERR_FILENO, "WARNING: couldn't find offset 0x%lx in binary!\n", offset);
     return 0;
-}
-
-/********************************************************************************
- // PAC crap
- ********************************************************************************/
-
-- (BOOL)isARM64e {
-    static dispatch_once_t onceToken;
-    static BOOL isARM64e = NO;
-    __weak XRMachOLibrary * wself = self;
-    dispatch_once(&onceToken, ^{
-        XRMachOLibrary *sself = wself;
-        cpu_type_t type = *(cpu_type_t *)&sself->_data[sself->_file_offset + 4];
-        cpu_subtype_t subtype = *(cpu_subtype_t *)&sself->_data[sself->_file_offset + 8];
-        
-        isARM64e = ((CPU_ARCH_ABI64|CPU_TYPE_ARM) == type && CPU_SUBTYPE_ARM64E == subtype) ? YES : NO;
-    });
-    return isARM64e;
 }
 
 /********************************************************************************

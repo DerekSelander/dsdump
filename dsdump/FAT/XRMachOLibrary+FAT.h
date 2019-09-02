@@ -22,7 +22,7 @@ NS_ASSUME_NONNULL_BEGIN
 -(NSString*)printAllArchitectures;
 
 /// Get offset for arch, returns FAT_OFFSET_BAD_NAME if can't find it
-- (intptr_t)offsetForArchitecture:(NSString *)architecture;
+- (intptr_t)offsetForArchitecture:(NSString *)architecture size:(size_t* _Nullable )size;
 
 /// Default arch name
 - (NSString *)defaultArchitectureName;

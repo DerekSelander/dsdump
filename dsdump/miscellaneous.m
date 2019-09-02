@@ -35,7 +35,7 @@ void print_manpage() {
 }
 
 void print_usage() {
-    printf("(%s, %s) %s\n", __TIME__, __DATE__, dsdump_usage);
+    printf("Version: 0.1.0, Built: (%s, %s) %s\n", __TIME__, __DATE__, dsdump_usage);
 }
 
 /********************************************************************************

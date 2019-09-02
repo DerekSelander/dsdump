@@ -40,10 +40,9 @@
 		3F009ADA22AF695400EA38D3 /* payload.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3F009AD822AF695400EA38D3 /* payload.cpp */; };
 		3F18948923052263000738F5 /* libswiftDemangling.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 3F18948823052263000738F5 /* libswiftDemangling.a */; };
 		3F29124A22820A99003C2BD7 /* TaskPath.mm in Sources */ = {isa = PBXBuildFile; fileRef = 3F29124822820A99003C2BD7 /* TaskPath.mm */; };
-		3F29126322877648003C2BD7 /* XRMachOLibrary+Dump.m in Sources */ = {isa = PBXBuildFile; fileRef = 3F29126222877648003C2BD7 /* XRMachOLibrary+Dump.m */; };
 		3F40275823010DB5007B3C25 /* XRMachOLibrary+Swift.mm in Sources */ = {isa = PBXBuildFile; fileRef = 3F40275723010DB5007B3C25 /* XRMachOLibrary+Swift.mm */; };
 		3F40275A2301106D007B3C25 /* libswiftAST.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 3F4027592301106D007B3C25 /* libswiftAST.a */; };
-		3F480806227A322E0078AE76 /* XRMachOLibrary+FAT.m in Sources */ = {isa = PBXBuildFile; fileRef = 3F480805227A322E0078AE76 /* XRMachOLibrary+FAT.m */; };
+		3F480806227A322E0078AE76 /* XRMachOLibrary+FAT.mm in Sources */ = {isa = PBXBuildFile; fileRef = 3F480805227A322E0078AE76 /* XRMachOLibrary+FAT.mm */; };
 		3F50D787231577410017A20A /* dsdump in Copy to /usr/local/bin */ = {isa = PBXBuildFile; fileRef = A66A9CBB22316CF3006602AB /* dsdump */; };
 		3F50D789231577620017A20A /* dsdump in Copy to compiled directory in repo */ = {isa = PBXBuildFile; fileRef = A66A9CBB22316CF3006602AB /* dsdump */; };
 		3F50D78E23160E730017A20A /* dsdump.1 in Copy Man Page */ = {isa = PBXBuildFile; fileRef = 3F50D78D23160E630017A20A /* dsdump.1 */; };
@@ -122,15 +121,13 @@
 		3F291247228207C7003C2BD7 /* dyld_process_info_internal.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = dyld_process_info_internal.h; sourceTree = "<group>"; };
 		3F29124822820A99003C2BD7 /* TaskPath.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = TaskPath.mm; sourceTree = "<group>"; };
 		3F29124922820A99003C2BD7 /* TaskPath.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = TaskPath.h; sourceTree = "<group>"; };
-		3F29126122877648003C2BD7 /* XRMachOLibrary+Dump.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "XRMachOLibrary+Dump.h"; sourceTree = "<group>"; };
-		3F29126222877648003C2BD7 /* XRMachOLibrary+Dump.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = "XRMachOLibrary+Dump.m"; sourceTree = "<group>"; };
 		3F2912782289B476003C2BD7 /* objc_.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = objc_.h; sourceTree = "<group>"; };
 		3F40275623010DB5007B3C25 /* XRMachOLibrary+Swift.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "XRMachOLibrary+Swift.h"; sourceTree = "<group>"; };
 		3F40275723010DB5007B3C25 /* XRMachOLibrary+Swift.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = "XRMachOLibrary+Swift.mm"; sourceTree = "<group>"; };
 		3F4027592301106D007B3C25 /* libswiftAST.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libswiftAST.a; path = "swift-source/build/Ninja-RelWithDebInfoAssert/swift-macosx-x86_64/lib/libswiftAST.a"; sourceTree = SOURCE_ROOT; };
 		3F40275B23012C6F007B3C25 /* objc-runtime-new.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "objc-runtime-new.h"; sourceTree = "<group>"; };
 		3F480804227A322E0078AE76 /* XRMachOLibrary+FAT.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "XRMachOLibrary+FAT.h"; sourceTree = "<group>"; };
-		3F480805227A322E0078AE76 /* XRMachOLibrary+FAT.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = "XRMachOLibrary+FAT.m"; sourceTree = "<group>"; };
+		3F480805227A322E0078AE76 /* XRMachOLibrary+FAT.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = "XRMachOLibrary+FAT.mm"; sourceTree = "<group>"; };
 		3F50D78D23160E630017A20A /* dsdump.1 */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.man; path = dsdump.1; sourceTree = "<group>"; };
 		3F5F41A9226EA3A800D3DCB1 /* XRMachOLibrary+SymbolDumper.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "XRMachOLibrary+SymbolDumper.h"; sourceTree = "<group>"; };
 		3F5F41AA226EA3A800D3DCB1 /* XRMachOLibrary+SymbolDumper.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = "XRMachOLibrary+SymbolDumper.m"; sourceTree = "<group>"; };
@@ -183,7 +180,7 @@
 			isa = PBXGroup;
 			children = (
 				3F480804227A322E0078AE76 /* XRMachOLibrary+FAT.h */,
-				3F480805227A322E0078AE76 /* XRMachOLibrary+FAT.m */,
+				3F480805227A322E0078AE76 /* XRMachOLibrary+FAT.mm */,
 			);
 			path = FAT;
 			sourceTree = "<group>";
@@ -228,8 +225,6 @@
 				3F009AD922AF695400EA38D3 /* payload.hpp */,
 				3F2912782289B476003C2BD7 /* objc_.h */,
 				3F98C3B2225F06E900606F97 /* XRMachOLibrary+FileManagement.m */,
-				3F29126122877648003C2BD7 /* XRMachOLibrary+Dump.h */,
-				3F29126222877648003C2BD7 /* XRMachOLibrary+Dump.m */,
 				3F5F41A9226EA3A800D3DCB1 /* XRMachOLibrary+SymbolDumper.h */,
 				3F5F41AA226EA3A800D3DCB1 /* XRMachOLibrary+SymbolDumper.m */,
 				3FEBCB5E227C98D200D3AD07 /* XRMachOLibrary+PID_Info.h */,
@@ -357,8 +352,7 @@
 				3FE4FD48231B3BC600D4B77C /* manpage.c in Sources */,
 				3FEBCB60227C98D200D3AD07 /* DSXRLibrary+PID_Info.m in Sources */,
 				3FDE7B982314BDE800715685 /* TestSwift.swift in Sources */,
-				3F29126322877648003C2BD7 /* XRMachOLibrary+Dump.m in Sources */,
-				3F480806227A322E0078AE76 /* XRMachOLibrary+FAT.m in Sources */,
+				3F480806227A322E0078AE76 /* XRMachOLibrary+FAT.mm in Sources */,
 				A66A9CBF22316CF3006602AB /* main.m in Sources */,
 				3F29124A22820A99003C2BD7 /* TaskPath.mm in Sources */,
 				3F009ADA22AF695400EA38D3 /* payload.cpp in Sources */,

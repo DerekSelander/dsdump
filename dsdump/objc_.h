@@ -63,7 +63,7 @@ typedef struct protocol_list : public payload::LoadToDiskTranslator<struct proto
 typedef struct method : public payload::LoadToDiskTranslator<struct method> {
     payload::LoadToDiskTranslator<const char>* name;
     payload::LoadToDiskTranslator<const char> *types;
-    void* imp;
+    payload::LoadToDiskTranslator<uintptr_t>* imp;
 } method_t;
 
 typedef struct method_list : public payload::LoadToDiskTranslator<struct method_list> {

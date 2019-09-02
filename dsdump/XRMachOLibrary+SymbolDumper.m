@@ -105,7 +105,7 @@
 //    dsclass_ref_t ref;
     uintptr_t buff = 0;
     uintptr_t fileOff = [self translateLoadAddressToFileOffset:sym->n_value + PTR_SIZE useFatOffset:NO];
-    pread(self.fd, &buff, sizeof(void*), fileOff + self.file_offset);
+    pread(self.fd, &buff, sizeof(void*), fileOff);
     
     // That buff is 0, then the class is defined elsewhere, use the opcode symbol bindings instead
     if (buff == 0) {

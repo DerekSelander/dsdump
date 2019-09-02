@@ -69,13 +69,12 @@ extern "C" {
 @property (nonatomic, copy) NSString *path;
 
 
-@property (nonatomic, readonly) BOOL isARM64e;
 
 /// File descriptor
 @property (nonatomic, assign) int fd;
 
 
-@property (nonatomic, assign) struct mach_header_64 header;
+@property (nonatomic, assign) struct mach_header_64* header;
 
 @property (nonatomic, strong) NSMutableDictionary <NSString*, XRBindSymbol*> *stringObjCDictionary;
 @property (nonatomic, strong) NSMutableDictionary <NSNumber*, XRBindSymbol*> *addressObjCDictionary;
@@ -104,7 +103,7 @@ extern "C" {
 @property (nonatomic, assign) struct nlist_64 *symbols;
 @property (nonatomic, assign) char *str_symbols;
 
-@property (nonatomic, assign) uint8_t *data;
+//@property (nonatomic, assign) uint8_t *data;
 @property (nonatomic, strong) NSMutableDictionary<NSNumber *, XRSymbolEntry *>*symbolEntry;
 
 
@@ -116,7 +115,7 @@ extern "C" {
 
 /// The indirect symbol table *int that points to actual symbols
 @property (nonatomic, assign) indirect_symbols_t indirect_symbols;
-@property (nonatomic, assign) uintptr_t file_offset;
+//@property (nonatomic, assign) uintptr_t file_offset;
 
 - (instancetype)initWithPath:(NSString*)path;
 - (NSString *)realizedPath;

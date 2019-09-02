@@ -176,7 +176,7 @@ struct EntryWithOffset
     
     // look bind info
     if ( self.dyldInfo ) {
-        const uint8_t* p = (uint8_t *)&self.data[self.dyldInfo->bind_off + self.file_offset];
+        const uint8_t* p = (uint8_t *)&payload::data[self.dyldInfo->bind_off];
         const uint8_t* end = (uint8_t *)&p[self.dyldInfo->bind_size];
         
         uint8_t type = 0;
@@ -368,7 +368,7 @@ struct EntryWithOffset
     do { seg = (struct segment_command_64 *)self.segmentCommandsArray[segindex++].longValue;
     } while (seg->maxprot == 0);
     uintptr_t baseAddr = seg->vmaddr;
-    const uint8_t* start = (uint8_t*)DATABUF(self.dyldInfo->export_off + self.file_offset);
+    const uint8_t* start = (uint8_t*)DATABUF(self.dyldInfo->export_off);
     const uint8_t* end = &start[self.dyldInfo->export_size];
     std::vector<XRSymbolEntry*> list;
     [self parseTrie:start end:end output:list baseAddr:baseAddr];

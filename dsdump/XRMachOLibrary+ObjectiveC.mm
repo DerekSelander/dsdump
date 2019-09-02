@@ -58,7 +58,7 @@ static NSDictionary <NSString*, NSNumber*> *blacklistedSelectors = nil;
         return;
     }
     
-    uint8_t isMeta = rodata->flags & RO_META ? 1 : 0 ;
+    uint8_t isMeta = rodata->disk()->flags & RO_META ? 1 : 0 ;
     auto count = methodList->disk()->count;
     auto methods = &methodList->disk()->first_method;
     if (xref_options.verbose > VERBOSE_2) {
@@ -73,6 +73,10 @@ static NSDictionary <NSString*, NSNumber*> *blacklistedSelectors = nil;
             continue;
         }
         printf("\t%s0x%011lx%s %s%c[%s %s]%s\n", dcolor(DSCOLOR_GRAY), (unsigned long)methodAddress, color_end(), dcolor(DSCOLOR_BOLD), "-+"[isMeta], name, methodName, color_end());
+    }
+    
+    if (xref_options.verbose > VERBOSE_2) {
+        putchar('\n');
     }
 }
 
@@ -312,7 +316,8 @@ static NSDictionary <NSString*, NSNumber*> *blacklistedSelectors = nil;
             continue;
         }
         auto categoryDisk = category->disk();
-        const char * clsName = categoryDisk->cls ? category->cls->GetName() : NULL;
+
+        const char * clsName = categoryDisk->cls->validAddress() ? categoryDisk->cls->GetName() : NULL;
         
         
 
@@ -352,8 +357,8 @@ static NSDictionary <NSString*, NSNumber*> *blacklistedSelectors = nil;
             putchar('\n');
         };
         
-        dumpCategoryMethods(category->classMethods, true);
-        dumpCategoryMethods(category->instanceMethods, false);
+        dumpCategoryMethods(category->disk()->classMethods, true);
+        dumpCategoryMethods(category->disk()->instanceMethods, false);
         
     }
 }

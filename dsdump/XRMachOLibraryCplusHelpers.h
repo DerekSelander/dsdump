@@ -39,7 +39,7 @@
      T LoadToOffsetDeref(XRMachOLibrary *library, T* t) {
          uintptr_t loadAddress = reinterpret_cast<uintptr_t>(t);
          uintptr_t fileOff = [library translateLoadAddressToFileOffset:loadAddress useFatOffset:YES];
-         T retT = *reinterpret_cast<T*>(&library.data[fileOff]);
+         T retT = *reinterpret_cast<T*>(&payload::data[fileOff]);
          return retT;
      }
      
@@ -47,14 +47,14 @@
      T LoadToOffset(XRMachOLibrary *library, T t) {
          uintptr_t loadAddress = *reinterpret_cast<uintptr_t*>(&t); // TODO find a better way than this...
          uintptr_t fileOff = [library translateLoadAddressToFileOffset:(loadAddress) useFatOffset:YES];
-         T retT = reinterpret_cast<T>(&library.data[fileOff]);
+         T retT = reinterpret_cast<T>(&payload::data[fileOff]);
          return retT;
      }
      
      template <typename T>
      T OffsetToLoad(XRMachOLibrary *library, T t) {
          uintptr_t offset = *reinterpret_cast<uintptr_t*>(&t);
-         uintptr_t loadAddress = [library translateOffsetToLoadAddress:offset - (uintptr_t)&library.data[0]];
+         uintptr_t loadAddress = [library translateOffsetToLoadAddress:offset - (uintptr_t)&payload::data[0]];
          T retT = *reinterpret_cast<T*>(&loadAddress);
          return retT;
      }

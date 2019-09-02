@@ -64,6 +64,11 @@ namespace payload {
             return r;
         }
         
+        inline uintptr_t strip() {
+            auto p = reinterpret_cast<uintptr_t>(this);
+            return  ARM64E_POINTER(p);
+        }
+        
         ///
         inline bool isLoad() {
             return !isDisk();
@@ -72,7 +77,7 @@ namespace payload {
         ///
         inline T* load() {
             if (isLoad()) {return reinterpret_cast<T*>((uintptr_t)strip_PAC());  }
-            auto offset = reinterpret_cast<uintptr_t>(strip_PAC()) - reinterpret_cast<uintptr_t>(payload::data) + payload::offset;
+            auto offset = reinterpret_cast<uintptr_t>(strip_PAC()) - reinterpret_cast<uintptr_t>(payload::data);
             for (auto &sec : payload::sections) {
                 if (sec->offset <= (offset) && (offset) < (sec->offset + sec->size)) {
                     auto resolvedLoad = offset - sec->offset + sec->addr;
@@ -112,7 +117,7 @@ namespace payload {
         
         
         inline bool validAddress() {
-            auto loadAddress = reinterpret_cast<uintptr_t>(strip_PAC()) + payload::offset;
+            auto loadAddress = reinterpret_cast<uintptr_t>(strip_PAC());
             for (auto &sec : payload::sections) {
                 if (sec->addr <= loadAddress && loadAddress < sec->addr + sec->size) {
                     return true;
