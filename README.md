@@ -3,7 +3,6 @@ An improved nm + objc/swift class-dump
 
 [![img](media/vmmap.png)](https://store.raywenderlich.com/products/advanced-apple-debugging-and-reverse-engineering)
 
-
 ### man
 
 <!--man_start--->
@@ -81,6 +80,9 @@ Darwin			       September 1, 2019			Darwin
 ```
 <!--man_stop--->
 
+## Compiling
+
+Compiling this will be a bit of a pain in the butt on your end. You'll need to clone the Swift library and build the Swift `libSwiftAST.a` and `libswiftDemangling.a static` libs and stick them into the appropriate locations in Xcode. Alternatively, you can just grab the compiled version in the **compiled** directory. Make sure the SHA1 matches below if you're paranoid. 
 
 Compiled SHA1
 ```
