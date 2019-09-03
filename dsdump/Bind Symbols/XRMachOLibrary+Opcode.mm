@@ -336,7 +336,7 @@ struct EntryWithOffset
     NSString *s = [NSString stringWithUTF8String:symbol];
     NSNumber *a = @(address);
     
-    if (![s hasPrefix:@"_OBJC_CLASS_$_"]) { return; }
+//    if (![s hasPrefix:@"_OBJC_CLASS_$_"]) { return; }
     
     if (self.addressObjCDictionary[a]) {
         if (xref_options.debug) {

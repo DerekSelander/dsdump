@@ -24,7 +24,19 @@ namespace payload {
     
     uintptr_t Offset2Virtual(uintptr_t f) {
         auto r = ARM64E_POINTER(f);
-        for (auto i = 1; i < payload::sections.size(); i++) {
+        for (auto &sec : payload::sections) {
+            if (sec->offset <= (r) && (r) < (sec->offset + sec->size)) {
+                return r + sec->addr - sec->offset;
+            }
+        }
+        
+        printf( "WARNING: couldn't find offset 0x%lx in binary!\n", r);
+        return 0;
+    }
+    
+    uintptr_t Virtual2Offset(uintptr_t f) {
+        auto r = ARM64E_POINTER(f);
+        for (auto i = 0; i < payload::sections.size(); i++) {
             struct section_64 *sec  = payload::sections[i];
             if (sec->offset <= (r) && (r) < (sec->offset + sec->size)) {
                 return r + sec->addr - sec->offset;
@@ -34,6 +46,7 @@ namespace payload {
         printf( "WARNING: couldn't find offset 0x%lx in binary!\n", r);
         return 0;
     }
+    
 
 
 }

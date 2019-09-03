@@ -9,6 +9,13 @@
 import Foundation
 
 
-class someTest {
+protocol AProtocol {
+    func yay() 
+}
+
+class someTest : AProtocol {
     func somefunc() {}
+    func yay() {
+        
+    }
 }

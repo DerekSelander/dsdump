@@ -360,13 +360,25 @@ using namespace payload;
     
     
     if (xref_options.virtual_address) {
-        struct _tmp { uintptr_t yoloolololollolo; };
-        auto addrs = reinterpret_cast<payload::LoadToDiskTranslator<_tmp> *> (xref_options.virtual_address);
+
+        auto addrs = reinterpret_cast<payload::LoadToDiskTranslator<uintptr_t> *> (xref_options.virtual_address);
         auto diskAddr = addrs->disk();
-        printf("Virtual 0x%012lx -> Offset 0x%012lx\n", xref_options.virtual_address, (uintptr_t)diskAddr - (uintptr_t)payload::data);
+        auto loadAddr = reinterpret_cast<uintptr_t>(addrs->load());
+        if (!addrs->validAddress()) {
+            printf("Couldn't find virtual address %p\n", addrs);
+            exit(1);
+        }
+        
+        section_64 *foundSect = nullptr;
+        for (auto &sect : payload::sections) {
+            if (sect->addr <= loadAddr && loadAddr <= sect->addr + sect->size) {
+                foundSect = sect;
+            }
+        }
+        printf("Virtual 0x%014lx -> Offset 0x%014lx, %s.%s [%p - %p]\n", xref_options.virtual_address, (uintptr_t)diskAddr - (uintptr_t)payload::data, foundSect->segname, foundSect->sectname, (void*)foundSect->addr, (void*)(foundSect->addr + foundSect->size));
         for (int i = 0; i < xref_options.virtual_address_count; i++) {
-//            auto addr = &diskAddr[i];
-//            printf("  %s0x%012lx%s:   %s0x%018lx  %s%s0x%014lx%s\n", dcolor(DSCOLOR_CYAN), xref_options.virtual_address + (i * PTR_SIZE), color_end(), dcolor(DSCOLOR_YELLOW), *addr, color_end(), dcolor(DSCOLOR_RED), *reinterpret_cast<uintptr_t*>(addr) & 0x000000ffffffffff, color_end());
+            auto addr = &diskAddr[i];
+            printf("  %s0x%016lx%s:   %s0x%016lx%s %s0x%016lx%s\n", dcolor(DSCOLOR_CYAN), xref_options.virtual_address + (i * PTR_SIZE), color_end(), dcolor(DSCOLOR_YELLOW), *addr, color_end(), dcolor(DSCOLOR_RED), ARM64E_POINTER(*reinterpret_cast<uintptr_t*>(addr)), color_end());
         }
         exit(0);
     }
@@ -481,17 +493,17 @@ using namespace payload;
 }
 
 - (uintptr_t)translateOffsetToLoadAddress:(uintptr_t)offset {
-    assert(0);
-//    uintptr_t f = -self.file_offset;
-//    for (int i = 1; i < self.sectionCommandsArray.count; i++) {
-//        NSNumber *sectionNumber = self.sectionCommandsArray[i];
-//        struct section_64 *sec = (struct section_64 *)sectionNumber.pointerValue;
-//
-//        if (sec->offset <= (offset + f) && (offset + f) < (sec->offset + sec->size)) {
-//            return offset - sec->offset + sec->addr + f;
-//        }
-//    }
-//    dprintf(STDERR_FILENO, "WARNING: couldn't find offset 0x%lx in binary!\n", offset);
+//    assert(0);
+    uintptr_t f = 0;
+    for (int i = 1; i < self.sectionCommandsArray.count; i++) {
+        NSNumber *sectionNumber = self.sectionCommandsArray[i];
+        struct section_64 *sec = (struct section_64 *)sectionNumber.pointerValue;
+
+        if (sec->offset <= (offset + f) && (offset + f) < (sec->offset + sec->size)) {
+            return offset - sec->offset + sec->addr + f;
+        }
+    }
+    dprintf(STDERR_FILENO, "WARNING: couldn't find offset 0x%lx in binary!\n", offset);
     return 0;
 }
 

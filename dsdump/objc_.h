@@ -63,7 +63,8 @@ typedef struct protocol_list : public payload::LoadToDiskTranslator<struct proto
 typedef struct method : public payload::LoadToDiskTranslator<struct method> {
     payload::LoadToDiskTranslator<const char>* name;
     payload::LoadToDiskTranslator<const char> *types;
-    payload::LoadToDiskTranslator<uintptr_t>* imp;
+    // true for isCodePointer, different value for PAC
+    payload::LoadToDiskTranslator<uintptr_t, true>* imp;
 } method_t;
 
 typedef struct method_list : public payload::LoadToDiskTranslator<struct method_list> {
@@ -316,7 +317,7 @@ typedef struct   {
 
 
 // Swift class heeeeeeeeeeeeeeeereeeeeeeee
-typedef struct swift_class_t  : public payload::LoadToDiskTranslator<struct swift_class_t >  {
+typedef struct swift_class_t  : public payload::LoadToDiskTranslator<struct swift_class_t, true>  {
     using SwiftClassDescriptor = payload::LoadToDiskTranslator<swift::TargetClassDescriptor<swift::InProcess>>;
     
     struct swift_class_t *isa_cls;
@@ -366,7 +367,12 @@ typedef struct swift_class_t  : public payload::LoadToDiskTranslator<struct swif
         if (rodata == nullptr) {
             return NULL;
         }
+        
+        if (!rodata->validAddress()) {
+            return NULL;
+        }
         auto rodataDisk = rodata->disk();
+        if (rodataDisk == nullptr) { return NULL; }
         auto name = rodataDisk->name;
         if (name == nullptr) {
             return NULL;

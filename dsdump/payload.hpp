@@ -43,30 +43,65 @@ namespace payload {
     
     
     /// Used to translate virtual load addresses to disk (mmap'd) offsets
-    template <class T>
+    template <class T, bool isCodePointer = false>
     struct LoadToDiskTranslator {
         template <typename C>
-        static payload::LoadToDiskTranslator<T>* Cast(C val) {
-            return reinterpret_cast<payload::LoadToDiskTranslator<T>*>(val);
+        static payload::LoadToDiskTranslator<T, isCodePointer>* Cast(C val) {
+            return reinterpret_cast<payload::LoadToDiskTranslator<T, isCodePointer>*>(val);
         }
         
         /// This assumes the disk address (the address mmap'd in memory) doesn't overlap with the virtual address
         inline bool isDisk() {
             auto d = reinterpret_cast<uintptr_t>(payload::data);
-            auto v = reinterpret_cast<uintptr_t>(this);
+//            auto v = reinterpret_cast<uintptr_t>(this);
+            auto v = strip_PAC();
             return v >= d && v <= (d + payload::size);
         }
         
-        ///
-        inline uintptr_t strip_PAC() {
-            auto p = reinterpret_cast<uintptr_t>(this);
-            auto r = (p & (1UL << 63)) ? payload::Offset2Virtual(p) : ARM64E_POINTER(p);
-            return r;
+        inline bool isNull() {
+            auto h = reinterpret_cast<uintptr_t>(this);
+            // Normal case
+            if (h == 0) {
+                return true;
+            }
+            
+            // ARM64e case
+            if (h & (1UL << 62)) {
+                return true;
+            }
+            return false; 
         }
         
-        inline uintptr_t strip() {
+        ///
+        uintptr_t strip_PAC() {
             auto p = reinterpret_cast<uintptr_t>(this);
-            return  ARM64E_POINTER(p);
+            auto isPACCodePointer =  reinterpret_cast<uintptr_t>(p & (1UL << 63)) ? true : false;
+            // Code ARM64e pointer
+            if (isPACCodePointer) {
+
+                auto lower32Mask = -1UL >> 32;
+                auto virtualAddress = payload::Offset2Virtual(lower32Mask & p);
+                return virtualAddress;
+            }
+            
+            // The DATA ARM64e pointer
+            return ARM64E_POINTER(p);
+        }
+        
+        ///
+        T* strip() {
+            auto p = reinterpret_cast<uintptr_t>(this);
+            auto isPACCodePointer =  reinterpret_cast<uintptr_t>(p & (3UL << 62)) ? true : false;
+            // Code ARM64e pointer
+            if (isPACCodePointer ||  isCodePointer) {
+                
+                auto lower32Mask = -1UL >> 32;
+                auto virtualAddress = payload::Offset2Virtual(lower32Mask & p);
+                return reinterpret_cast<T*>(virtualAddress);
+            }
+            
+            // The DATA ARM64e pointer
+            return reinterpret_cast<T*>(ARM64E_POINTER(p));
         }
         
         ///
@@ -101,13 +136,14 @@ namespace payload {
                 return reinterpret_cast<T*>(ARM64E_POINTER(this));
             }
             
-            auto loadAddress = reinterpret_cast<uintptr_t>(strip_PAC()) + payload::offset;
+//            auto loadAddress = reinterpret_cast<uintptr_t>(ARM64E_POINTER(this));
+            auto loadAddress = strip_PAC();
             for (auto &sec : payload::sections) {
                 if (sec->addr <= loadAddress && loadAddress < sec->addr + sec->size) {
                     uintptr_t resolvedOffset = loadAddress - sec->addr  + sec->offset;
                     uint8_t *resolvedAddress = &payload::data[resolvedOffset];
-                    auto payload = reinterpret_cast<T*>(ARM64E_POINTER(resolvedAddress));
-                    return payload;
+                    auto payload = payload::LoadToDiskTranslator<uintptr_t>::Cast(resolvedAddress)->strip_PAC();
+                    return reinterpret_cast<T*>(payload);
                 }
             }
             
@@ -117,7 +153,8 @@ namespace payload {
         
         
         inline bool validAddress() {
-            auto loadAddress = reinterpret_cast<uintptr_t>(strip_PAC());
+//            auto loadAddress = reinterpret_cast<uintptr_t>(strip_PAC());
+            auto loadAddress = reinterpret_cast<uintptr_t>(ARM64E_POINTER(this));
             for (auto &sec : payload::sections) {
                 if (sec->addr <= loadAddress && loadAddress < sec->addr + sec->size) {
                     return true;
@@ -127,15 +164,15 @@ namespace payload {
         }
         
         inline uintptr_t loadAddress() {
-            auto diskAddress = reinterpret_cast<payload::LoadToDiskTranslator<uintptr_t>*>(this->disk());
+            auto diskAddress = reinterpret_cast<payload::LoadToDiskTranslator<uintptr_t, isCodePointer>*>(this->disk());
             return reinterpret_cast<uintptr_t>(diskAddress->load());
         }
         
-        ///
-        T* operator ->() {
-            auto disk = this->disk();
-            return  reinterpret_cast<T*>(disk);
-        }
+//        ///
+//        T* operator ->() {
+//            auto disk = this->disk();
+//            return  reinterpret_cast<T*>(disk);
+//        }
         
         // Using blah.atIndex(i) you get ARM64e resolves via the slightly prettier syntax of blah[i]
         inline T Get(int i) {
@@ -144,9 +181,19 @@ namespace payload {
         
         inline T* GetDisk(int i) {
             auto addr = &this->disk()[i];
-            return reinterpret_cast<payload::LoadToDiskTranslator<T>*>(addr)->disk();
+            return reinterpret_cast<payload::LoadToDiskTranslator<T, isCodePointer>*>(addr)->disk();
         }
     };
+    
+    inline bool ValidDiskAddress(uintptr_t addr) {
+
+//        auto loadAddress = reinterpret_cast<uintptr_t>(addr);
+        if ((uintptr_t)payload::data <= addr && addr <= (uintptr_t)payload::data + payload::size) {
+                return true;
+        }
+//        }
+        return false;
+    }
     
     // IF there's a concrete type, then 
     template <class T>

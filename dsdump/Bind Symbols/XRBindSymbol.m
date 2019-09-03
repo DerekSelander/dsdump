@@ -23,7 +23,7 @@
 
 - (NSString *)shortName {
     NSInteger index = [self.name rangeOfString:@"_$_"].location;
-    if (index) {
+    if (index != NSNotFound) {
         return [self.name substringFromIndex:index + 3];
     }
     return self.name;

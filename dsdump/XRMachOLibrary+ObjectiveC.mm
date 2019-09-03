@@ -67,7 +67,7 @@ static NSDictionary <NSString*, NSNumber*> *blacklistedSelectors = nil;
     
     for (int i = 0; i < count; i++) {
         auto method = methods[i];
-        auto methodAddress = method.imp;
+        auto methodAddress = method.imp->strip_PAC();
         auto methodName = method.name->disk();
         if (blacklistedSelectors[[NSString stringWithUTF8String:methodName]]) {
             continue;
@@ -228,8 +228,9 @@ static NSDictionary <NSString*, NSNumber*> *blacklistedSelectors = nil;
                 } else {
                     auto rodata = cls->disk()->rodata();
 
-                    if (!superclassName && (rodata->disk()->flags & RO_ROOT) == 0) {
-                        printf(" %sbug! \"%s\" shouldn't be ROOT (report this to Derek) (0x%lu) %s", dcolor(DSCOLOR_RED), name,  resolvedAddress, color_end());
+                    if (!superclassName && !(rodata->disk()->flags & RO_ROOT)) {
+                        superclassName = "<Derek Bug Superclass, class shouldn't be root>";
+                        color = dcolor(DSCOLOR_RED);
                     }
                     auto context = Context();
                     auto str = StringRef( superclassName);
@@ -320,18 +321,20 @@ static NSDictionary <NSString*, NSNumber*> *blacklistedSelectors = nil;
         const char * clsName = categoryDisk->cls->validAddress() ? categoryDisk->cls->GetName() : NULL;
         
         
-
+        char * color = dcolor(DSCOLOR_CYAN);
         if (!clsName) { // IF the class is implemented in a different module...
             auto superClassAddress = payload::GetLoadAddress(&categoryDisk->cls);
             XRBindSymbol *objcReference = self.addressObjCDictionary[@(superClassAddress)];
             if (!objcReference) {
-                printf(" (Derek Bug Categories...) ");
+                clsName = "<DEREK BUG Categories!>";
+                color = dcolor(DSCOLOR_RED);
+            } else {
+                clsName = objcReference.shortName.UTF8String;
             }
-            clsName = objcReference.shortName.UTF8String;
 
         }
         auto categoryName = categoryDisk->name->disk();
-        printf("0x%011lx %s%s(%s)%s\n", reinterpret_cast<uintptr_t>(category), dcolor(DSCOLOR_CYAN), clsName, categoryName, color_end());
+        printf("0x%011lx %s%s(%s)%s\n", reinterpret_cast<uintptr_t>(category->strip_PAC()), color, clsName, categoryName, color_end());
         
         if (xref_options.verbose <= VERBOSE_2) {
             continue;
@@ -352,7 +355,7 @@ static NSDictionary <NSString*, NSNumber*> *blacklistedSelectors = nil;
             for (int j = 0; j < count; j++) {
                 auto method = methods[j];
                 auto methodName = method.name->disk();
-                printf("\t%s0x%011lx%s %s%c[%s(%s) %s]%s\n", dcolor(DSCOLOR_GRAY), (uintptr_t)method.imp, color_end(), dcolor(DSCOLOR_BOLD), c, clsName, categoryName, methodName, color_end());
+                printf("\t%s0x%011lx%s %s%c[%s(%s) %s]%s\n", dcolor(DSCOLOR_GRAY), (uintptr_t)method.imp->strip_PAC(), color_end(), dcolor(DSCOLOR_BOLD), c, clsName, categoryName, methodName, color_end());
             }
             putchar('\n');
         };

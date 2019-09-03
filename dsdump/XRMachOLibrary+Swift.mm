@@ -181,12 +181,11 @@ void wtf(uintptr_t address) {
     int numClasses = (int)(class_list->size / PTR_SIZE);
     for (int i = 0; i < numClasses; i++) {
 
-        auto swiftClassDiskPointer = classes[i]->load()->disk();
-        if (!(swiftClassDiskPointer->bits & (FAST_IS_SWIFT_LEGACY|FAST_IS_SWIFT_STABLE))) {
+        auto swiftClassDisk = classes[i]->load()->disk();
+        if (!(swiftClassDisk->bits & (FAST_IS_SWIFT_LEGACY|FAST_IS_SWIFT_STABLE))) {
             continue;
         }
         
-        auto &swiftClassDisk  = *swiftClassDiskPointer;
         auto descriptor = swiftClassDisk->descriptor->disk();
         swiftDescriptorToClassDictionary[descriptor] = classes[i]->load();
         
@@ -196,16 +195,16 @@ void wtf(uintptr_t address) {
 }
 
 - (void)dumpSwiftProtocols {
-    struct section_64* swiftTypes = payload::sectionsDict["__TEXT.__swift5_protos"];
-    if (!swiftTypes) {
+    struct section_64* swiftProtos = payload::sectionsDict["__TEXT.__swift5_protos"];
+    if (!swiftProtos) {
         if (payload::sectionsDict["__TEXT.__swift4_protos"]) {
             printf("%sdsdump only supports swift5 :[\n%s", dcolor(DSCOLOR_RED), color_end());
         }
         return;
     }
     
-    auto protoOffsets = payload::DiskWrapper<int32_t>::Cast(swiftTypes->addr);
-    for (int i = 0; i < swiftTypes->size / sizeof(uint32_t); i++) {
+    auto protoOffsets = payload::DiskWrapper<int32_t>::Cast(swiftProtos->addr);
+    for (int i = 0; i < swiftProtos->size / sizeof(uint32_t); i++) {
         auto resolvedTypedOffset = (intptr_t)protoOffsets[i].disk() + *protoOffsets[i].disk();
         auto protocol = reinterpret_cast<ProtocolDescriptor *>(resolvedTypedOffset);
         auto requirements = protocol->getRequirements();
@@ -227,17 +226,26 @@ void wtf(uintptr_t address) {
         return;
     }
     
-    auto protoOffsets = payload::DiskWrapper<int32_t>::Cast(swiftTypes->addr);
+    auto protoOffsets = payload::DiskWrapper<int32_t>::Cast(swiftTypes->addr)->disk();
+//    auto protoOffsetsDisk = protoOffsets->disk();
     for (int i = 0; i < swiftTypes->size / sizeof(int32_t); i++) {
-        
-        auto resolvedTypedOffset = (uintptr_t)((intptr_t)(protoOffsets[i].disk()) + *protoOffsets[i].disk());
-        auto protocolConformance = reinterpret_cast<ProtocolConformanceDescriptor *>(resolvedTypedOffset);
+        auto resolvedDiskOffset = (uintptr_t)((intptr_t)(&protoOffsets[i]) + (int32_t)protoOffsets[i]);
+        auto protocolConformance = reinterpret_cast<ProtocolConformanceDescriptor *>(resolvedDiskOffset);
+        if (protocolConformance == nullptr) {
+            continue;
+        }
         auto typeDescriptor = protocolConformance->getTypeDescriptor();
+
+#warning figure out why ARM64e gives wonky values for this particular one
         auto protocol = protocolConformance->getProtocol();
+        
+        if (!payload::ValidDiskAddress((uintptr_t)protocol)) {
+            continue;
+        }
+        
         auto recast = static_cast<const ContextDescriptor*>(typeDescriptor);
         swiftProtocolsToTypesDictionary.emplace(recast, std::vector<const ProtocolDescriptor*>());
         swiftProtocolsToTypesDictionary.at(recast).push_back(protocol);
-        
     }
     
     return;
@@ -295,33 +303,28 @@ void wtf(uintptr_t address) {
     [self dumpSwiftMethods:descriptor];
 }
 
-- (void)printParentClassIfApplicable:(swift_class*)swiftClassLoad {
-    auto swiftClassDisk = swiftClassLoad->disk();
+- (void)printParentClassIfApplicable:(swift_class*)cls {
     DSCOLOR color;
     const char *demangledName = NULL;
-    auto superclass_ptr = swiftClassDisk->superclass;
     std::string outDemangledstring;
     
+    auto swiftClassDisk = cls->disk();
+    auto superCls = swiftClassDisk->superclass;
+    
     // Print out parent, is there a parent class and is it locally implemented?
-    if (reinterpret_cast<uintptr_t>(superclass_ptr) & 0x0000000FFFFFFFF0UL /* ARM64e check */) {
-        auto &superclass = *superclass_ptr; // Needed fo the overloaded -> operator
-        auto &rodata = *superclass->rodata();
-        auto mangledName = rodata->name->disk();
-        dshelpers::simple_demangle(mangledName, outDemangledstring);
-        demangledName = outDemangledstring.c_str();
-        color = DSCOLOR_MAGENTA;
-    } else {
-        // If we're here, the superclass was nil, meanining there could be no parent or could be referenced externally
-        XRBindSymbol *bindSymbol = self.addressObjCDictionary[@((uintptr_t)&swiftClassLoad->superclass)];
-        auto name = bindSymbol.name.UTF8String;
-        if (name && strnstr(name, "_OBJC_CLASS_$_", strlen("_OBJC_CLASS_$_"))) {
-            name = &name[strlen("_OBJC_CLASS_$_")];
-        }
+    if (superCls->isNull()) { // external
+        XRBindSymbol *bindSymbol = self.addressObjCDictionary[@((uintptr_t)&cls->load()->superclass)];
+        auto name = bindSymbol.shortName.UTF8String;
         dshelpers::simple_demangle(name, outDemangledstring);
         demangledName = outDemangledstring.c_str();
         color = DSCOLOR_GREEN;
+    } else {
+        // If here, locally implemented
+        auto mangledName = superCls->GetName();
+        dshelpers::simple_demangle(mangledName, outDemangledstring);
+        demangledName = outDemangledstring.c_str();
+        color = DSCOLOR_MAGENTA;
     }
-    
     printf(" : %s%s%s", dcolor(color), demangledName, color_end());
 }
 
