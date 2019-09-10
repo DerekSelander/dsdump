@@ -30,7 +30,7 @@ __attribute__((constructor)) static void InitializeStuff() {
  ********************************************************************************/
 static const char * dsdump_usage = "dsdump [option..] <mach-o-file>";
 
-static char* dsdump_version = "Beta 1";
+static char* dsdump_version = "Beta 2";
 void print_manpage() {
     printf("%s\n\n", __manpage_deets ? (const char*)&__manpage_deets : dsdump_usage);
 }
