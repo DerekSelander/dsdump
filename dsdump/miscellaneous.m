@@ -174,3 +174,16 @@ const uintptr_t r_sleb128_decode(uint8_t *byte, uintptr_t* datalen, uint64_t *v)
     if (datalen) { *datalen = l; }
     return result;
 }
+
+const BOOL ContainsFilteredWords(const char *word) {
+    NSString *nameString = [NSString stringWithUTF8String:word];
+    if (xref_options.filters) {
+        for (NSString *filter in xref_options.filters) {
+            if ([nameString rangeOfString:filter options:NSCaseInsensitiveSearch].location != NSNotFound) {
+                return YES;
+            }
+        }
+        return NO;
+    }
+    return YES;
+}

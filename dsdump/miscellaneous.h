@@ -12,7 +12,7 @@
 
 #import <Foundation/Foundation.h>
 #import <stdlib.h>
-
+#import <Foundation/Foundation.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -77,6 +77,7 @@ typedef struct {
     int debug;
     int help;
     char *dump;
+    NSMutableSet *filters;
 } xref_options_t;
 
 extern xref_options_t xref_options;
@@ -86,7 +87,8 @@ extern xref_options_t xref_options;
 //uint64_t read_uleb128 (const uint8_t ** offset, const uint8_t * end);
 const uint8_t *r_uleb128_decode(uint8_t *data, int *datalen, uint64_t *v);
 const uintptr_t r_sleb128_decode(uint8_t *byte, uintptr_t* shift, uint64_t *v);
-    
+const BOOL ContainsFilteredWords(const char *word);
+
 void warn_debug(const char *format, ...);
 
 #ifdef __cplusplus

@@ -88,7 +88,7 @@ Compiling this will be a bit of a pain in the butt on your end. You'll need to c
 
 Compiled SHA1
 ```
-SHA1: 12882bb6df3ff98ec60a39d46b8505af38c4ac0b
+SHA1: 397cfb2351be5a9f0ef1ab53d333c99e7a89af62
 ```
 
 ### Credits

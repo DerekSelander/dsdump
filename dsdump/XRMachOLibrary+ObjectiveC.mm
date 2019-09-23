@@ -184,6 +184,9 @@ static NSDictionary <NSString*, NSNumber*> *blacklistedSelectors = nil;
             }
 
             const char *name = cls->GetName();
+            if (!ContainsFilteredWords(name)) {
+                continue;
+            }
             
             d_offsets off;
             if (xref_options.swift_mode) {
@@ -289,6 +292,9 @@ static NSDictionary <NSString*, NSNumber*> *blacklistedSelectors = nil;
                 continue;
             }
 
+            if (!ContainsFilteredWords(&chr[OBJC_CLASS_LENGTH])) {
+                continue;
+            }
             print_symbol(self, &sym, NULL);
         }
     }
@@ -331,9 +337,12 @@ static NSDictionary <NSString*, NSNumber*> *blacklistedSelectors = nil;
             } else {
                 clsName = objcReference.shortName.UTF8String;
             }
-
         }
         auto categoryName = categoryDisk->name->disk();
+        if (!ContainsFilteredWords(clsName) && !ContainsFilteredWords(categoryName)) {
+            continue;
+        }
+        
         printf("0x%011lx %s%s(%s)%s\n", reinterpret_cast<uintptr_t>(category->strip_PAC()), color, clsName, categoryName, color_end());
         
         if (xref_options.verbose <= VERBOSE_2) {

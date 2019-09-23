@@ -103,27 +103,27 @@ extern "C" {
 @property (nonatomic, assign) struct nlist_64 *symbols;
 @property (nonatomic, assign) char *str_symbols;
 
-//@property (nonatomic, assign) uint8_t *data;
 @property (nonatomic, strong) NSMutableDictionary<NSNumber *, XRSymbolEntry *>*symbolEntry;
 
 
 
-
+///
 @property (nonatomic, assign) struct linkedit_data_command *function_starts_cmd;
+
+/// __DATA.__la_symbol_ptr Mach-O section
 @property (nonatomic, assign) struct section_64 *lazy_ptr_section;
+
+
 @property (nonatomic, assign) struct dyld_info_command *dyldInfo;
 
 /// The indirect symbol table *int that points to actual symbols
 @property (nonatomic, assign) indirect_symbols_t indirect_symbols;
-//@property (nonatomic, assign) uintptr_t file_offset;
 
 - (instancetype)initWithPath:(NSString*)path;
 - (NSString *)realizedPath;
-
-
 - (uintptr_t)translateLoadAddressToFileOffset:(uintptr_t)loadAddress useFatOffset:(BOOL)useFatOffset;
 - (uintptr_t)translateOffsetToLoadAddress:(uintptr_t)offset;
-
+- (NSString*)analysisSavePath;
 
 @end
 

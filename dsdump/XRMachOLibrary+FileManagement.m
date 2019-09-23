@@ -50,7 +50,7 @@
 }
 
 - (NSString *)analysisSavePath {
-    return [NSString stringWithFormat:@"/tmp/com.selander.xref.%@", [self translateUUID]];
+    return [NSString stringWithFormat:@"/tmp/%@.%@", [self.path lastPathComponent], [self translateUUID]];
 }
 
 

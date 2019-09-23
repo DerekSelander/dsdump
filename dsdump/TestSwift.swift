@@ -13,7 +13,10 @@ protocol AProtocol {
     func yay() 
 }
 
-class someTest : AProtocol {
+struct someTest : AProtocol {
+    var blah : String!
+    var num : Int = 4
+    
     func somefunc() {}
     func yay() {
         

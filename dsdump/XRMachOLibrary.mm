@@ -16,7 +16,6 @@
 #import "XRMachOLibraryCplusHelpers.h"
 #import "payload.hpp"
 
-
 #import <sys/mman.h>
 #import <mach/mach.h>
 #import <unordered_map>
@@ -33,6 +32,9 @@ namespace llvm {
     int EnableABIBreakingChecks = 0;
 }
 
+using namespace payload;
+
+/// Used for an oddball address that no process virtual memory should usually grab
 #define MMAP_POTENTIAL_START 0x0000000400000000UL
 
 namespace dshelpers {
@@ -84,10 +86,7 @@ namespace dshelpers {
         strout_ref = context.demangleTypeAsString(str, simplifiedOptions);
         return strout_ref.c_str();
     }
-    
-    
 }
-
 
 /// Using mmap to specify an address that's not in dsdump's virtual memory and also not in inspected exectuables virtual memory
 static void ensureSafeAddressForMMap(size_t memory_size) {
@@ -112,10 +111,7 @@ static void ensureSafeAddressForMMap(size_t memory_size) {
         printf("%p region is not large enough, exiting\n", (void*)MMAP_POTENTIAL_START);
         exit(1);
     }
-
 }
-
-using namespace payload;
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -182,7 +178,7 @@ using namespace payload;
         auto magic = *payload::GetData<uint32_t>(0); //*(uint32_t *)&_data[_file_offset];
         
         
-    // If this is a fat executable, it'll go back here and try again
+    // If this is a fat executable, update start, go back here and try again
     LOL:
         
         if (magic == MH_MAGIC || magic == MH_MAGIC) {
@@ -223,7 +219,6 @@ using namespace payload;
                 } else if (load_cmd->cmd == LC_FUNCTION_STARTS) {
                     
                     self.function_starts_cmd = (struct linkedit_data_command *)cur;
-//                    void * functions = &_data[self.function_starts_cmd->dataoff];
                     auto functions = payload::GetData<uint8_t>(self.function_starts_cmd->dataoff);
                     
                     const uint8_t* infoStart = (uint8_t*)functions;
@@ -268,9 +263,9 @@ using namespace payload;
 //#warning fix this
                     
                     self.exports.reserve(self.dyldInfo->export_size);
-                    if (xref_options.objectiveC_mode) {
+                    // Swift implies Objc so parse 'em even if only Swift
+                    if (xref_options.objectiveC_mode || xref_options.swift_mode) {
                         [self parseDYLDOpcodes];
-                        
                     }
                     
                 } else if (load_cmd->cmd == LC_DYSYMTAB) {
@@ -340,17 +335,12 @@ using namespace payload;
     }
     
     [exploredSet addObject:path];
-    
 
-//    if (!self.symtab) {
-//        perror("Warning: no symbol table\n");
-//        return nil;
-//    }
     
     self.symbolEntry = [NSMutableDictionary dictionaryWithCapacity:self.dysymtab->nlocalsym + self.dysymtab->nextdefsym];
     
     // DYLD opcodes contain information about ObjC classes, used for classdump
-    if (xref_options.objectiveC_mode) {
+    if (xref_options.objectiveC_mode || xref_options.swift_mode) {
         [self preparseUndefinedObjectiveCSymbols];
         [self parseDYLDExports];
         
@@ -360,26 +350,7 @@ using namespace payload;
     
     
     if (xref_options.virtual_address) {
-
-        auto addrs = reinterpret_cast<payload::LoadToDiskTranslator<uintptr_t> *> (xref_options.virtual_address);
-        auto diskAddr = addrs->disk();
-        auto loadAddr = reinterpret_cast<uintptr_t>(addrs->load());
-        if (!addrs->validAddress()) {
-            printf("Couldn't find virtual address %p\n", addrs);
-            exit(1);
-        }
-        
-        section_64 *foundSect = nullptr;
-        for (auto &sect : payload::sections) {
-            if (sect->addr <= loadAddr && loadAddr <= sect->addr + sect->size) {
-                foundSect = sect;
-            }
-        }
-        printf("Virtual 0x%014lx -> Offset 0x%014lx, %s.%s [%p - %p]\n", xref_options.virtual_address, (uintptr_t)diskAddr - (uintptr_t)payload::data, foundSect->segname, foundSect->sectname, (void*)foundSect->addr, (void*)(foundSect->addr + foundSect->size));
-        for (int i = 0; i < xref_options.virtual_address_count; i++) {
-            auto addr = &diskAddr[i];
-            printf("  %s0x%016lx%s:   %s0x%016lx%s %s0x%016lx%s\n", dcolor(DSCOLOR_CYAN), xref_options.virtual_address + (i * PTR_SIZE), color_end(), dcolor(DSCOLOR_YELLOW), *addr, color_end(), dcolor(DSCOLOR_RED), ARM64E_POINTER(*reinterpret_cast<uintptr_t*>(addr)), color_end());
-        }
+        [self handleVirtualAddress];
         exit(0);
     }
     
@@ -436,9 +407,7 @@ using namespace payload;
 - (uintptr_t)externalSymbolStubAddress:(NSString *)symbol {
     
     const char *searched_symbol = [symbol UTF8String];
-
     size_t count  = (self.lazy_ptr_section->size / (1 << self.lazy_ptr_section->align));
-    
     int start = self.lazy_ptr_section->reserved1;
     for (int i = 0; i < count; i++) {
         int offset = self.indirect_symbols.indirect_sym[i + start];
@@ -548,6 +517,29 @@ using namespace payload;
         return [self.path stringByReplacingOccurrencesOfString:@"@rpath" withString:[self.path stringByDeletingLastPathComponent]];
     }
     return self.path;
+}
+
+/// Display virtual addresses if specified in options
+- (void)handleVirtualAddress {
+    auto addrs = reinterpret_cast<payload::LoadToDiskTranslator<uintptr_t> *> (xref_options.virtual_address);
+    auto diskAddr = addrs->disk();
+    auto loadAddr = reinterpret_cast<uintptr_t>(addrs->load());
+    if (!addrs->validAddress()) {
+        printf("Couldn't find virtual address %p\n", addrs);
+        exit(1);
+    }
+    
+    section_64 *foundSect = nullptr;
+    for (auto &sect : payload::sections) {
+        if (sect->addr <= loadAddr && loadAddr <= sect->addr + sect->size) {
+            foundSect = sect;
+        }
+    }
+    printf("Virtual 0x%014lx -> Offset 0x%014lx, %s.%s [%p - %p]\n", xref_options.virtual_address, (uintptr_t)diskAddr - (uintptr_t)payload::data, foundSect->segname, foundSect->sectname, (void*)foundSect->addr, (void*)(foundSect->addr + foundSect->size));
+    for (int i = 0; i < xref_options.virtual_address_count; i++) {
+        auto addr = &diskAddr[i];
+        printf("  %s0x%016lx%s:   %s0x%016lx%s %s0x%016lx%s\n", dcolor(DSCOLOR_CYAN), xref_options.virtual_address + (i * PTR_SIZE), color_end(), dcolor(DSCOLOR_YELLOW), *addr, color_end(), dcolor(DSCOLOR_RED), ARM64E_POINTER(*reinterpret_cast<uintptr_t*>(addr)), color_end());
+    }
 }
 
 @end

@@ -16,6 +16,7 @@
 #import "XRMachOLibrary.h"
 #import "XRMachOLibrary+SymbolDumper.h"
 #import "TaskPath.h"
+#import "XRSymbolEntry.h"
 
 @import MachO;
 
@@ -23,7 +24,10 @@
  
  *******************************************************************************/
 static NSArray <NSString *>* exc_rpaths = nil;
+static int analyzeFD = -1;
 static void handle_args(int argc, const char * argv[]);
+static void AddFilter(char * filter);
+
 
 int main(int argc, const char * argv[], const char*envp[]) {
     handle_args(argc, argv);
@@ -50,11 +54,6 @@ int main(int argc, const char * argv[], const char*envp[]) {
     }
     
     XRMachOLibrary *image = [[XRMachOLibrary alloc] initWithPath:path];
-    // Go through the options
-    if (! ( xref_options.file_offset  || xref_options.analyze || xref_options.library || xref_options.dump)) {
-        [image dumpSymbols];
-        return 0;
-    }
     
     if (xref_options.library) {
         if (geteuid() != 0) {
@@ -63,6 +62,30 @@ int main(int argc, const char * argv[], const char*envp[]) {
         }
         DumpProcessesContainingLibrary(basename(resolved_path));
     }
+    
+//    if (xref_options.analyze) {
+//        NSString *savePath = [image analysisSavePath];
+//        analyzeFD = open(savePath.UTF8String, O_RDWR  | O_CREAT| O_TRUNC, 0644);
+//        if (analyzeFD <= 0) {
+//            printf("Couldn't open %s\n", savePath.UTF8String);
+//            exit(1);
+//        }
+//
+//
+//        for (NSNumber *key in image.symbolEntry) {
+//            XRSymbolEntry *entry = image.symbolEntry[key];
+//            if (entry.visited) {
+//                continue;
+//            }
+//            printf("0x%011llx %s<stripped>%s\n", entry.address, dcolor(DSCOLOR_RED), color_end());
+//        }
+//    }
+    
+    // Go through the options
+    if (! ( xref_options.file_offset || xref_options.library || xref_options.dump)) {
+        [image dumpSymbols];
+    }
+    
 
     
     return 0;
@@ -85,13 +108,14 @@ static void handle_args(int argc, const char * argv[]) {
             {"objc",    no_argument, &xref_options.objectiveC_mode,  1 },
             {"swift",    no_argument, &xref_options.swift_mode,  1 },
             {"all",    no_argument, &xref_options.all_symbols,  1 },
+            {"analyze",    no_argument, &xref_options.analyze,  1 },
             {"debug",    no_argument, &xref_options.debug,  1 },
             {"help",    no_argument, &xref_options.help,  1 },
             {0,         0,                 0,  0 }
         };
         
 
-        c = getopt_long(argc, (char * const *)argv, "a:hA:uUxcvSl",
+        c = getopt_long(argc, (char * const *)argv, "f:a:A:uUxcvSlZh",
                         long_options, &option_index);
         if (c == -1) { break; }
         struct host_basic_info;
@@ -106,11 +130,15 @@ static void handle_args(int argc, const char * argv[]) {
                 } else if (strcmp(long_options[option_index].name, "help") == 0) {
                     print_manpage();
                     exit(0);
+                } else if (strcmp(long_options[option_index].name, "filter") == 0) {
+                    AddFilter(optarg);
                 }
                 break;
             case 'v':
                 xref_options.verbose++;
                 break;
+            case 'Z':
+                xref_options.analyze = 1;
             case 'c':
                 xref_options.color = 1;
                 break;
@@ -125,6 +153,9 @@ static void handle_args(int argc, const char * argv[]) {
                 break;
             case 'a':
                 xref_options.arch = optarg;
+                break;
+            case 'f':
+                AddFilter(optarg);
                 break;
             case 'h':
                 print_manpage();
@@ -162,7 +193,6 @@ static void handle_args(int argc, const char * argv[]) {
     }
     
     // Handle some post argument shuffling...
-    if (xref_options.swift_mode) { xref_options.objectiveC_mode = 1; }
     xref_options.color |= getenv("DSCOLOR") ? 1 : 0;
     xref_options.debug |= getenv("DEBUG") ? 1 : 0;
     
@@ -170,4 +200,14 @@ static void handle_args(int argc, const char * argv[]) {
         xref_options.arch = getenv("ARCH");
     }
     
+}
+
+static void AddFilter(char * filter) {
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        xref_options.filters = [NSMutableSet set];
+    });
+    
+    NSString *filterString = [NSString stringWithUTF8String:filter];
+    [xref_options.filters addObject:filterString];
 }

@@ -173,7 +173,7 @@ void wtf(uintptr_t address) {
         class_list = payload::sectionsDict["__DATA_CONST.__objc_classlist"];
     }
     if (!class_list) {
-        perror("Couldn't find __objc_classlist segment?!\n");
+        // OK, no ObjC classes in here
         return YES;
     }
 
@@ -188,7 +188,6 @@ void wtf(uintptr_t address) {
         
         auto descriptor = swiftClassDisk->descriptor->disk();
         swiftDescriptorToClassDictionary[descriptor] = classes[i]->load();
-        
     }
 
     return YES;
@@ -343,6 +342,9 @@ void wtf(uintptr_t address) {
 
             ContextDescriptorKind kind = descriptor->Flags.getKind();
             const char* name = descriptor->Name.get();
+            if (!ContainsFilteredWords(name)) {
+                continue;
+            }
             printf(" %s %s%s%s", getKindString(kind), dcolor(DSCOLOR_CYAN), name, color_end());
             switch (kind) {
                 case ContextDescriptorKind::Struct: {
@@ -382,11 +384,6 @@ void wtf(uintptr_t address) {
     auto methodDescriptors = classDescriptor->getMethodDescriptors();
     if (xref_options.verbose >= VERBOSE_4 && methodDescriptors.size()) {
         printf("\n%s\t// Swift methods%s\n", dcolor(DSCOLOR_GRAY), color_end());
-    }
-    
-    auto it = swiftDescriptorToClassDictionary.find(classDescriptor);
-    if (it == swiftDescriptorToClassDictionary.end()) {
-        return;
     }
 
     char stripped[PATH_MAX];
@@ -460,7 +457,6 @@ void wtf(uintptr_t address) {
     
     putchar('\n');
 }
-
 
 @end
 

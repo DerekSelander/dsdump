@@ -20,11 +20,14 @@
     if (xref_options.swift_mode && [self preparseSwiftTypes]) {
         [self preparseSwiftProtocols];
         [self dumpSwiftTypes];
-        return;
     }
     
     if (xref_options.objectiveC_mode) {
         [self dumpObjectiveCClasses];
+    }
+    
+    // If no mode  specified, defaults to nm
+    if (xref_options.objectiveC_mode || xref_options.swift_mode) {
         return;
     }
     
@@ -44,6 +47,12 @@
     
     for (int i = 0; i < self.symtab->nsyms; i++) {
         struct nlist_64 symbol = self.symbols[i];
+        
+        // For stripped functions
+        if ((xref_options.all_symbols || xref_options.analyze) && symbol.n_value && self.symbolEntry[@(symbol.n_value)]) {
+            XRSymbolEntry *entry = self.symbolEntry[@(symbol.n_value)];
+            entry.visited = true;
+        }
 
         // If a debugging symbol only print if really verbose
         if ((symbol.n_type & N_STAB) && xref_options.verbose < VERBOSE_3) {
@@ -58,11 +67,6 @@
             print_symbol(self, &self.symbols[i], NULL);
         }
         
-        // For stripped functions
-        if (xref_options.all_symbols && symbol.n_value && self.symbolEntry[@(symbol.n_value)]) {
-            XRSymbolEntry *entry = self.symbolEntry[@(symbol.n_value)];
-            entry.visited = true;
-        }
     }
     
     // Enumerate the stripped symbols if all_symbols is set
@@ -135,7 +139,7 @@ void print_symbol(XRMachOLibrary *object, struct nlist_64 * _Nonnull sym, uintpt
     }
     
     // nm -x option
-    if (xref_options.verbose >= VERBOSE_2) {
+    if (xref_options.verbose >= VERBOSE_3) {
         output_len += printf("%02x %02x %04x ", sym->n_type, sym->n_sect, sym->n_desc);
     }
     

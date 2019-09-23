@@ -18,8 +18,6 @@
             _name = NULL;
         }
         _address = symbol->n_value;
-//        printf("%p, sym: %s, %p\n", self, _name, (void*)_address);
- 
     }
     return self;
 }
