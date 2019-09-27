@@ -26,8 +26,18 @@
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Weverything"
-    #import "swift/Demangling/Demangler.h"
-    #import "XRMachOLibraryCplusHelpers.h"
+
+#define protected public
+#define private public
+#define class struct
+
+#import "swift/Demangling/Demangler.h"
+
+#undef protected
+#undef private
+#undef class
+
+#import "XRMachOLibraryCplusHelpers.h"
 #pragma clang diagnostic pop
 
 

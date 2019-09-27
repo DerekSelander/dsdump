@@ -83,6 +83,8 @@ static unordered_map<const ContextDescriptor*, std::vector<const ProtocolDescrip
 static unordered_map<TargetClassDescriptor<InProcess>*, swift_class*> swiftDescriptorToClassDictionary;
 
 
+const char *getProtocolRequirementName(ProtocolRequirementFlags::Kind kind);
+
 void wtf(uintptr_t address) {
     
     const struct segment_command_64 * seg = getsegbyname("__TEXT");
@@ -96,11 +98,16 @@ void wtf(uintptr_t address) {
     
     uintptr_t *c = (uintptr_t*)seg->vmaddr;
     for (int i = 0; i < seg->vmsize / 8; i ++) {
-        uintptr_t addr = (uintptr_t)c[i];
+        uintptr_t addr = (uintptr_t)c[i] + (uintptr_t)&c[i];
         if (addr == address) {
             printf("(64) Found address at %p\n", &cur[i]);
         }
     }
+}
+
+void test(uintptr_t address) {
+    int32_t *cur = (int32_t *)address;
+    printf("resolved: %p\n", (void*)((uintptr_t)*cur + uintptr_t(address)) );
 }
 
 
@@ -131,22 +138,6 @@ void wtf(uintptr_t address) {
     for (int i = 0; i < swiftTypes->size / sizeof(uint32_t); i++) {
         auto resolvedTypedOffset = (intptr_t)typeOffsets[i].disk() + *typeOffsets[i].disk();
         auto descriptor = reinterpret_cast<TypeContextDescriptor *>(resolvedTypedOffset);
-        
-        
-        
-//        int32_t ztypeOffset = TODISKDEREF(&ztypeOffsets[i]);
-//        uintptr_t zresolvedTypedOffset = (uintptr_t)(&ztypeOffsets[i]) + ztypeOffset;
-////        TypeContextDescriptor* zdescriptor = TODISK(reinterpret_cast<TypeContextDescriptor*>(zresolvedTypedOffset));
-//
-////        assert(zdescriptor == descriptor);
-//
-//
-////        for (auto cur = this; true; cur = cur->Parent.get()) {
-////            if (auto module = dyn_cast<TargetModuleContextDescriptor<Runtime>>(cur))
-////                return module;
-////        }
-//
-////        const ContextDescriptor* cur = LoadToDiskTranslator::Cast(descriptor);
         
         LoadToDiskTranslator<ContextDescriptor>* cur = payload::CastToDisk<ContextDescriptor>(descriptor);
 
@@ -194,6 +185,7 @@ void wtf(uintptr_t address) {
 }
 
 - (void)dumpSwiftProtocols {
+    // swift5_protos
     struct section_64* swiftProtos = payload::sectionsDict["__TEXT.__swift5_protos"];
     if (!swiftProtos) {
         if (payload::sectionsDict["__TEXT.__swift4_protos"]) {
@@ -207,11 +199,29 @@ void wtf(uintptr_t address) {
         auto resolvedTypedOffset = (intptr_t)protoOffsets[i].disk() + *protoOffsets[i].disk();
         auto protocol = reinterpret_cast<ProtocolDescriptor *>(resolvedTypedOffset);
         auto requirements = protocol->getRequirements();
-        for (auto __unused &req : requirements) {
-
-#warning implement me hopefully by Swift 5.2?
-            // TODO: https://github.com/apple/swift/blob/659c49766be5e5cfa850713f43acc4a86f347fd8/include/swift/ABI/Metadata.h#L1717
+        auto parent = protocol->Parent.get();
+        printf(" protocol %s", protocol->Name.get());
+        if (parent != nullptr && parent->getKind() == ContextDescriptorKind::Protocol) {
+            auto parentProtocol = reinterpret_cast<const ProtocolDescriptor *>(parent);
+            printf(", %s", parentProtocol->Name.get());
         }
+        printf(" {\n");
+        printf(" \t// %d requirements\n", protocol->NumRequirements);
+        for (auto __unused &req : requirements) {
+            auto flags = req.Flags;
+            auto kind = flags.getKind();
+            auto isInstance = flags.isInstance();
+            printf(" \t// %s %s\n", isInstance ? "" : "class", getProtocolRequirementName(kind));
+            
+#warning implement me hopefully by Swift 6.0?
+            // TODO: https://github.com/apple/swift/blob/659c49766be5e5cfa850713f43acc4a86f347fd8/include/swift/ABI/Metadata.h#L1717
+//            printf(")
+        }
+
+        printf(" }");
+    }
+    if (swiftProtos->size) {
+        printf("\n\n");
     }
     return;
 }
@@ -237,7 +247,6 @@ void wtf(uintptr_t address) {
 
 #warning figure out why ARM64e gives wonky values for this particular one
         auto protocol = protocolConformance->getProtocol();
-        
         if (!payload::ValidDiskAddress((uintptr_t)protocol)) {
             continue;
         }
@@ -277,6 +286,8 @@ void wtf(uintptr_t address) {
 
 - (void)dumpSwiftStructType:(StructDescriptor *)descriptor {
     // Not available till a later version of Swift reflection
+    [self dumpProtocolsForTypeContextDescriptor:descriptor];
+    printf(" {");
 }
 
 
@@ -338,6 +349,8 @@ void wtf(uintptr_t address) {
             continue;
         }
         printf("module %s%s%s {\n", dcolor(DSCOLOR_GREEN), module->Name.get(), color_end());
+        
+        [self dumpSwiftProtocols];
         for (auto &descriptor : descriptors) {
 
             ContextDescriptorKind kind = descriptor->Flags.getKind();
@@ -349,7 +362,6 @@ void wtf(uintptr_t address) {
             switch (kind) {
                 case ContextDescriptorKind::Struct: {
                     auto structDescriptor = static_cast<StructDescriptor *>(descriptor);
-                    printf(" {");
                     [self dumpSwiftStructType:structDescriptor];
                     [self dumpTargetTypeContextDescriptorFields:structDescriptor];
                     break;
@@ -446,7 +458,6 @@ void wtf(uintptr_t address) {
         std::string str;
         const char* resolvedSymbolicReference = dshelpers::simple_type(mangledName, str);
         
-        
         printf("\t%s%s %s %s %s%s\n", dcolor(DSCOLOR_GREEN),
                                            declarationNameType,
                                            fieldName,
@@ -504,4 +515,30 @@ const char *getKindMethodString(swift::MethodDescriptorFlags::Kind kind) {
     }
     
     return "<unknown>";
+}
+
+
+const char *getProtocolRequirementName(ProtocolRequirementFlags::Kind kind) {
+    switch (kind) {
+        case swift::ProtocolRequirementFlags::Kind::BaseProtocol:
+            return "base protocol";
+        case swift::ProtocolRequirementFlags::Kind::Method:
+            return "method";
+        case swift::ProtocolRequirementFlags::Kind::Init:
+            return "init";
+        case swift::ProtocolRequirementFlags::Kind::Getter:
+            return "getter";
+        case swift::ProtocolRequirementFlags::Kind::Setter:
+            return "setter";
+        case swift::ProtocolRequirementFlags::Kind::ReadCoroutine:
+            return "read coroutine";
+        case swift::ProtocolRequirementFlags::Kind::ModifyCoroutine:
+            return "modify coroutine";
+        case swift::ProtocolRequirementFlags::Kind::AssociatedTypeAccessFunction:
+            return "associated type access function";
+        case swift::ProtocolRequirementFlags::Kind::AssociatedConformanceAccessFunction:
+            return "associated conformance access function";
+            
+    }
+    return "unknown";
 }

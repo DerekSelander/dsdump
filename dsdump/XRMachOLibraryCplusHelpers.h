@@ -15,7 +15,16 @@
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Weverything"
 
+//#define protected public
+//#define private public
+//#define class struct
+
 #import "swift/Demangling/Demangler.h"
+
+//#undef protected
+//#undef private
+//#undef class
+
 
 #pragma clang diagnostic pop
 

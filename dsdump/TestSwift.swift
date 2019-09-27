@@ -10,15 +10,26 @@ import Foundation
 
 
 protocol AProtocol {
-    func yay() 
+    func yay()
+    func hey()
 }
 
-struct someTest : AProtocol {
+struct someTest {
     var blah : String!
     var num : Int = 4
     
     func somefunc() {}
     func yay() {
+        print("do stuff")
         
+    }
+    func hey() { }
+
+}
+
+extension someTest: AProtocol {
+
+    func extensionTest() {
+        print("\(#function)")
     }
 }

@@ -19,8 +19,17 @@
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Weverything"
 
+//#define protected public
+//#define private public
+//#define class struct
+
 #import "swift/ABI/MetadataValues.h"
 #import "swift/ABI/Metadata.h"
+
+//#undef protected
+//#undef private
+//#undef class
+
 
 #pragma clang diagnostic pop
 
@@ -384,3 +393,34 @@ typedef struct swift_class_t  : public payload::LoadToDiskTranslator<struct swif
 
 
 #endif /* objc__h */
+
+
+/**
+ Derek notes
+ 
+ 
+[0x10006dae4-0x10006daf4] protocol conformance descriptor for dsdump.someTest : dsdump.AProtocol in dsdump
+int32_t*'s in dsdump`__TEXT.__swift5_proto, that point to ConformanceDescriptors
+ 
+ 
+[0x10006daf4-0x10006db00] property descriptor for dsdump.someTest.blah : Swift.Optional<Swift.String>
+Pointed to by the Reflection metadata field descriptor,
+
+
+[0x10006db4c-0x10006db68] nominal type descriptor for dsdump.someTest
+int32_t*'s in  __TEXT.__swift5_types, the "main things"
+
+[0x100077d74-0x100077d9c] reflection metadata field descriptor dsdump.someTest
+ The Fields value in the StructDescriptor
+
+[0x100079830-0x100079848] protocol witness table for dsdump.someTest : dsdump.AProtocol in dsdump
+ The GenericWitnessTable, TODO, struct is 8 bytes, but symbol is 24 bytes... da hell?
+
+[0x100079848-0x1000798a0] value witness table for dsdump.someTest
+ 
+
+[0x1000798a0-0x1000798a8] full type metadata for dsdump.someTest
+
+[0x1000798a8-0x1000798c0] type metadata for dsdump.someTest
+
+*/
