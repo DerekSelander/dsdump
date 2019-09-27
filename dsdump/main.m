@@ -24,7 +24,7 @@
  
  *******************************************************************************/
 static NSArray <NSString *>* exc_rpaths = nil;
-static int analyzeFD = -1;
+//static int analyzeFD = -1;
 static void handle_args(int argc, const char * argv[]);
 static void AddFilter(char * filter);
 

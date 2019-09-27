@@ -123,7 +123,6 @@ extern "C" {
 - (NSString *)realizedPath;
 - (uintptr_t)translateLoadAddressToFileOffset:(uintptr_t)loadAddress useFatOffset:(BOOL)useFatOffset;
 - (uintptr_t)translateOffsetToLoadAddress:(uintptr_t)offset;
-- (NSString*)analysisSavePath;
 
 @end
 
