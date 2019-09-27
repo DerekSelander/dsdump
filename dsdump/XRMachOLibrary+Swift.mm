@@ -211,11 +211,14 @@ void test(uintptr_t address) {
             auto flags = req.Flags;
             auto kind = flags.getKind();
             auto isInstance = flags.isInstance();
-            printf(" \t// %s %s\n", isInstance ? "" : "class", getProtocolRequirementName(kind));
+            
+            if (xref_options.verbose > VERBOSE_4) {
+                printf(" \t// %s%s\n", isInstance ? "" : "class ", getProtocolRequirementName(kind));
+            }
             
 #warning implement me hopefully by Swift 6.0?
+            // Add more code here when Swift reflection developer adds names to requirements
             // TODO: https://github.com/apple/swift/blob/659c49766be5e5cfa850713f43acc4a86f347fd8/include/swift/ABI/Metadata.h#L1717
-//            printf(")
         }
 
         printf(" }");
