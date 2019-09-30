@@ -4,17 +4,15 @@ Building out a "class-dump"-like introspection tool for Apple platforms has chan
 
 This article attempts to explain the complete process of programmatically inspecting a [Mach-O](https://en.wikipedia.org/wiki/Mach-O) (Apple) binary by discussing the following:
 
-* Apple's [Mach-O File Format](https://en.wikipedia.org/wiki/Mach-O)
-* The symbol table (`<mach-o/nlist.h>`)
-* dyld opcodes and binding
-* Objective-C layout
-* Swift layout
+* [Mach-O File Format](#apples_mach-o_file_format)
+* [The Symbol Table](#the_symbol_table)
+* [DYLD Opcodes and Binding](#dyld_opcodes_and_binding)
+* Objective-C Class Layout
+* Swift Types Layout
 * ARM64e disk pointers
 
-```none
-Note: You should be comfortable with C before reading this article. If you can understand this, then you're good to go
-```
-
+---
+**Note:** You should be comfortable with C before reading this article. If you can understand this, then you're good to go
 ```c
 int32_t* a = NULL;
 int64_t* b = NULL;
@@ -24,6 +22,8 @@ if (++a != ++b) {
 	// google "pointer arithmetic"
 }
 ```
+
+---
 
 ### Apple's Mach-O File Format
 
@@ -91,16 +91,13 @@ This produces something similar to:
 00000000: feedfacf 01000007 80000003 00000002  ................
 00000010: 00000013 00000750 00200085 00000000  ....P..... .....
 ```
+Going through the `mach_header_64` struct members:
 
-Cross referencing the output with the `<mach-o/loader.h>`, we can see that the `0xfeedfacf` means it's a 64-bit compiled image (`MH_MAGIC_64`).
-
-The `0x01000007` can be resolved via `<mach/machine.h>` to realize it's compiled for a `CPU_TYPE_X86_64` type of machine.
-
-The `0x80000003` can be resolved via the same `<mach/machine.h>`header to realize it's the or'ing of `CPU_SUBTYPE_X86_ALL|CPU_SUBTYPE_LIB64`
-
-The `0x00000002` value is given by the `MH_EXECUTE`, meaning it's an executable (and not a library or something else)
-
-Following the `filetype` in the struct is the `ncmds`, which 16 commands (`0x00000013` == 19)
+* Cross referencing the output with the `<mach-o/loader.h>`, we can see that the `0xfeedfacf` means it's a 64-bit compiled image (`MH_MAGIC_64`).
+* The `0x01000007` can be resolved via `<mach/machine.h>` to realize it's compiled for a `CPU_TYPE_X86_64` type of machine.
+* The `0x80000003` can be resolved via the same `<mach/machine.h>`header to realize it's the or'ing of `CPU_SUBTYPE_X86_ALL|CPU_SUBTYPE_LIB64`
+* The `0x00000002` value is given by the `MH_EXECUTE`, meaning it's an executable (and not a library or something else)
+* Following the `filetype` in the struct is the `ncmds`, which 16 commands (`0x00000013` == 19)
 
 I'll let you figure the remaining struct members out yourself.
 
@@ -118,10 +115,24 @@ Mach header
  0xfeedfacf 16777223          3  0x80           2    19       1872 0x00200085
  ```
 
-### Load commands
+### Load Commands
 
-It's these load commands (given by the `ncmds` from the `mach_header_64`) that can be interesting when exploring a compiled executable
+It's these load commands (given by the `ncmds` from the `mach_header_64`) that can be interesting when exploring a compiled executable.
 
+
+#### File Offsets => Virtual Addresses (and back)
+
+
+### LC_SOURCE_VERSION
+
+https://opensource.apple.com/tarballs/text_cmds/text_cmds-99.tar.gz
+
+https://opensource.apple.com/source/text_cmds/text_cmds-99/grep/grep.c.auto.html
+
+
+## Symbol Table
+
+## DYLD Opcodes and Binding
 <!-- 
 You can use the [editor on GitHub](https://github.com/DerekSelander/dsdump/edit/master/docs/index.md) to maintain and preview the content for your website in Markdown files.
 
