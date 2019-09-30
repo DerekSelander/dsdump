@@ -57,7 +57,7 @@
 		3FEBCB60227C98D200D3AD07 /* DSXRLibrary+PID_Info.m in Sources */ = {isa = PBXBuildFile; fileRef = 3FEBCB5F227C98D200D3AD07 /* DSXRLibrary+PID_Info.m */; };
 		3FF9AE0822777A9500F71FA5 /* XRMachOLibrary+ObjectiveC.mm in Sources */ = {isa = PBXBuildFile; fileRef = 3FF9AE0722777A9500F71FA5 /* XRMachOLibrary+ObjectiveC.mm */; };
 		A66A9CBF22316CF3006602AB /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = A66A9CBE22316CF3006602AB /* main.m */; };
-		A66A9CC922316D7F006602AB /* miscellaneous.m in Sources */ = {isa = PBXBuildFile; fileRef = A66A9CC822316D7F006602AB /* miscellaneous.m */; };
+		A66A9CC922316D7F006602AB /* miscellaneous.mm in Sources */ = {isa = PBXBuildFile; fileRef = A66A9CC822316D7F006602AB /* miscellaneous.mm */; };
 		A66A9CCC22316EA5006602AB /* XRMachOLibrary.mm in Sources */ = {isa = PBXBuildFile; fileRef = A66A9CCB22316EA5006602AB /* XRMachOLibrary.mm */; };
 /* End PBXBuildFile section */
 
@@ -285,7 +285,7 @@
 		A66A9CBB22316CF3006602AB /* dsdump */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = dsdump; sourceTree = BUILT_PRODUCTS_DIR; };
 		A66A9CBE22316CF3006602AB /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		A66A9CC722316D7F006602AB /* miscellaneous.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.h; path = miscellaneous.h; sourceTree = "<group>"; };
-		A66A9CC822316D7F006602AB /* miscellaneous.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = miscellaneous.m; sourceTree = "<group>"; };
+		A66A9CC822316D7F006602AB /* miscellaneous.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = miscellaneous.mm; sourceTree = "<group>"; };
 		A66A9CCA22316EA5006602AB /* XRMachOLibrary.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = XRMachOLibrary.h; sourceTree = "<group>"; };
 		A66A9CCB22316EA5006602AB /* XRMachOLibrary.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = XRMachOLibrary.mm; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -431,7 +431,7 @@
 				3F29124822820A99003C2BD7 /* TaskPath.mm */,
 				3F29124922820A99003C2BD7 /* TaskPath.h */,
 				A66A9CC722316D7F006602AB /* miscellaneous.h */,
-				A66A9CC822316D7F006602AB /* miscellaneous.m */,
+				A66A9CC822316D7F006602AB /* miscellaneous.mm */,
 				3F0EBF3E23334F8F0083FE2B /* TestSwift.swift */,
 			);
 			path = dsdump;
@@ -673,7 +673,7 @@
 				3FD99918233E9D3F0072F4A0 /* XRMachOLibrary+Disassemble.mm in Sources */,
 				3F40275823010DB5007B3C25 /* XRMachOLibrary+Swift.mm in Sources */,
 				A66A9CCC22316EA5006602AB /* XRMachOLibrary.mm in Sources */,
-				A66A9CC922316D7F006602AB /* miscellaneous.m in Sources */,
+				A66A9CC922316D7F006602AB /* miscellaneous.mm in Sources */,
 				3FF9AE0822777A9500F71FA5 /* XRMachOLibrary+ObjectiveC.mm in Sources */,
 				3F5F41AB226EA3A800D3DCB1 /* XRMachOLibrary+SymbolDumper.m in Sources */,
 				3FEAB9D8226D0C0E00ED706A /* XRMachOLibrary+Opcode.mm in Sources */,

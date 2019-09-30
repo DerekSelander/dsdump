@@ -15,6 +15,7 @@
 #import <Foundation/Foundation.h>
 
 #ifdef __cplusplus
+
 extern "C" {
 #endif
 
@@ -44,10 +45,10 @@ typedef NS_OPTIONS(NSUInteger, DSCOLOR) {
     DSCOLOR_BOLD,
     DSCOLOR_CYANISH
 };
-char* dcolor(DSCOLOR c);
+char const* dcolor(DSCOLOR c);
 
 /// Ends the color option if the DSCOLOR env var is set
-char *color_end(void);
+char const*color_end(void);
 
 /// Different levels to logging, opted for a "codesign -vvvv" style
 #define VERBOSE_NONE 0
@@ -77,7 +78,6 @@ typedef struct {
     int debug;
     int help;
     char *dump;
-    NSMutableSet *filters;
 } xref_options_t;
 
 extern xref_options_t xref_options;
@@ -87,9 +87,10 @@ extern xref_options_t xref_options;
 //uint64_t read_uleb128 (const uint8_t ** offset, const uint8_t * end);
 const uint8_t *r_uleb128_decode(uint8_t *data, int *datalen, uint64_t *v);
 const uintptr_t r_sleb128_decode(uint8_t *byte, uintptr_t* shift, uint64_t *v);
-const BOOL ContainsFilteredWords(const char *word);
+BOOL ContainsFilteredWords(const char *word);
 
 void warn_debug(const char *format, ...);
+void AddFilter(char * filter);
 
 #ifdef __cplusplus
 }

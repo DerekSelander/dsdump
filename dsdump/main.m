@@ -26,7 +26,6 @@
 static NSArray <NSString *>* exc_rpaths = nil;
 //static int analyzeFD = -1;
 static void handle_args(int argc, const char * argv[]);
-static void AddFilter(char * filter);
 
 
 int main(int argc, const char * argv[], const char*envp[]) {
@@ -202,12 +201,4 @@ static void handle_args(int argc, const char * argv[]) {
     
 }
 
-static void AddFilter(char * filter) {
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        xref_options.filters = [NSMutableSet set];
-    });
-    
-    NSString *filterString = [NSString stringWithUTF8String:filter];
-    [xref_options.filters addObject:filterString];
-}
+

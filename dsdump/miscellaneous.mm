@@ -11,6 +11,9 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/types.h>
+#import "payload.hpp"
+
+extern "C" {
 
 BOOL quiet_mode = NO;
 NSMutableSet <NSString*> *pathsSet = nil;
@@ -30,7 +33,7 @@ __attribute__((constructor)) static void InitializeStuff() {
  ********************************************************************************/
 static const char * dsdump_usage = "dsdump [option..] <mach-o-file>";
 
-static char* dsdump_version = "Beta 2";
+static const char* dsdump_version = "Beta 2";
 void print_manpage() {
     printf("%s\n\n", __manpage_deets ? (const char*)&__manpage_deets : dsdump_usage);
 }
@@ -43,7 +46,7 @@ void print_usage() {
  //  Colors!
  ********************************************************************************/
 
-char* dcolor(DSCOLOR c) {
+char const* dcolor(DSCOLOR c) {
     static BOOL useColor = NO;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
@@ -81,7 +84,7 @@ char* dcolor(DSCOLOR c) {
     }
 }
 
-char *color_end() {
+char const* color_end() {
     static BOOL useColor = NO;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
@@ -175,15 +178,32 @@ const uintptr_t r_sleb128_decode(uint8_t *byte, uintptr_t* datalen, uint64_t *v)
     return result;
 }
 
-const BOOL ContainsFilteredWords(const char *word) {
-    NSString *nameString = [NSString stringWithUTF8String:word];
-    if (xref_options.filters) {
-        for (NSString *filter in xref_options.filters) {
-            if ([nameString rangeOfString:filter options:NSCaseInsensitiveSearch].location != NSNotFound) {
-                return YES;
-            }
-        }
-        return NO;
+
+
+
+
+
+BOOL ContainsFilteredWords(const char *word) {
+    static size_t count = 0;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        count = payload::filters.size();
+    });
+
+    if (count == 0) {
+        return YES;
     }
-    return YES;
+    
+    for (auto &it : payload::filters) {
+        if (strcasestr(word, it)) {
+            return YES;
+        }
+    }
+    return NO;
 }
+
+void AddFilter(char * filter) {
+    payload::filters.insert(filter);
+}
+
+}; // extern "C"

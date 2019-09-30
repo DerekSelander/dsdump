@@ -82,9 +82,9 @@
 - (void)dumpExternalSymbols {
     uintptr_t base = self.lazy_ptr_section->addr;
     size_t align_size = 1 << (self.lazy_ptr_section->align);
-    char *cyan = dcolor(DSCOLOR_CYAN);
-    char *end = color_end();
-    char *yellow = dcolor(DSCOLOR_YELLOW);
+    const char *cyan = dcolor(DSCOLOR_CYAN);
+    const char *end = color_end();
+    const char *yellow = dcolor(DSCOLOR_YELLOW);
     
     for (int i = 0; i < self.indirect_symbols.count; i++) {
         int offset = self.indirect_symbols.indirect_sym[i];

@@ -16,6 +16,9 @@
 #import <map>
 #import <string>
 #import <mach-o/loader.h>
+#import <unordered_set>
+
+
 
 #define ARM64E_MASK             0x000007FFFFFFFFFFUL
 #define ARM64E_POINTER(data)    ((uintptr_t)data & ARM64E_MASK)
@@ -27,7 +30,8 @@ namespace payload {
     extern std::vector<struct section_64 *> sections;
     extern uintptr_t offset;
     extern std::map<std::string, struct section_64 *> sectionsDict;
-    
+
+    extern std::unordered_set<char*> filters;
     uintptr_t Offset2Virtual(uintptr_t f);
 
     template <typename T>

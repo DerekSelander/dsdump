@@ -9,8 +9,7 @@ An improved nm + objc/swift class-dump
 
 <!--man_start--->
 ```
-
-dsdump(1)		  BSD General Commands Manual		     dsdump(1)
+dsdump(1)                 BSD General Commands Manual                dsdump(1)
 
 NAME
      dsdump -- An improved nm + objc/swift class-dump
@@ -24,47 +23,51 @@ DESCRIPTION
 
 OPTIONS
      -c, --color
-	     Adds color to output
+             Adds color to output
+
+     -f, --filter FilterWord
+             Specify classes to filter by (case insensitive, can be used mul-
+             tiple times)
 
      -a, --arch architecture
-	     Specify the arichtecture if file is FAT. Understands x86_64h,
-	     x86_64, arm64, arm64e
+             Specify the arichtecture if file is FAT. Understands x86_64h,
+             x86_64, arm64, arm64e
 
      -u, --undefined
-	     Only display undefined (externally referenced) symbols or classes
+             Only display undefined (externally referenced) symbols or classes
 
      -U, --defined
-	     Only display defined (internally implemented) symbols or classes
+             Only display defined (internally implemented) symbols or classes
 
      -v, --verbose
-	     Specifies the verbosity level. The -v option can be used multiple
-	     times, while the long argument sets the exact level 0-5. Kind of
-	     like codesign(1)'s verbosity that everyone complains about...
+             Specifies the verbosity level. The -v option can be used multiple
+             times, while the long argument sets the exact level 0-5. Kind of
+             like codesign(1)'s verbosity that everyone complains about...
 
      --objc  Dump the Objective-C classes
 
      --swift
-	     Dump the Swift type descriptors (classes, structs, enums)
+             Dump the Swift type descriptors (classes, structs, enums)
 
      -h, --help
-	     Print out this beautiful, helpful document
+             Print out this beautiful, helpful document
 
 EXAMPLES
      List ObjC internal/external classes referenced/implemented by vmmap:
-	   dsdump --objc $(which vmmap)
+           dsdump --objc $(which vmmap)
 
      List the Objective-C external classes called by vmmap:
-	   dsdump --objc $(which vmmap) -u
+           dsdump --objc $(which vmmap) -u
 
      List the Objective-C internal classes implemented by vmmap:
-	   dsdump --objc $(which vmmap) -U
+           dsdump --objc $(which vmmap) -U
 
      Perform an Objective-C "class-dump" in color of vmmap
-	   dsdump --objc $(which vmmap) -U -vvvc
+           dsdump --objc $(which vmmap) -U -vvvc
 
      Thoroughly dump the Swift content in color in the Console app
-	   dsdump --swift
-	   /Applications/Utilities/Console.app/Contents/MacOS/Console -cvvvv
+           dsdump --swift
+           /Applications/Utilities/Console.app/Contents/MacOS/Console -cvvvv
 
 ENVIRONMENT
      DSCOLOR Enables color. Alternatively, use -c
@@ -75,10 +78,18 @@ ENVIRONMENT
 SEE ALSO
      nm(1), objdump(1), vmmap(1)
 
+BUGS
+     There's a situation where occassionally dsdump will think the parent
+     class is a RO_ROOT where it will in fact won't be. I'll print this out
+     for now so I can hunt it down
+
+     ARM64e still needs some luv, especially on the Swift side, especially
+     with Protocols... and not crashing
+
 AUTHORS
      Derek Selander @LOLgrep
 
-Darwin			       September 1, 2019			Darwin
+Darwin                        September 29, 2019                        Darwin
 ```
 <!--man_stop--->
 
@@ -88,7 +99,7 @@ Compiling this will be a bit of a pain in the butt on your end. You'll need to c
 
 Compiled SHA1
 ```
-SHA1: a35f83b453bf7687b1b844a19d9641bdf4739357
+SHA1: 2e798575801bd78053aa20e85d9cc03fdf3c2c88
 ```
 
 ### Credits

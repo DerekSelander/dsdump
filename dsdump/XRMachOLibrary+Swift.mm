@@ -200,6 +200,11 @@ void test(uintptr_t address) {
         auto requirements = protocol->getRequirements();
         ContextDescriptor* parent = const_cast<ContextDescriptor*>(protocol->Parent.get());
         
+        auto name = protocol->Name.get();
+        if (!ContainsFilteredWords(name)) {
+            continue;
+        }
+        
         printf(" protocol %s%s%s", dcolor(DSCOLOR_YELLOW), protocol->Name.get(), color_end());
         while (parent != nullptr && parent->getKind() == ContextDescriptorKind::Protocol) {
             auto parentProtocol = reinterpret_cast<const ProtocolDescriptor *>(parent);

@@ -21,6 +21,7 @@ namespace payload {
     std::vector<struct section_64 *> sections;
     uintptr_t offset;
     std::map<std::string, struct section_64 *> sectionsDict;
+    std::unordered_set<char*> filters;
     
     uintptr_t Offset2Virtual(uintptr_t f) {
         auto r = ARM64E_POINTER(f);
@@ -50,4 +51,3 @@ namespace payload {
 
 
 }
-

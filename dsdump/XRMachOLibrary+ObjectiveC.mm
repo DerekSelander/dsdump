@@ -208,7 +208,7 @@ static NSDictionary <NSString*, NSNumber*> *blacklistedSelectors = nil;
             }
 
             XRBindSymbol *objcReference = nil;
-            char *color = dcolor(DSCOLOR_GREEN);
+            auto color = dcolor(DSCOLOR_GREEN);
             
             ///////////////////////////////////////////////////
             // Print out the superclass if any verbose level //
@@ -337,7 +337,7 @@ static NSDictionary <NSString*, NSNumber*> *blacklistedSelectors = nil;
         const char * clsName = categoryDisk->cls->validAddress() ? categoryDisk->cls->GetName() : NULL;
         
         
-        char * color = dcolor(DSCOLOR_CYAN);
+        auto color = dcolor(DSCOLOR_CYAN);
         if (!clsName) { // IF the class is implemented in a different module...
             auto superClassAddress = payload::GetLoadAddress(&categoryDisk->cls);
             XRBindSymbol *objcReference = self.addressObjCDictionary[@(superClassAddress)];
