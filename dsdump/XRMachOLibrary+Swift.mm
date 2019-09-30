@@ -361,9 +361,17 @@ void test(uintptr_t address) {
         auto module = ptr->first;
         auto descriptors = ptr->second;
         
-        if ((module->Name.isNull() || module->isCImportedContext()) && xref_options.verbose < VERBOSE_4) {
+//        if ((module->Name.isNull() || module->isCImportedContext()) && xref_options.verbose < VERBOSE_4) {
+//            continue;
+//        }
+        if (module->isCImportedContext() && (xref_options.undefined || xref_options.defined) && !xref_options.undefined) {
             continue;
         }
+        
+        if (!module->isCImportedContext() && (xref_options.undefined || xref_options.defined) && !xref_options.defined) {
+            continue;
+        }
+        
         printf("module %s%s%s {\n", dcolor(DSCOLOR_GREEN), module->Name.get(), color_end());
         
         [self dumpSwiftProtocols];
