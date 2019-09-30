@@ -1,5 +1,5 @@
 ## dsdump 
-An improved nm + objc/swift class-dump (writeup)[https://en.wikipedia.org/wiki/Mach-O])
+An improved nm + objc/swift class-dump [writeup](https://en.wikipedia.org/wiki/Mach-O)
 
 [![img](media/vmmap.png)](https://store.raywenderlich.com/products/advanced-apple-debugging-and-reverse-engineering)
 
