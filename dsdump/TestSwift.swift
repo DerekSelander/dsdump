@@ -8,15 +8,29 @@
 
 import Foundation
 
-
+// swiftc /Users/lolgrep/code/dsdump/dsdump/TestSwift.swift -sdk `xcrun --show-sdk-path  -sdk iphoneos` -target arm64e-apple-ios99.99.99.99 -o /tmp/TestSwift
 protocol AProtocol {
     func yay()
     func hey()
 }
 
-struct someTest {
-    var blah : String!
-    var num : Int = 4
+enum WootYeah {
+    case some
+    case test
+}
+
+@_cdecl("do_stuff")
+public func meh() {
+    let a = SomeTest()
+    print("\(a)")
+ 
+}
+
+struct SomeTest {
+//    var blah : String!
+    var numa : Int = 0
+    var numb : Int = 2
+    var numc : Int = 4
     
     func somefunc() {}
     func yay() {
@@ -27,7 +41,7 @@ struct someTest {
 
 }
 
-extension someTest: AProtocol {
+extension SomeTest: AProtocol {
 
     func extensionTest() {
         print("\(#function)")

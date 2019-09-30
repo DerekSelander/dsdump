@@ -521,7 +521,7 @@ static void ensureSafeAddressForMMap(size_t memory_size) {
 
 /// Display virtual addresses if specified in options
 - (void)handleVirtualAddress {
-    auto addrs = reinterpret_cast<payload::LoadToDiskTranslator<uintptr_t> *> (xref_options.virtual_address);
+    auto addrs = payload::CastToDisk<uintptr_t>(xref_options.virtual_address);
     auto diskAddr = addrs->disk();
     auto loadAddr = reinterpret_cast<uintptr_t>(addrs->load());
     if (!addrs->validAddress()) {

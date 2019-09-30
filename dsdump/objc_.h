@@ -19,15 +19,15 @@
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Weverything"
 
-//#define protected public
-//#define private public
+#define protected public
+#define private public
 //#define class struct
 
 #import "swift/ABI/MetadataValues.h"
 #import "swift/ABI/Metadata.h"
 
-//#undef protected
-//#undef private
+#undef protected
+#undef private
 //#undef class
 
 
@@ -327,7 +327,7 @@ typedef struct   {
 
 // Swift class heeeeeeeeeeeeeeeereeeeeeeee
 typedef struct swift_class_t  : public payload::LoadToDiskTranslator<struct swift_class_t, true>  {
-    using SwiftClassDescriptor = payload::LoadToDiskTranslator<swift::TargetClassDescriptor<swift::InProcess>>;
+    using SwiftClassDescriptor = payload::LoadToDiskTranslator<swift::ClassDescriptor>;
     
     struct swift_class_t *isa_cls;
     struct swift_class_t *superclass;

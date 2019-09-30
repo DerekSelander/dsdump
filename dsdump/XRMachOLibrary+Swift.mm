@@ -25,6 +25,7 @@
 #import <vector>
 #import <type_traits>
 #import "XRMachOLibraryCplusHelpers.h"
+#import "XRMachOLibrary+Disassemble.h"
 #import <mach-o/getsect.h>
 
 /////////////////////////////////////////////////////////
@@ -138,8 +139,7 @@ void test(uintptr_t address) {
     for (int i = 0; i < swiftTypes->size / sizeof(uint32_t); i++) {
         auto resolvedTypedOffset = (intptr_t)typeOffsets[i].disk() + *typeOffsets[i].disk();
         auto descriptor = reinterpret_cast<TypeContextDescriptor *>(resolvedTypedOffset);
-        
-        LoadToDiskTranslator<ContextDescriptor>* cur = payload::CastToDisk<ContextDescriptor>(descriptor);
+        auto cur = payload::CastToDisk<ContextDescriptor>(descriptor);
 
         while (cur->disk()->Parent.get() != nullptr) {
             auto parent = const_cast<ContextDescriptor*>(cur->disk()->Parent.get());
@@ -163,8 +163,7 @@ void test(uintptr_t address) {
     if (!class_list) {
         class_list = payload::sectionsDict["__DATA_CONST.__objc_classlist"];
     }
-    if (!class_list) {
-        // OK, no ObjC classes in here
+    if (!class_list) { // OK, no ObjC classes in here
         return YES;
     }
 
@@ -178,7 +177,7 @@ void test(uintptr_t address) {
         }
         
         auto descriptor = swiftClassDisk->descriptor->disk();
-        swiftDescriptorToClassDictionary[descriptor] = classes[i]->load();
+        swiftDescriptorToClassDictionary[descriptor] = classes[i]->disk();
     }
 
     return YES;
@@ -199,21 +198,30 @@ void test(uintptr_t address) {
         auto resolvedTypedOffset = (intptr_t)protoOffsets[i].disk() + *protoOffsets[i].disk();
         auto protocol = reinterpret_cast<ProtocolDescriptor *>(resolvedTypedOffset);
         auto requirements = protocol->getRequirements();
-        auto parent = protocol->Parent.get();
-        printf(" protocol %s", protocol->Name.get());
-        if (parent != nullptr && parent->getKind() == ContextDescriptorKind::Protocol) {
+        ContextDescriptor* parent = const_cast<ContextDescriptor*>(protocol->Parent.get());
+        
+        printf(" protocol %s%s%s", dcolor(DSCOLOR_YELLOW), protocol->Name.get(), color_end());
+        while (parent != nullptr && parent->getKind() == ContextDescriptorKind::Protocol) {
             auto parentProtocol = reinterpret_cast<const ProtocolDescriptor *>(parent);
             printf(", %s", parentProtocol->Name.get());
+            parent = const_cast<ContextDescriptor*>(parent->Parent.get());
         }
-        printf(" {\n");
-        printf(" \t// %d requirements\n", protocol->NumRequirements);
+        
+
+        printf(" %s// %zu requirements%s", dcolor(DSCOLOR_GRAY), requirements.size(), color_end());
+
+        if (xref_options.verbose < VERBOSE_4) {
+            putchar('\n');
+            continue;
+        }
+        printf("\n {\n");
         for (auto __unused &req : requirements) {
             auto flags = req.Flags;
             auto kind = flags.getKind();
             auto isInstance = flags.isInstance();
             
             if (xref_options.verbose > VERBOSE_4) {
-                printf(" \t// %s%s\n", isInstance ? "" : "class ", getProtocolRequirementName(kind));
+                printf("\t// %s%s\n", isInstance ? "" : "class ", getProtocolRequirementName(kind));
             }
             
 #warning implement me hopefully by Swift 6.0?
@@ -221,7 +229,7 @@ void test(uintptr_t address) {
             // TODO: https://github.com/apple/swift/blob/659c49766be5e5cfa850713f43acc4a86f347fd8/include/swift/ABI/Metadata.h#L1717
         }
 
-        printf(" }");
+        printf(" }\n");
     }
     if (swiftProtos->size) {
         printf("\n\n");
@@ -277,7 +285,7 @@ void test(uintptr_t address) {
             continue;
         }
         auto protocol = payload::CastToDisk<ProtocolDescriptor>(prot);
-        printf(" %s", protocol->disk()->Name.get());
+        printf(" %s%s%s", dcolor(DSCOLOR_YELLOW), protocol->disk()->Name.get(), color_end());
         if (i != count - 1) {
             putchar(',');
             putchar(' ');
@@ -428,12 +436,59 @@ void test(uintptr_t address) {
     }
 }
 
+- (ivar *)extractSwiftObjCIvars:(swift::TypeContextDescriptor *)descriptorDisk {
+    auto castDescriptor = payload::CastToDisk<ClassDescriptor>(descriptorDisk)->disk();
+    auto got = swiftDescriptorToClassDictionary.find(castDescriptor);
+    if (got == swiftDescriptorToClassDictionary.end()) {
+        return NULL;
+    }
+    auto swiftClassDisk = got->second->disk();
+    auto rodata = swiftClassDisk->rodata()->disk();
+    auto rodataDisk = rodata->disk();
+    if (rodataDisk->ivarList == nullptr) {
+        return NULL;
+    }
+    
+    auto ivarList = rodataDisk->ivarList;
+    if (ivarList == nullptr) {
+        return NULL;
+    }
+    
+    auto ivarListDisk = ivarList->disk();
+    auto ivarsPtr = &ivarListDisk->first_ivar;
+    return ivarsPtr->disk();
+}
+
 /// AKA properties
 - (void)dumpTargetTypeContextDescriptorFields:(TypeContextDescriptor*)descriptorDisk {
 
     auto fields = descriptorDisk->Fields.get();
     if (!fields) {
         return;
+    }
+    
+    auto accessFuncPtr = reinterpret_cast<uintptr_t>(descriptorDisk->AccessFunctionPtr.get());
+    auto typeMetadata = [self resolveMetadataFromCode:accessFuncPtr];
+    const uint32_t *offsets = NULL;
+    ivar *ivars = NULL;
+    auto valid = payload::ValidDiskAddress((uintptr_t)typeMetadata);
+    if (typeMetadata != nullptr && valid) {
+        auto metadata = reinterpret_cast<TargetMetadata<InProcess> *>(typeMetadata);
+        auto kind = metadata->getKind();
+        
+        if (kind == MetadataKind::Struct) {
+            auto structMetadata = reinterpret_cast<StructMetadata*>(metadata);
+            auto desc = const_cast<ValueTypeDescriptor*>(structMetadata->Description);
+            auto descDisk = payload::CastToDisk<const StructDescriptor>(desc)->disk();
+            if (descDisk->hasFieldOffsetVector()) {
+                offsets = (uint32_t*)(descDisk->FieldOffsetVectorOffset + (uintptr_t*)metadata);
+            }
+            
+        } else if (kind == MetadataKind::Class) {
+            ivars = [self extractSwiftObjCIvars:descriptorDisk];
+        } else if (kind == MetadataKind::Enum) {
+            // TODO: ds
+        }
     }
     
     auto numFields = fields->NumFields;
@@ -450,9 +505,9 @@ void test(uintptr_t address) {
     ContextDescriptorKind kind = descriptorDisk->Flags.getKind();
     auto fieldRecords = descriptorDisk->Fields.get()->getFields();
 
-    for (auto &pt : fieldRecords) {
+    for (int i = 0; i < fieldRecords.size(); i++) {
         const char * declarationNameType;
-        
+        auto &pt = fieldRecords[i];
         declarationNameType = kind == ContextDescriptorKind::Enum ? "case" : pt.Flags.isVar() ? "var" : "let";
         auto mangledNameBase = pt.MangledTypeName.get();
         StringRef mangledName = (mangledNameBase == nullptr) ? StringRef("") : makeSymbolicMangledNameStringRef(pt.MangledTypeName.get());
@@ -461,15 +516,23 @@ void test(uintptr_t address) {
         std::string str;
         const char* resolvedSymbolicReference = dshelpers::simple_type(mangledName, str);
         
-        printf("\t%s%s %s %s %s%s\n", dcolor(DSCOLOR_GREEN),
+        printf("\t%s%s %s %s %s%s", dcolor(DSCOLOR_GREEN),
                                            declarationNameType,
                                            fieldName,
                                            !mangledName.empty() ? ":" : "",
                                            resolvedSymbolicReference,
                                            color_end());
+        if (xref_options.verbose >= VERBOSE_3 && (offsets || ivars)) {
+            printf(" %s// +0x%x%s", dcolor(DSCOLOR_GRAY), ivars ? *ivars[i].offset->disk() : offsets[i], color_end());
+            if (xref_options.verbose >= VERBOSE_4 && ivars) {
+                printf(" %s(0x%x)%s", dcolor(DSCOLOR_GRAY), ivars[i].size, color_end());
+            }
+        }
+        putchar('\n');
     }
     
     putchar('\n');
+    
 }
 
 @end

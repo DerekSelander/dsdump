@@ -1,0 +1,3 @@
+[submodule "capstone"]
+	path = capstone
+	url = https://derekselander@github.com/aquynh/capstone.git

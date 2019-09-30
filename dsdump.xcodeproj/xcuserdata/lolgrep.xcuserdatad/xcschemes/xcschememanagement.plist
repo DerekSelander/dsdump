@@ -7,7 +7,12 @@
 		<key>Generate Build.xcscheme_^#shared#^_</key>
 		<dict>
 			<key>orderHint</key>
-			<integer>2</integer>
+			<integer>1</integer>
+		</dict>
+		<key>Generate Manpage.xcscheme_^#shared#^_</key>
+		<dict>
+			<key>orderHint</key>
+			<integer>6</integer>
 		</dict>
 		<key>dsdump.xcscheme_^#shared#^_</key>
 		<dict>
