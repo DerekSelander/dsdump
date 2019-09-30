@@ -354,16 +354,49 @@ void test(uintptr_t address) {
     printf(" : %s%s%s", dcolor(color), demangledName, color_end());
 }
 
+- (void)dumpDescriptors:(const std::vector<swift::TargetTypeContextDescriptor<swift::InProcess> *, std::allocator<swift::TargetTypeContextDescriptor<swift::InProcess> *> > &)descriptors {
+    for (auto &descriptor : descriptors) {
+        
+        ContextDescriptorKind kind = descriptor->Flags.getKind();
+        const char* name = descriptor->Name.get();
+        if (!ContainsFilteredWords(name)) {
+            continue;
+        }
+        printf(" %s %s%s%s", getKindString(kind), dcolor(DSCOLOR_CYAN), name, color_end());
+        switch (kind) {
+            case ContextDescriptorKind::Struct: {
+                auto structDescriptor = static_cast<StructDescriptor *>(descriptor);
+                [self dumpSwiftStructType:structDescriptor];
+                [self dumpTargetTypeContextDescriptorFields:structDescriptor];
+                break;
+            } case ContextDescriptorKind::Class: {
+                auto classDescriptorDisk = static_cast<ClassDescriptor *>(descriptor);
+                [self dumpSwiftClass:classDescriptorDisk];
+                break;
+            } case ContextDescriptorKind::Protocol:
+                printf("TODO Protocol\n");
+                break;
+            case ContextDescriptorKind::Enum: {
+                printf(" {");
+                auto enumDescriptor = static_cast<EnumDescriptor*>(descriptor);
+                [self dumpTargetTypeContextDescriptorFields:enumDescriptor];
+                break;
+            }
+                
+            default:
+                break;
+        }
+        printf(" }\n\n");
+    }
+}
+
 - (void)dumpSwiftTypes {
     
     // Iterate all Swift descriptors in swift5_types
     for (auto ptr = moduleDescriptorDictionary.begin(); ptr != moduleDescriptorDictionary.end(); ++ptr ) {
         auto module = ptr->first;
         auto descriptors = ptr->second;
-        
-//        if ((module->Name.isNull() || module->isCImportedContext()) && xref_options.verbose < VERBOSE_4) {
-//            continue;
-//        }
+    
         if (module->isCImportedContext() && (xref_options.undefined || xref_options.defined) && !xref_options.undefined) {
             continue;
         }
@@ -375,42 +408,11 @@ void test(uintptr_t address) {
         printf("module %s%s%s {\n", dcolor(DSCOLOR_GREEN), module->Name.get(), color_end());
         
         [self dumpSwiftProtocols];
-        for (auto &descriptor : descriptors) {
-
-            ContextDescriptorKind kind = descriptor->Flags.getKind();
-            const char* name = descriptor->Name.get();
-            if (!ContainsFilteredWords(name)) {
-                continue;
-            }
-            printf(" %s %s%s%s", getKindString(kind), dcolor(DSCOLOR_CYAN), name, color_end());
-            switch (kind) {
-                case ContextDescriptorKind::Struct: {
-                    auto structDescriptor = static_cast<StructDescriptor *>(descriptor);
-                    [self dumpSwiftStructType:structDescriptor];
-                    [self dumpTargetTypeContextDescriptorFields:structDescriptor];
-                    break;
-                } case ContextDescriptorKind::Class: {
-                    auto classDescriptorDisk = static_cast<ClassDescriptor *>(descriptor);
-                    [self dumpSwiftClass:classDescriptorDisk];
-                    break;
-                } case ContextDescriptorKind::Protocol:
-                    printf("TODO Protocol\n");
-                    break;
-                case ContextDescriptorKind::Enum: {
-                    printf(" {");
-                    auto enumDescriptor = static_cast<EnumDescriptor*>(descriptor);
-                    [self dumpTargetTypeContextDescriptorFields:enumDescriptor];
-                    break;
-                }
-                    
-                default:
-                    break;
-            }
-            printf(" }\n\n");
-        }
+        [self dumpDescriptors:descriptors];
         printf("}\n");
     }
     
+    [self dumpDescriptors:descriptorsWithNoModule];
     putchar('\n');
 }
 

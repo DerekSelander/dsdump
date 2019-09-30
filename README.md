@@ -99,7 +99,7 @@ Compiling this will be a bit of a pain in the butt on your end. You'll need to c
 
 Compiled SHA1
 ```
-SHA1: 3c42fbbd3b7aa0bb6d99c4f6b0796ddb574170c4
+SHA1: 79ddc71f544d525d3bf3ebeef333203a93852b74
 ```
 
 ### Credits
