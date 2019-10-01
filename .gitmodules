@@ -1,6 +1,3 @@
 [submodule "capstone"]
 	path = capstone
 	url = https://derekselander@github.com/aquynh/capstone.git
-[submodule "swift-source/swift"]
-	path = swift-source/swift
-	url = git@github.com:apple/swift.git
