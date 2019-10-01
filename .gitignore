@@ -5,6 +5,7 @@
 *.xcuserstate
 *.xcbkptlist
 Breakpoints_v2.xcbkptlist
-/swift-source/*
 /.DS_Store
 /dsdump.xcodeproj/xcshareddata/xcschemes/dsdump.xcscheme
+/dsdump/.DS_Store
+.DS_Store

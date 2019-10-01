@@ -7,7 +7,15 @@
 //
 
 #import "XRMachOLibrary+Disassemble.h"
+
+/////////////////////////////////////////////////////////
+// muwahahahahahaha going to hell for this...
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Weverything"
 #import "capstone.h"
+#pragma clang diagnostic pop
+// </muwahahahahahaha going to hell for this...>
+
 #import <AppKit/AppKit.h>
 
 
