@@ -113,6 +113,7 @@ git checkout 75670c17272a993ed798cee7e31c20590e94118b
 # Use the swift update helper script to grab everything else 
 ./swift/utils/update-checkout --clone-with-ssh
 ```
+Comment out any remaining problematic code after a build, remove methods in `Metadata.h` as needed (i.e. problematic ARC bridging code on line 700)
 
 I've included the `libSwiftDemangling.a` static lib that I built into `dsdump/dsdump`.  If you want to build entirely from Swift source, you'll need to build this yourself. Otherwise you should be good to go to build `dsdump` via Xcode.
 
@@ -120,7 +121,7 @@ Alternatively, you can skip all of this by simply grabbing the compiled `dsdump`
 
 Compiled SHA1
 ```
-SHA1: 79ddc71f544d525d3bf3ebeef333203a93852b74
+SHA1: ff72c263b04421e82ad3e3acf47c563bfd985ac9
 ```
 
 ### Credits
