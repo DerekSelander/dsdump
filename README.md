@@ -95,11 +95,33 @@ Darwin                        September 29, 2019                        Darwin
 
 ## Compiling
 
-Compiling this will be a bit of a pain in the butt on your end. You'll need to clone the Swift library and build the Swift `libSwiftAST.a` and `libswiftDemangling.a static` libs and stick them into the appropriate locations in Xcode. Alternatively, you can just grab the compiled version in the **compiled** directory. Make sure the SHA1 matches below if you're paranoid. 
+Compiling this will be a bit of a pain in the butt on your end. You'll need to clone the Swift language in the same directory.
+
+```bash
+# cd to the same directory as the dsdump repo
+cd dsdump/.. 
+
+# make a directory called swift-source, yes, name it exactly that
+mkdir swift-source
+
+# clone 
+git clone git@github.com:apple/swift.git
+
+# checkout 
+git checkout 75670c17272a993ed798cee7e31c20590e94118b
+
+# Use the swift update helper script to grab everything else 
+./swift/utils/update-checkout --clone-with-ssh
+```
+Comment out any remaining problematic code after a build, remove methods in `Metadata.h` as needed (i.e. problematic ARC bridging code on line 700)
+
+I've included the `libSwiftDemangling.a` static lib that I built into `dsdump/dsdump`.  If you want to build entirely from Swift source, you'll need to build this yourself. Otherwise you should be good to go to build `dsdump` via Xcode.
+
+Alternatively, you can skip all of this by simply grabbing the compiled `dsdump` version in the **compiled** directory [found here](https://github.com/DerekSelander/dsdump/blob/master/compiled/dsdump). Make sure the SHA1 matches below if you're paranoid. 
 
 Compiled SHA1
 ```
-SHA1: 79ddc71f544d525d3bf3ebeef333203a93852b74
+SHA1: ff72c263b04421e82ad3e3acf47c563bfd985ac9
 ```
 
 ### Credits

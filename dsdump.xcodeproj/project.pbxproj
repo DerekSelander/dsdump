@@ -38,10 +38,9 @@
 
 /* Begin PBXBuildFile section */
 		3F009ADA22AF695400EA38D3 /* payload.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3F009AD822AF695400EA38D3 /* payload.cpp */; };
-		3F18948923052263000738F5 /* libswiftDemangling.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 3F18948823052263000738F5 /* libswiftDemangling.a */; };
+		3F23C2FE2343DE4500483D1E /* libswiftDemangling.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 3F23C2FD2343DE4500483D1E /* libswiftDemangling.a */; };
 		3F29124A22820A99003C2BD7 /* TaskPath.mm in Sources */ = {isa = PBXBuildFile; fileRef = 3F29124822820A99003C2BD7 /* TaskPath.mm */; };
 		3F40275823010DB5007B3C25 /* XRMachOLibrary+Swift.mm in Sources */ = {isa = PBXBuildFile; fileRef = 3F40275723010DB5007B3C25 /* XRMachOLibrary+Swift.mm */; };
-		3F40275A2301106D007B3C25 /* libswiftAST.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 3F4027592301106D007B3C25 /* libswiftAST.a */; };
 		3F480806227A322E0078AE76 /* XRMachOLibrary+FAT.mm in Sources */ = {isa = PBXBuildFile; fileRef = 3F480805227A322E0078AE76 /* XRMachOLibrary+FAT.mm */; };
 		3F50D787231577410017A20A /* dsdump in Copy to /usr/local/bin */ = {isa = PBXBuildFile; fileRef = A66A9CBB22316CF3006602AB /* dsdump */; };
 		3F50D789231577620017A20A /* dsdump in Copy to compiled directory in repo */ = {isa = PBXBuildFile; fileRef = A66A9CBB22316CF3006602AB /* dsdump */; };
@@ -237,15 +236,14 @@
 		3F009AD822AF695400EA38D3 /* payload.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = payload.cpp; sourceTree = "<group>"; };
 		3F009AD922AF695400EA38D3 /* payload.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = payload.hpp; sourceTree = "<group>"; };
 		3F0EBF3E23334F8F0083FE2B /* TestSwift.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TestSwift.swift; sourceTree = "<group>"; };
-		3F18948823052263000738F5 /* libswiftDemangling.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libswiftDemangling.a; path = "swift-source/build/Ninja-RelWithDebInfoAssert/swift-macosx-x86_64/lib/libswiftDemangling.a"; sourceTree = SOURCE_ROOT; };
 		3F20316422A78BA000014502 /* XRMachOLibraryCplusHelpers.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = XRMachOLibraryCplusHelpers.h; sourceTree = "<group>"; };
+		3F23C2FD2343DE4500483D1E /* libswiftDemangling.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libswiftDemangling.a; sourceTree = "<group>"; };
 		3F291247228207C7003C2BD7 /* dyld_process_info_internal.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = dyld_process_info_internal.h; sourceTree = "<group>"; };
 		3F29124822820A99003C2BD7 /* TaskPath.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = TaskPath.mm; sourceTree = "<group>"; };
 		3F29124922820A99003C2BD7 /* TaskPath.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = TaskPath.h; sourceTree = "<group>"; };
 		3F2912782289B476003C2BD7 /* objc_.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = objc_.h; sourceTree = "<group>"; };
 		3F40275623010DB5007B3C25 /* XRMachOLibrary+Swift.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "XRMachOLibrary+Swift.h"; sourceTree = "<group>"; };
 		3F40275723010DB5007B3C25 /* XRMachOLibrary+Swift.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = "XRMachOLibrary+Swift.mm"; sourceTree = "<group>"; };
-		3F4027592301106D007B3C25 /* libswiftAST.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libswiftAST.a; path = "swift-source/build/Ninja-RelWithDebInfoAssert/swift-macosx-x86_64/lib/libswiftAST.a"; sourceTree = SOURCE_ROOT; };
 		3F40275B23012C6F007B3C25 /* objc-runtime-new.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "objc-runtime-new.h"; sourceTree = "<group>"; };
 		3F480804227A322E0078AE76 /* XRMachOLibrary+FAT.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "XRMachOLibrary+FAT.h"; sourceTree = "<group>"; };
 		3F480805227A322E0078AE76 /* XRMachOLibrary+FAT.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = "XRMachOLibrary+FAT.mm"; sourceTree = "<group>"; };
@@ -296,8 +294,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				3FD99905233E90FE0072F4A0 /* libcapstone.a in Frameworks */,
-				3F40275A2301106D007B3C25 /* libswiftAST.a in Frameworks */,
-				3F18948923052263000738F5 /* libswiftDemangling.a in Frameworks */,
+				3F23C2FE2343DE4500483D1E /* libswiftDemangling.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -400,10 +397,9 @@
 		A66A9CBD22316CF3006602AB /* dsdump */ = {
 			isa = PBXGroup;
 			children = (
+				3F23C2FD2343DE4500483D1E /* libswiftDemangling.a */,
 				3FE4FD46231B002400D4B77C /* manpage.c */,
 				3F50D78D23160E630017A20A /* dsdump.1 */,
-				3F4027592301106D007B3C25 /* libswiftAST.a */,
-				3F18948823052263000738F5 /* libswiftDemangling.a */,
 				A66A9CBE22316CF3006602AB /* main.m */,
 				3F3D70CD229B65F900307FD3 /* Bind Symbols */,
 				3F3D70CE229B666400307FD3 /* FAT */,
@@ -861,9 +857,11 @@
 					"$(inherited)",
 					"DEBUG_VERBOSE=1",
 				);
+				GCC_PREPROCESSOR_DEFINITIONS_NOT_USED_IN_PRECOMPS = "";
 				HEADER_SEARCH_PATHS = (
-					"\"$(SRCROOT)/swift-source/swift/include\"",
-					"\"$(SRCROOT)/swift-source/llvm/include\"",
+					"\"$(SRCROOT)/../swift-source/swift/include\"",
+					"\"$(SRCROOT)/../swift-source/llvm/include/\"",
+					"\"$(SRCROOT)/fix_swift\"",
 				);
 				LD_NO_PIE = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -873,7 +871,7 @@
 				);
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
-					"$(PROJECT_DIR)/swift-source/build/Ninja-RelWithDebInfoAssert/swift-macosx-x86_64/lib",
+					"$(PROJECT_DIR)/dsdump",
 				);
 				ONLY_ACTIVE_ARCH = YES;
 				OTHER_LDFLAGS = "-lncurses";
@@ -891,9 +889,11 @@
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = H4U46V6494;
+				GCC_PREPROCESSOR_DEFINITIONS_NOT_USED_IN_PRECOMPS = "";
 				HEADER_SEARCH_PATHS = (
-					"\"$(SRCROOT)/swift-source/swift/include\"",
-					"\"$(SRCROOT)/swift-source/llvm/include\"",
+					"\"$(SRCROOT)/../swift-source/swift/include\"",
+					"\"$(SRCROOT)/../swift-source/llvm/include/\"",
+					"\"$(SRCROOT)/fix_swift\"",
 				);
 				LD_NO_PIE = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -903,7 +903,7 @@
 				);
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
-					"$(PROJECT_DIR)/swift-source/build/Ninja-RelWithDebInfoAssert/swift-macosx-x86_64/lib",
+					"$(PROJECT_DIR)/dsdump",
 				);
 				ONLY_ACTIVE_ARCH = YES;
 				OTHER_LDFLAGS = "-lncurses";
