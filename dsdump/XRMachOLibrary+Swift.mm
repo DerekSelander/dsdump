@@ -86,6 +86,12 @@ static unordered_map<TargetClassDescriptor<InProcess>*, swift_class*> swiftDescr
 
 const char *getProtocolRequirementName(ProtocolRequirementFlags::Kind kind);
 
+const char * resolveExternalTypeDescriptorIfNeeded(const char *base);
+/********************************************************************************
+// Debugging symbols
+********************************************************************************/
+
+#if DEBUG
 void wtf(uintptr_t address) {
     
     const struct segment_command_64 * seg = getsegbyname("__TEXT");
@@ -110,6 +116,11 @@ void test(uintptr_t address) {
     int32_t *cur = (int32_t *)address;
     printf("resolved: %p\n", (void*)((uintptr_t)*cur + uintptr_t(address)) );
 }
+
+#endif // DEBUG
+
+
+
 
 
 @implementation XRMachOLibrary (Swift)
@@ -508,7 +519,7 @@ void test(uintptr_t address) {
     
     auto numFields = fields->NumFields;
     if (xref_options.verbose >= VERBOSE_4 && numFields > 0) {
-        printf("\n%s\t// Properties%s", dcolor(DSCOLOR_GRAY), color_end());
+        printf("\n\n%s\t// Properties%s", dcolor(DSCOLOR_GRAY), color_end());
     }
     if (numFields) {
         putchar('\n');
@@ -524,13 +535,12 @@ void test(uintptr_t address) {
         const char * declarationNameType;
         auto &pt = fieldRecords[i];
         declarationNameType = kind == ContextDescriptorKind::Enum ? "case" : pt.Flags.isVar() ? "var" : "let";
-        auto mangledNameBase = pt.MangledTypeName.get();
-        StringRef mangledName = (mangledNameBase == nullptr) ? StringRef("") : makeSymbolicMangledNameStringRef(pt.MangledTypeName.get());
+        auto mangledNameBase = makeSymbolicMangledNameStringRef(pt.MangledTypeName.get());
+        StringRef mangledName = resolveExternalTypeDescriptorIfNeeded(mangledNameBase.data());
         auto fieldName = pt.FieldName.get();
-        
         std::string str;
         const char* resolvedSymbolicReference = dshelpers::simple_type(mangledName, str);
-        
+
         printf("\t%s%s %s %s %s%s", dcolor(DSCOLOR_GREEN),
                                            declarationNameType,
                                            fieldName,
@@ -545,8 +555,6 @@ void test(uintptr_t address) {
         }
         putchar('\n');
     }
-    
-    putchar('\n');
     
 }
 
@@ -622,4 +630,43 @@ const char *getProtocolRequirementName(ProtocolRequirementFlags::Kind kind) {
             
     }
     return "unknown";
+}
+
+/// https://twitter.com/LOLgrep/status/1150820937773621248
+const char * resolveExternalTypeDescriptorIfNeeded(const char *base) {
+  if (!base)
+    return {};
+    ContextDescriptor * contextDescriptor = nullptr;
+    auto end = base;
+    while (*end != '\0') {
+        if (*end >= '\x01' && *end <= '\x17') {
+            end++;
+            contextDescriptor = (ContextDescriptor *)(*(int32_t *)(end) + (uintptr_t)end);
+            break;
+
+        } else if (*end >= '\x18' && *end <= '\x1F') {
+            contextDescriptor = (ContextDescriptor *)++end;
+            break;
+        }
+        ++end;
+    }
+    
+    if (contextDescriptor) {
+        switch (contextDescriptor->getKind()) {
+            case ContextDescriptorKind::Enum:
+                return reinterpret_cast<EnumDescriptor *>(contextDescriptor)->Name.get();
+                break;
+            case ContextDescriptorKind::Protocol:
+                return reinterpret_cast<ProtocolDescriptor *>(contextDescriptor)->Name.get();
+            case ContextDescriptorKind::Class:
+                return reinterpret_cast<ClassDescriptor *>(contextDescriptor)->Name.get();
+            case ContextDescriptorKind::Struct:
+                return reinterpret_cast<StructDescriptor *>(contextDescriptor)->Name.get();
+            default:
+                break;
+        }
+    }
+    
+    return base ;
+    //  return StringRef(base, end - base);
 }
