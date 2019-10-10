@@ -24,7 +24,7 @@
 - (uintptr_t *)resolveMetadataFromCode:(uintptr_t)address   {
     
     cs_arch arch = self.header->cputype == CPU_TYPE_ARM64? CS_ARCH_ARM64 : CS_ARCH_X86;
-    cs_mode mode = self.header->cputype == CPU_TYPE_ARM64? CS_MODE_ARM : CS_MODE_64;
+    cs_mode mode = self.header->cputype == CPU_TYPE_ARM64? CS_MODE_LITTLE_ENDIAN : CS_MODE_64;
     static csh handle = 0;
     static uint8_t *buffer = NULL;
     static dispatch_once_t onceToken;
@@ -59,10 +59,17 @@
             }
         }
     // ARM64(e)
-    } else if (self.header->cputype == CPU_TYPE_ARM64) {
+    } else if (self.header->cputype == CPU_TYPE_ARM64 && (self.header->cpusubtype & CPU_SUBTYPE_ARM64E)) {
         for (int i = 1; i < 20; i++) {
             auto insnADD = instructions[i];
             auto insnADRP = instructions[i - 1];
+        
+            if (insnADD.detail == nullptr || insnADRP.detail == nullptr) {
+                if (xref_options.debug) {
+                    printf("DEBUG swift pointer AccessFunction %p\n", (void*)address);
+                }
+                continue;
+            }
             
             auto insnADDCount = insnADD.detail->arm64.op_count;
             auto insnADRPCount = insnADRP.detail->arm64.op_count;
