@@ -6,6 +6,8 @@
 //  Copyright © 2019 Selander. All rights reserved.
 //
 
+
+#import "swift/Demangling/Demangler.h"
 #import "XRMachOLibrary.h"
 #import "miscellaneous.h"
 #import "XRMachOLibrary.h"
@@ -255,7 +257,7 @@ static void ensureSafeAddressForMMap(size_t memory_size) {
                     
                     self.symbols = GetData<struct nlist_64>(self.symtab->symoff);
                     self.str_symbols = payload::GetData<char>(self.symtab->stroff);
-                    lseek(self.fd, self.symtab->symoff, SEEK_SET);
+
 
                 } else if (load_cmd->cmd == LC_DYLD_INFO || load_cmd->cmd == LC_DYLD_INFO_ONLY) {
                     
@@ -264,7 +266,7 @@ static void ensureSafeAddressForMMap(size_t memory_size) {
                     
                     self.exports.reserve(self.dyldInfo->export_size);
                     // Swift implies Objc so parse 'em even if only Swift
-                    if (xref_options.objectiveC_mode || xref_options.swift_mode) {
+                    if (xref_options.objectiveC_mode || xref_options.swift_mode || xref_options.opcodes) {
                         [self parseDYLDOpcodes];
                     }
                     
@@ -340,7 +342,7 @@ static void ensureSafeAddressForMMap(size_t memory_size) {
     self.symbolEntry = [NSMutableDictionary dictionaryWithCapacity:self.dysymtab->nlocalsym + self.dysymtab->nextdefsym];
     
     // DYLD opcodes contain information about ObjC classes, used for classdump
-    if (xref_options.objectiveC_mode || xref_options.swift_mode) {
+    if (xref_options.objectiveC_mode || xref_options.swift_mode || xref_options.opcodes) {
         [self preparseUndefinedObjectiveCSymbols];
         [self parseDYLDExports];
         
