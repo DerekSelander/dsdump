@@ -46,6 +46,22 @@ void print_usage() {
  //  Colors!
  ********************************************************************************/
 
+static const std::map<DSCOLOR, const char*> colorMap = {
+    {DSCOLOR_CYAN,      "\e[36m"},
+    {DSCOLOR_GREEN,     "\e[92m"},
+    {DSCOLOR_YELLOW,    "\e[33m"},
+    {DSCOLOR_YELLOW_LIGHT, "\e[93m"},
+    {DSCOLOR_MAGENTA,   "\e[95m"},
+    {DSCOLOR_PURPLE,    "\e[35m"},
+    {DSCOLOR_RED,       "\e[91m"},
+    {DSCOLOR_BLUE,      "\e[34m"},
+    {DSCOLOR_GRAY,      "\e[90m"},
+    {DSCOLOR_PURPLE_BOLD, "\e[35;1m"},
+    {DSCOLOR_CYAN_LIGHT,"\e[96m"},
+    {DSCOLOR_BOLD,      "\e[1m"},
+    {DSCOLOR_CYAN_UNDERLINE, "\033[36;1;4m"}
+};
+
 char const* dcolor(DSCOLOR c) {
     static BOOL useColor = NO;
     static dispatch_once_t onceToken;
@@ -58,30 +74,11 @@ char const* dcolor(DSCOLOR c) {
         return "";
     }
     
-    switch (c) {
-        case DSCOLOR_CYAN:
-            return "\e[36m";
-        case DSCOLOR_GREEN:
-            return "\e[92m";
-        case DSCOLOR_YELLOW:
-             return "\e[33m";
-        case DSCOLOR_MAGENTA:
-            return "\e[95m";
-        case DSCOLOR_PURPLE:
-            return "\e[35m";
-        case DSCOLOR_RED:
-            return "\e[91m";
-        case DSCOLOR_BLUE:
-            return "\e[34m";
-        case DSCOLOR_GRAY:
-            return "\e[90m";
-        case DSCOLOR_BOLD:
-             return "\e[1m";
-        case DSCOLOR_CYANISH:
-            return "\033[36;1;4m";
-        default:
-            return "";
+    auto color = colorMap.at(c);
+    if (color) {
+        return color;
     }
+    return "";
 }
 
 char const* color_end() {
@@ -201,6 +198,7 @@ BOOL ContainsFilteredWords(const char *word) {
     }
     return NO;
 }
+
 
 void AddFilter(char * filter) {
     payload::filters.insert(filter);

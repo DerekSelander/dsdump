@@ -21,12 +21,17 @@
 @import MachO;
 
 /*******************************************************************************
- 
- *******************************************************************************/
+Declarations
+*******************************************************************************/
+
+
 static NSArray <NSString *>* exc_rpaths = nil;
 //static int analyzeFD = -1;
 static void handle_args(int argc, const char * argv[]);
 
+/*******************************************************************************
+ LC_MAIN fun starts haaaaaaaaaaaaaaa
+ *******************************************************************************/
 
 int main(int argc, const char * argv[], const char*envp[]) {
     handle_args(argc, argv);
@@ -61,27 +66,9 @@ int main(int argc, const char * argv[], const char*envp[]) {
         }
         DumpProcessesContainingLibrary(basename(resolved_path));
     }
-    
-//    if (xref_options.analyze) {
-//        NSString *savePath = [image analysisSavePath];
-//        analyzeFD = open(savePath.UTF8String, O_RDWR  | O_CREAT| O_TRUNC, 0644);
-//        if (analyzeFD <= 0) {
-//            printf("Couldn't open %s\n", savePath.UTF8String);
-//            exit(1);
-//        }
-//
-//
-//        for (NSNumber *key in image.symbolEntry) {
-//            XRSymbolEntry *entry = image.symbolEntry[key];
-//            if (entry.visited) {
-//                continue;
-//            }
-//            printf("0x%011llx %s<stripped>%s\n", entry.address, dcolor(DSCOLOR_RED), color_end());
-//        }
-//    }
-    
-    // Go through the options
-    if (! ( xref_options.file_offset || xref_options.library || xref_options.dump)) {
+        
+    // Go through the options and pick a default if nothing is set
+    if (! ( xref_options.file_offset || xref_options.library)) {
         [image dumpSymbols];
     }
     
@@ -92,33 +79,35 @@ int main(int argc, const char * argv[], const char*envp[]) {
 
 
 static void handle_args(int argc, const char * argv[]) {
-    int c;
-    
     while (1) {
         int option_index = 0;
         static struct option long_options[] = {
-            {"library", no_argument, &xref_options.library,  1 },
-            {"arch",  required_argument, 0,  0 },
-            {"regex",   no_argument,       &xref_options.use_regex,  1},
-            {"verbose", optional_argument,     &xref_options.verbose,  1 },
-            {"color",    no_argument, &xref_options.color,  1 },
-            {"defined",    no_argument, &xref_options.defined,  1 },
-            {"undefined",    no_argument, &xref_options.undefined,  1 },
-            {"objc",    no_argument, &xref_options.objectiveC_mode,  1 },
-            {"swift",    no_argument, &xref_options.swift_mode,  1 },
-            {"all",    no_argument, &xref_options.all_symbols,  1 },
-            {"analyze",    no_argument, &xref_options.analyze,  1 },
-            {"debug",    no_argument, &xref_options.debug,  1 },
-            {"help",    no_argument, &xref_options.help,  1 },
+            {"arch",       required_argument, 0,  0},
+            {"verbose",    optional_argument, &xref_options.verbose, 1},
+            {"library",    no_argument, &xref_options.library, 1},
+            {"regex",      no_argument, &xref_options.use_regex, 1},
+            {"color",      no_argument, &xref_options.color, 1},
+            {"defined",    no_argument, &xref_options.defined, 1},
+            {"undefined",  no_argument, &xref_options.undefined, 1},
+            {"objc",       no_argument, &xref_options.objectiveC_mode, 1},
+            {"swift",      no_argument, &xref_options.swift_mode, 1},
+            {"all",        no_argument, &xref_options.all_symbols, 1},
+            {"analyze",    no_argument, &xref_options.analyze, 1},
+            {"debug",      no_argument, &xref_options.debug, 1},
+            {"help",       no_argument, &xref_options.help, 1},
+            {"opcs",       no_argument, &xref_options.opcodes, 1},
+            {"sym",        no_argument, &xref_options.symbol_mode, 1},
             {0,         0,                 0,  0 }
         };
         
-
-        c = getopt_long(argc, (char * const *)argv, "f:a:A:uUxcvSlZh",
+        int c = getopt_long(argc, (char * const *)argv, "f:a:A:uUOxcvSlZh",
                         long_options, &option_index);
-        if (c == -1) { break; }
-        struct host_basic_info;
+        if (c == -1) {
+            break;
+        }
+        
         switch (c) {
+            // Case for long getopts, that can't use ints
             case 0:
                 if (strcmp(long_options[option_index].name, "file_offset") == 0) {
                     xref_options.file_offset = strtol(optarg, 0, 0);
@@ -138,6 +127,7 @@ static void handle_args(int argc, const char * argv[]) {
                 break;
             case 'Z':
                 xref_options.analyze = 1;
+                break;
             case 'c':
                 xref_options.color = 1;
                 break;
@@ -155,6 +145,9 @@ static void handle_args(int argc, const char * argv[]) {
                 break;
             case 'f':
                 AddFilter(optarg);
+                break;
+            case 'O':
+                xref_options.opcodes = 1;
                 break;
             case 'h':
                 print_manpage();
@@ -182,7 +175,7 @@ static void handle_args(int argc, const char * argv[]) {
                     }
                     
                 }
-                
+                break;
             } case '?':
                 break;
                 
@@ -199,6 +192,7 @@ static void handle_args(int argc, const char * argv[]) {
         xref_options.arch = getenv("ARCH");
     }
     
+    if (!(xref_options.symbol_mode || xref_options.swift_mode || xref_options.objectiveC_mode || xref_options.virtual_address || xref_options.library)) {
+        xref_options.symbol_mode = 1;
+    }
 }
-
-
