@@ -11,6 +11,7 @@
 #import "XRMachOLibrary+ObjectiveC.h"
 #import "XRSymbolEntry.h"
 #import "XRMachOLibrary+Swift.h"
+#import <libgen.h>
 @implementation XRMachOLibrary (SymbolDumper)
 
 
@@ -150,7 +151,7 @@ void print_symbol(XRMachOLibrary *object, struct nlist_64 * _Nonnull sym, uintpt
             struct section_64 * sec = (struct section_64 *)object.sectionCommandsArray[sym->n_sect].longValue;
             output_len += printf("%s%s.%s%s ", dcolor(DSCOLOR_GRAY), sec->segname, sec->sectname, color_end());
         } else if (libIndex > 0 && (sym->n_type & N_TYPE) == N_UNDF) {
-            const char *libName = [object.depdencies[libIndex] UTF8String];
+            const char *libName = xref_options.verbose == 1 ? basename((char*)[object.depdencies[libIndex] UTF8String]) : [object.depdencies[libIndex] UTF8String];
             output_len += printf("%s%s%s: ", dcolor(DSCOLOR_YELLOW), libName, color_end());
         }
     }
