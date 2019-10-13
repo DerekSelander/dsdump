@@ -216,7 +216,19 @@ void test(uintptr_t address) {
             continue;
         }
         
-        printf(" protocol %s%s%s", dcolor(DSCOLOR_YELLOW), protocol->Name.get(), color_end());
+        const char *moduleName = "";
+        auto moduleContext = protocol->getModuleContext();
+        if (moduleContext) {
+            moduleName = moduleContext->Name.get();
+        }
+        
+        printf(" protocol %s%s%s.%s%s%s", dcolor(DSCOLOR_YELLOW_LIGHT), moduleName, color_end(), dcolor(DSCOLOR_YELLOW), protocol->Name.get(), color_end());
+        
+        if (xref_options.verbose == VERBOSE_NONE) {
+            putchar('\n');
+            continue;
+        }
+        
         while (parent != nullptr && parent->getKind() == ContextDescriptorKind::Protocol) {
             auto parentProtocol = reinterpret_cast<const ProtocolDescriptor *>(parent);
             printf(", %s", parentProtocol->Name.get());
@@ -244,11 +256,11 @@ void test(uintptr_t address) {
             // Add more code here when Swift reflection developer adds names to requirements
             // TODO: https://github.com/apple/swift/blob/659c49766be5e5cfa850713f43acc4a86f347fd8/include/swift/ABI/Metadata.h#L1717
         }
-
         printf(" }\n");
     }
-    if (swiftProtos->size) {
-        printf("\n\n");
+    
+    if (swiftProtos->size && xref_options.verbose >= VERBOSE_3) {
+        printf("\n");
     }
     return;
 }
@@ -263,7 +275,6 @@ void test(uintptr_t address) {
     }
     
     auto protoOffsets = payload::DiskWrapper<int32_t>::Cast(swiftTypes->addr)->disk();
-//    auto protoOffsetsDisk = protoOffsets->disk();
     for (int i = 0; i < swiftTypes->size / sizeof(int32_t); i++) {
         auto resolvedDiskOffset = (uintptr_t)((intptr_t)(&protoOffsets[i]) + (int32_t)protoOffsets[i]);
         auto protocolConformance = reinterpret_cast<ProtocolConformanceDescriptor *>(resolvedDiskOffset);
@@ -291,7 +302,14 @@ void test(uintptr_t address) {
     if (found == swiftProtocolsToTypesDictionary.end()) {
         return;
     }
-    putchar(',');
+    
+    auto kind = descriptor->getKind();
+    if (kind == ContextDescriptorKind::Struct) {
+        putchar(':');
+    } else {
+        putchar(',');
+    }
+    
     auto supportedProtocols = found->second;
     auto count = supportedProtocols.size();
     for (int i = 0; i < count; i++) {
@@ -311,15 +329,21 @@ void test(uintptr_t address) {
 
 
 
-- (void)dumpSwiftStructType:(StructDescriptor *)descriptor {
-    // Not available till a later version of Swift reflection
+- (void)dumpSwiftStruct:(StructDescriptor *)descriptor {
+    // Not available till a later version of Swift reflection :|
     [self dumpProtocolsForTypeContextDescriptor:descriptor];
     printf(" {");
+    
+    [self dumpTargetTypeContextDescriptorFields:descriptor];
 }
 
 
 - (void)dumpSwiftClass:(ClassDescriptor *)descriptor {
 
+    if (xref_options.verbose == VERBOSE_NONE) {
+        putchar('\n');
+        return;
+    }
     auto it = swiftDescriptorToClassDictionary.find(descriptor);
     if (it == swiftDescriptorToClassDictionary.end()) {
         printf(" {");
@@ -365,7 +389,11 @@ void test(uintptr_t address) {
     printf(" : %s%s%s", dcolor(color), demangledName, color_end());
 }
 
-- (void)dumpDescriptors:(const std::vector<swift::TargetTypeContextDescriptor<swift::InProcess> *, std::allocator<swift::TargetTypeContextDescriptor<swift::InProcess> *> > &)descriptors {
+- (void)dumpDescriptors:(const std::vector<TypeContextDescriptor *> &)descriptors module:(const ModuleContextDescriptor* )module {
+    const char* moduleName = NULL;
+    if (module) {
+      moduleName = module->Name.get();
+    }
     for (auto &descriptor : descriptors) {
         
         ContextDescriptorKind kind = descriptor->Flags.getKind();
@@ -373,12 +401,20 @@ void test(uintptr_t address) {
         if (!ContainsFilteredWords(name)) {
             continue;
         }
-        printf(" %s %s%s%s", getKindString(kind), dcolor(DSCOLOR_CYAN), name, color_end());
+        if (moduleName) {
+            printf(" %s %s%s%s.%s%s%s", getKindString(kind), dcolor(DSCOLOR_CYAN_LIGHT), moduleName, color_end(), dcolor(DSCOLOR_CYAN), name, color_end());
+        } else {
+            printf(" %s %s%s%s", getKindString(kind), dcolor(DSCOLOR_CYAN), name, color_end());
+        }
+        
+        if (xref_options.verbose == VERBOSE_NONE) {
+            putchar('\n');
+            continue;
+        }
         switch (kind) {
             case ContextDescriptorKind::Struct: {
                 auto structDescriptor = static_cast<StructDescriptor *>(descriptor);
-                [self dumpSwiftStructType:structDescriptor];
-                [self dumpTargetTypeContextDescriptorFields:structDescriptor];
+                [self dumpSwiftStruct:structDescriptor];
                 break;
             } case ContextDescriptorKind::Class: {
                 auto classDescriptorDisk = static_cast<ClassDescriptor *>(descriptor);
@@ -397,33 +433,24 @@ void test(uintptr_t address) {
             default:
                 break;
         }
-        printf(" }\n\n");
+        if (xref_options.verbose > VERBOSE_NONE) {
+            printf(" }\n\n");
+        }
     }
 }
 
 - (void)dumpSwiftTypes {
+    [self dumpSwiftProtocols];
     
     // Iterate all Swift descriptors in swift5_types
     for (auto ptr = moduleDescriptorDictionary.begin(); ptr != moduleDescriptorDictionary.end(); ++ptr ) {
         auto module = ptr->first;
         auto descriptors = ptr->second;
-    
-        if (module->isCImportedContext() && (xref_options.undefined || xref_options.defined) && !xref_options.undefined) {
-            continue;
-        }
-        
-        if (!module->isCImportedContext() && (xref_options.undefined || xref_options.defined) && !xref_options.defined) {
-            continue;
-        }
-        
-        printf("module %s%s%s {\n", dcolor(DSCOLOR_GREEN), module->Name.get(), color_end());
-        
-        [self dumpSwiftProtocols];
-        [self dumpDescriptors:descriptors];
-        printf("}\n");
+
+        [self dumpDescriptors:descriptors module:module];
     }
     
-    [self dumpDescriptors:descriptorsWithNoModule];
+    [self dumpDescriptors:descriptorsWithNoModule module:nullptr];
     putchar('\n');
 }
 
@@ -487,6 +514,10 @@ void test(uintptr_t address) {
 
 /// AKA properties
 - (void)dumpTargetTypeContextDescriptorFields:(TypeContextDescriptor*)descriptorDisk {
+    
+    if (xref_options.verbose == VERBOSE_NONE) {
+        return;
+    }
 
     auto fields = descriptorDisk->Fields.get();
     if (!fields) {
