@@ -9,11 +9,13 @@
 .Op option...
 .Ar <mach-o-file>
 .Sh DESCRIPTION
-Provides an "nm-improved" experience when working with Mach-O executables and can display C, Objective-C and Swift "class-dump" information
+Provides an "nm-improved" experience when working with Mach-O executables. dsdump has 3 "primary" modes: Symbol table (--sym), Objective-C (--objc), and Swift (--swift). Omitting all of these options will default to the Swift mode. 
 .Sh OPTIONS
 .Bl -tag -width indent
 .It Fl c, -color
 Adds color to output
+.It Fl O, -opcs
+Dump the DYLD opcodes used to bind external symbols at load time
 .It Fl f, -filter Ar FilterWord
 Specify classes to filter by (case insensitive, can be used multiple times)
 .It Fl a, -arch Ar architecture
@@ -46,6 +48,33 @@ Perform an Objective-C "class-dump" in color of vmmap
 .Pp
 Thoroughly dump the Swift content in color in the Console app
 .Dl dsdump --swift /Applications/Utilities/Console.app/Contents/MacOS/Console  -cvvvv
+.Pp
+.Sh VERBOSITY
+dsdump can output a range of verbosity between the 3 different modes (--sym, --swift, --objc). The verbosity level can be set by the long form (--verbose=3) or by specifying a count via short form (-vvv). The breakdown of these levels are shown below:
+.Pp
+--sym:
+.Dl 0. 
+.Dl 1.
+.Dl 2.
+.Dl 3.
+.Dl 4.
+.Dl 5.
+.Pp
+--swift:
+.Dl 0. List swift types
+.Dl 1.
+.Dl 2.
+.Dl 3.
+.Dl 4.
+.Dl 5.
+.Pp
+--objc:
+.Dl 0. List Objective-C classes
+.Dl 1. 0 + Parent classes & library basename for external
+.Dl 2. 1 + Fullpath to libraries for external + protocols
+.Dl 3. 2 + Objective-C "class dump"
+.Dl 4. 3 + Print properties
+.Dl 5. 4 + Print ivars & offsets
 .Pp
 .Sh ENVIRONMENT
 .Pp

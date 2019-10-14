@@ -6,18 +6,8 @@
 //  Copyright © 2019 Selander. All rights reserved.
 //
 
-// Knock out objc/runtime.h so I can use the actual headers
-//#ifndef _OBJC_RUNTIME_H
-//#define _OBJC_RUNTIME_H
-//
-////#import "objc-runtime-new.h"
-//
-//#endif // OBJC_RUNTIME
-
-
 #import <libgen.h>
 #import <stddef.h>
-
 #import "XRMachOLibrary+ObjectiveC.h"
 #import "XRMachOLibrary+SymbolDumper.h"
 #import "objc_.h"
@@ -94,7 +84,10 @@ static NSDictionary <NSString*, NSNumber*> *blacklistedSelectors = nil;
  // Properties
  ********************************************************************************/
 - (void)dumpObjCPropertiesWithResolvedAddress:(swift_class*)cls {
-  
+  if (xref_options.verbose < VERBOSE_4) {
+      return;
+  }
+    
     auto clsDisk = cls->disk();
     auto rodata = clsDisk->rodata();
     if (rodata == nullptr) {
@@ -129,7 +122,9 @@ static NSDictionary <NSString*, NSNumber*> *blacklistedSelectors = nil;
  // ivars
  ********************************************************************************/
 - (void)dumpObjCInstanceVariablesWithResolvedAddress:(swift_class *)cls {
-    
+    if (xref_options.verbose <= VERBOSE_4) {
+        return;
+    }
     auto clsDisk = cls->disk();
     auto rodata = clsDisk->rodata();
     if (rodata == nullptr) {
@@ -160,7 +155,7 @@ static NSDictionary <NSString*, NSNumber*> *blacklistedSelectors = nil;
         auto ivarOffsetPointer = ivr->offset;
         auto ivarOffset = ivarOffsetPointer ? *ivarOffsetPointer->disk() : 0;
         auto ivarName = ivr->name->disk();
-        auto ivarType = xref_options.verbose > VERBOSE_2 ? ivr->type->disk() : "";
+        auto ivarType = ivr->type->disk();
         __ivarsDictionary[@(ivarOffset)] = [NSString stringWithUTF8String:ivarName];
         printf("\t+0x%04x %s %s (0x%x)\n", ivarOffset, ivarType, ivarName, ivr->size);
     }
@@ -389,7 +384,7 @@ static NSDictionary <NSString*, NSNumber*> *blacklistedSelectors = nil;
  // Protocols
  ********************************************************************************/
 -(BOOL)printObjectiveCProtocols:(swift_class*)cls {
-    if (xref_options.verbose == VERBOSE_NONE) {
+    if (xref_options.verbose <= VERBOSE_1) {
         return NO;
     }
     

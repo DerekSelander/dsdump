@@ -54,6 +54,7 @@ char const* color_end(void);
 #define VERBOSE_2    2
 #define VERBOSE_3    3
 #define VERBOSE_4    4
+#define VERBOSE_5    4
 
 typedef struct {
     int verbose;
