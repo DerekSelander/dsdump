@@ -196,20 +196,20 @@ struct EntryWithOffset
         while ( !done && (p < end) ) {
             uint8_t immediate = *p & BIND_IMMEDIATE_MASK;
             uint8_t opcode = *p & BIND_OPCODE_MASK;
-            DEBUG_PRINT("0x%04lX ", (long)p - (long)start_off);
+            DEBUG_PRINT("%s0x%04lX%s ", dcolor(DSCOLOR_GRAY), (long)p - (long)start_off, color_end());
             ++p;
             switch (opcode) {
                 case BIND_OPCODE_DONE: {
                     done = true;
-                    DEBUG_PRINT("BIND_OPCODE_DONE\n");
+                    DEBUG_PRINT("%sBIND_OPCODE_DONE%s\n", dcolor(DSCOLOR_CYAN), color_end());
                     break;
                 } case BIND_OPCODE_SET_DYLIB_ORDINAL_IMM: {
                     libraryOrdinal = immediate;
-                    DEBUG_PRINT("BIND_OPCODE_SET_DYLIB_ORDINAL_IMM (%d)\n", immediate);
+                    DEBUG_PRINT("%sBIND_OPCODE_SET_DYLIB_ORDINAL_IMM%s (%d)\n", dcolor(DSCOLOR_CYAN), color_end(), immediate);
                     break;
                 } case BIND_OPCODE_SET_DYLIB_ORDINAL_ULEB: {
                     libraryOrdinal = read_uleb128(&p, end);
-                    DEBUG_PRINT("BIND_OPCODE_SET_DYLIB_ORDINAL_ULEB (0x%llX)\n", libraryOrdinal);
+                    DEBUG_PRINT("%sBIND_OPCODE_SET_DYLIB_ORDINAL_ULEB%s (0x%llX)\n", dcolor(DSCOLOR_CYAN), color_end(), libraryOrdinal);
                     break;
                 } case BIND_OPCODE_SET_DYLIB_SPECIAL_IMM: {
                     // the special ordinals are negative numbers
@@ -219,62 +219,62 @@ struct EntryWithOffset
                         int8_t signExtended = BIND_OPCODE_MASK | immediate;
                         libraryOrdinal = signExtended;
                     }
-                    DEBUG_PRINT("BIND_OPCODE_SET_DYLIB_SPECIAL_IMM (%d)\n", (int)libraryOrdinal);
+                    DEBUG_PRINT("%sBIND_OPCODE_SET_DYLIB_SPECIAL_IMM%s (%d)\n", dcolor(DSCOLOR_CYAN), color_end(), (int)libraryOrdinal);
                     break;
                 } case BIND_OPCODE_SET_SYMBOL_TRAILING_FLAGS_IMM: {
                     symbolName = (char*)p;
                     while (*p != '\0') { ++p; }
                     ++p;
-                    DEBUG_PRINT("BIND_OPCODE_SET_SYMBOL_TRAILING_FLAGS_IMM (0x%02x, %s)\n", immediate, symbolName);
+                    DEBUG_PRINT("%sBIND_OPCODE_SET_SYMBOL_TRAILING_FLAGS_IMM%s (0x%02x, %s%s%s)\n", dcolor(DSCOLOR_CYAN), color_end(), immediate, dcolor(DSCOLOR_YELLOW), symbolName, color_end());
                     break;
                 } case BIND_OPCODE_SET_TYPE_IMM: {
                     type = immediate;
-                    DEBUG_PRINT("BIND_OPCODE_SET_TYPE_IMM (%d)\n", type);
+                    DEBUG_PRINT("%sBIND_OPCODE_SET_TYPE_IMM%s (%d)\n", dcolor(DSCOLOR_CYAN), color_end(), type);
                     break;
                 } case BIND_OPCODE_SET_ADDEND_SLEB: {
                     addend = read_sleb128(&p, end);
-                    DEBUG_PRINT("BIND_OPCODE_SET_ADDEND_SLEB (0x%llX)\n", addend);
+                    DEBUG_PRINT("%sBIND_OPCODE_SET_ADDEND_SLEB%s (0x%llX)\n", dcolor(DSCOLOR_CYAN), color_end(), addend);
                     break;
                 } case BIND_OPCODE_SET_SEGMENT_AND_OFFSET_ULEB: {
                     segIndex = immediate;
                     struct segment_command_64 *seg = (struct segment_command_64 *)self.segmentCommandsArray[immediate].longValue;
                     segStartAddr = seg->vmaddr; // segStartAddress(segIndex);
                     segOffset = read_uleb128(&p, end);
-                    DEBUG_PRINT("BIND_OPCODE_SET_SEGMENT_AND_OFFSET_ULEB (%d, 0x%08llX) (0x%08llX)\n", immediate, segOffset, (segOffset + segStartAddr));
+                    DEBUG_PRINT("%sBIND_OPCODE_SET_SEGMENT_AND_OFFSET_ULEB%s (%d, 0x%08llX) (0x%08llX)\n", dcolor(DSCOLOR_CYAN), color_end(), immediate, segOffset, (segOffset + segStartAddr));
                     break;
                 } case BIND_OPCODE_ADD_ADDR_ULEB: {
                     uint64_t off = read_uleb128(&p, end);
                     segOffset += off;
-                    DEBUG_PRINT("BIND_OPCODE_ADD_ADDR_ULEB (0x%llX) (0x%08llX)\n", off, (segOffset + segStartAddr));
+                    DEBUG_PRINT("%sBIND_OPCODE_ADD_ADDR_ULEB%s (0x%llX) (0x%08llX)\n", dcolor(DSCOLOR_CYAN), color_end(), off, (segOffset + segStartAddr));
                     break;
                 } case BIND_OPCODE_DO_BIND: {
                     if (threaded_count > 0) {
                         threaded_count--;
                         [self addToThreaded:segOffset + segStartAddr symbol:symbolName libord:libraryOrdinal addend:addend];
                     } else {
-                        DEBUG_PRINT("BIND_OPCODE_DO_BIND (0x%08llX, %s)\n", (segOffset + segStartAddr), symbolName);
+                        DEBUG_PRINT("%sBIND_OPCODE_DO_BIND%s (0x%08llX, %s%s%s)\n", dcolor(DSCOLOR_CYAN), color_end(), (segOffset + segStartAddr), dcolor(DSCOLOR_YELLOW), symbolName, color_end());
                         BIND_THAT_BAD_BOY;
                     }
                     segOffset += sizeof(uintptr_t);
                     break;
                 } case BIND_OPCODE_DO_BIND_ADD_ADDR_ULEB: {
                     uint64_t off = read_uleb128(&p, end) + sizeof(uintptr_t);
-                    DEBUG_PRINT("BIND_OPCODE_DO_BIND_ADD_ADDR_ULEB (%08llx) (0x%08llX, %s)\n", off, (segOffset + segStartAddr), symbolName);
+                    DEBUG_PRINT("%sBIND_OPCODE_DO_BIND_ADD_ADDR_ULEB%s (%08llx) (0x%08llX, %s%s%s)\n", dcolor(DSCOLOR_CYAN), color_end(), off, (segOffset + segStartAddr), dcolor(DSCOLOR_YELLOW), symbolName, color_end());
                     BIND_THAT_BAD_BOY;
                     segOffset += off;
                     break;
                 } case BIND_OPCODE_DO_BIND_ADD_ADDR_IMM_SCALED: {
                     uint64_t off = immediate*sizeof(uintptr_t) + sizeof(uintptr_t);
-                    DEBUG_PRINT("BIND_OPCODE_DO_BIND_ADD_ADDR_IMM_SCALED (0x%llx) (0x%08llX)\n", off, (segOffset + segStartAddr));
+                    DEBUG_PRINT("%sBIND_OPCODE_DO_BIND_ADD_ADDR_IMM_SCALED%s (0x%llx) (0x%08llX)\n", dcolor(DSCOLOR_CYAN), color_end(), off, (segOffset + segStartAddr));
                     BIND_THAT_BAD_BOY;
                     segOffset += off;
                     break;
                 } case BIND_OPCODE_DO_BIND_ULEB_TIMES_SKIPPING_ULEB: {
                     count = read_uleb128(&p, end);
                     skip = read_uleb128(&p, end);
-                    DEBUG_PRINT("BIND_OPCODE_DO_BIND_ULEB_TIMES_SKIPPING_ULEB (%llu, 0x%08llX)\n", count, skip);
+                    DEBUG_PRINT("%sBIND_OPCODE_DO_BIND_ULEB_TIMES_SKIPPING_ULEB%s (%llu, 0x%08llX)\n", dcolor(DSCOLOR_CYAN), color_end(), count, skip);
                     for (uint32_t i = 0; i < count; ++i) {
-                        DEBUG_PRINT("\tDO_BIND (0x%08llX, %s)\n",(segStartAddr + segOffset), symbolName);
+                        DEBUG_PRINT("\t%sDO_BIND%s (0x%08llX, %s%s%s)\n", dcolor(DSCOLOR_CYAN), color_end(), (segStartAddr + segOffset), dcolor(DSCOLOR_YELLOW), symbolName, color_end());
                         BIND_THAT_BAD_BOY;
                         segOffset += skip + sizeof(uintptr_t);
                     }
@@ -286,11 +286,11 @@ struct EntryWithOffset
                             ordinalTableSize = read_uleb128(&p, end);
                             useThreadedRebaseBind = true;
                             threaded_count = ordinalTableSize;
-                            DEBUG_PRINT("BIND_SUBOPCODE_THREADED_SET_BIND_ORDINAL_TABLE_SIZE_ULEB (%llu)\n", ordinalTableSize);
+                            DEBUG_PRINT("%sBIND_SUBOPCODE_THREADED_SET_BIND_ORDINAL_TABLE_SIZE_ULEB%s (%llu)\n", dcolor(DSCOLOR_CYAN), color_end(), ordinalTableSize);
                             break;
                         case BIND_SUBOPCODE_THREADED_APPLY: {
                             if ( !useThreadedRebaseBind ) { assert(0); }
-                            DEBUG_PRINT("BIND_SUBOPCODE_THREADED_APPLY\n");
+                            DEBUG_PRINT("%sBIND_SUBOPCODE_THREADED_APPLY%s\n", dcolor(DSCOLOR_CYAN), color_end());
                             uint64_t delta = 0;
                            
                             do {
@@ -307,7 +307,7 @@ struct EntryWithOffset
                                     if (threadOrdinal >= ordinalTableSize) { assert(0); }
                                     XRBindSymbol *obj = self.threadedHolder[threadOrdinal];
                                     [self addToDictionaries:segStartAddr + segOffset  symbol:(char*)obj.name.UTF8String libord:obj.libOrdinal addend:obj.addend];
-                                    DEBUG_PRINT("\tTHREADED_APPLY (%p, %s)\n", (void*)resolvedAddress, obj.name.UTF8String);
+                                    DEBUG_PRINT("\t%sTHREADED_APPLY%s (%p, %s%s%s)\n", dcolor(DSCOLOR_CYAN), color_end(), (void*)resolvedAddress, dcolor(DSCOLOR_YELLOW), obj.name.UTF8String, color_end());
                                 }
                                 
                                 value &= ~(1ULL << 62);

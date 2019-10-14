@@ -95,7 +95,7 @@ static void handle_args(int argc, const char * argv[]) {
             {"analyze",    no_argument, &xref_options.analyze, 1},
             {"debug",      no_argument, &xref_options.debug, 1},
             {"help",       no_argument, &xref_options.help, 1},
-            {"opcs",       no_argument, &xref_options.opcodes, 1},
+            {"opcodes",    no_argument, &xref_options.opcodes, 1},
             {"sym",        no_argument, &xref_options.symbol_mode, 1},
             {0,         0,                 0,  0 }
         };
@@ -192,7 +192,7 @@ static void handle_args(int argc, const char * argv[]) {
         xref_options.arch = getenv("ARCH");
     }
     
-    if (!(xref_options.symbol_mode || xref_options.swift_mode || xref_options.objectiveC_mode || xref_options.virtual_address || xref_options.library)) {
+    if (!(xref_options.symbol_mode || xref_options.swift_mode || xref_options.objectiveC_mode || xref_options.virtual_address || xref_options.library || xref_options.opcodes)) {
         xref_options.symbol_mode = 1;
     }
 }

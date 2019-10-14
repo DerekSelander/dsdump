@@ -45,6 +45,9 @@
                locreloff: %d, nlocrel: %d\n", d->ilocalsym, d->nlocalsym, d->iextdefsym, d->nextdefsym, d->iundefsym, d->nundefsym, d->modtaboff, d->nmodtab, d->extrefsymoff, d->nextrefsyms, d->indirectsymoff, d->nindirectsyms, d->extrefsymoff, d->nextrel, d->locreloff, d->nlocrel);
     }
     
+    if (!xref_options.symbol_mode) {
+        return;
+    }
     
     for (int i = 0; i < self.symtab->nsyms; i++) {
         struct nlist_64 symbol = self.symbols[i];
@@ -107,7 +110,6 @@
     }
     
     XRBindSymbol *objcReference;
-//    dsclass_ref_t ref;
     uintptr_t buff = 0;
     uintptr_t fileOff = [self translateLoadAddressToFileOffset:sym->n_value + PTR_SIZE useFatOffset:NO];
     pread(self.fd, &buff, sizeof(void*), fileOff);
