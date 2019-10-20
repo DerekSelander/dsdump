@@ -55,13 +55,13 @@ When referring to C System headers on your OS X machine, you can usually resolve
 
 
 ```bash
-echo $(xcrun --show-sdk-path)/usr/include
+lolgrep:~$ echo $(xcrun --show-sdk-path)/usr/include
 ```
 
 This resolve to the base directory, so the resolved filepath can be viewed via:
 
 ```bash
-cat $(xcrun --show-sdk-path)/usr/include/mach-o/loader.h | less -R
+lolgrep:~$ cat $(xcrun --show-sdk-path)/usr/include/mach-o/loader.h | less -R
 ```
 
 ---
@@ -84,7 +84,7 @@ struct mach_header_64 {
 Cross reference this with any compiled executable. I'll pick **grep**, feel free to pick anything else:
 
 ```bash
-xxd -g 4 -e $(which grep) | head -2
+lolgrep:~$ xxd -g 4 -e $(which grep) | head -2
 ```
 The `xxd` command will dump the raw data of an executable to `stdout`. The `-g 4` says to group all the values into 4 bytes, which is perfect since each member in the mach_header_64 struct is a 4 byte value. The `-e` option says to format the output in little-endian byte order. If any of this is confusing, The Advanced Apple Deubgging book goes into much more detail about this. 
 
@@ -107,7 +107,7 @@ I'll let you figure the remaining struct members out yourself.
 You can view this in an alternative way by running `otool -h` to view the Mach-O header.
 
 ```bash
-otool -h $(which grep)
+lolgrep:~$ otool -h $(which grep)
 ```
 
 This produces the following on my machine:
@@ -125,7 +125,7 @@ It's these load commands (given by the `ncmds` from the `mach_header_64`) that c
 Use `otool`'s `-l` option to display an image's load commands:
 
 ```bash
-otool -l $(which grep)
+lolgrep:~$ otool -l $(which grep)
 ```
 
 When exploring memory and the load commands, different areas of memory are grouped together. These Mach-O groupings are called **Segments**. Segments will have different memory permissions. For example in `grep`:
@@ -179,7 +179,7 @@ These sections group certain parts of functionality in an executable. Inside the
 Using `grep` to only show the Mach-O sections in `grep` 
 
 ```bash
-otool -l $(which grep) | grep __TEXT -B2 -A9
+lolgrep:~$ otool -l $(which grep) | grep __TEXT -B2 -A9
       cmd LC_SEGMENT_64
   cmdsize 632
   segname __TEXT
@@ -240,13 +240,13 @@ int main() {
 
 Upon compiling and querying the Mach-O section locations for the global integers
 ```bash
-clang ex.c -o ex
+lolgrep:~$ clang ex.c -o ex
 ```
 
 Using the `nm` tool (which displays symbol table information, more on that later...)
 
 ```bash
-nm -m ex | grep GlobalInt
+lolgrep:~$ nm -m ex | grep GlobalInt
 0000000100001004 (__DATA,__data) external _SecondGlobalInt
 0000000100001000 (__DATA,__data) external _SomeGlobalInt
 ```
@@ -258,7 +258,7 @@ The globals are located in the `__DATA` segment inside the `__data` section, at 
 One can translate these virtual addresses to the file offset by consulting the Mach-O section load commands.
 
 ```bash
-otool -l ex | grep __data -A10
+lolgrep:~$ otool -l ex | grep __data -A10
   sectname __data
    segname __DATA
       addr 0x0000000100001000
@@ -277,7 +277,7 @@ The size of the `__data` section is 8 bytes (due to the 2 4 byte integers). The 
 You can verify this with `xxd` again...
 
 ```bash
-xxd -g 4 -e -s 4096 ex  | head -1
+lolgrep:~$ xxd -g 4 -e -s 4096 ex  | head -1
 00001000: 00000008 00000007 00000000 00000000  ................
 ```
 
