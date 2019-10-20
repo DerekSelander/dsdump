@@ -1,8 +1,10 @@
 ## dsdump 
 An improved nm + objc/swift class-dump ([writeup](https://derekselander.github.io/dsdump/))
 
+Works great on Objective-C classes
 [![img](media/vmmap.png)](https://store.raywenderlich.com/products/advanced-apple-debugging-and-reverse-engineering)
 
+... and Swift types
 [![img](media/swift.png)](https://store.raywenderlich.com/products/advanced-apple-debugging-and-reverse-engineering)
 
 ### man
