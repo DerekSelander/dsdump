@@ -100,7 +100,7 @@ static void handle_args(int argc, const char * argv[]) {
             {0,         0,                 0,  0 }
         };
         
-        int c = getopt_long(argc, (char * const *)argv, "f:a:A:uUOxcvSlZh",
+        int c = getopt_long(argc, (char * const *)argv, "f:a:A:uUOxscvlZh",
                         long_options, &option_index);
         if (c == -1) {
             break;
@@ -124,6 +124,10 @@ static void handle_args(int argc, const char * argv[]) {
                 break;
             case 'v':
                 xref_options.verbose++;
+                break;
+            case 's':
+                xref_options.verbose = VERBOSE_4;
+                xref_options.swift_mode = 1;
                 break;
             case 'Z':
                 xref_options.analyze = 1;

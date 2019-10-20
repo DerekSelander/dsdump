@@ -18,12 +18,17 @@ SYNOPSIS
      dsdump [option...] <mach-o-file>
 
 DESCRIPTION
-     Provides an "nm-improved" experience when working with Mach-O executables
-     and can display C, Objective-C and Swift "class-dump" information
+     Provides an "nm-improved" experience when working with Mach-O executa-
+     bles. dsdump has 3 "primary" modes: Symbol table (--sym), Objective-C
+     (--objc), and Swift (--swift, -s). Omitting all of these options will
+     default to the Swift mode.
 
 OPTIONS
      -c, --color
              Adds color to output
+
+     -O, --opcs
+             Dump the DYLD opcodes used to bind external symbols at load time
 
      -f, --filter FilterWord
              Specify classes to filter by (case insensitive, can be used mul-
@@ -49,6 +54,8 @@ OPTIONS
      --swift
              Dump the Swift type descriptors (classes, structs, enums)
 
+     -s      Sets mode to Swift mode and verbosity to level 4
+
      -h, --help
              Print out this beautiful, helpful document
 
@@ -68,6 +75,36 @@ EXAMPLES
      Thoroughly dump the Swift content in color in the Console app
            dsdump --swift
            /Applications/Utilities/Console.app/Contents/MacOS/Console -cvvvv
+
+VERBOSITY
+     dsdump can output a range of verbosity between the 3 different modes
+     (--sym, --swift, --objc). The verbosity level can be set by the long form
+     (--verbose=3) or by specifying a count via short form (-vvv). The break-
+     down of these levels are shown below:
+
+     --sym:
+           0. Print symbol
+           1. 0 + library path or Mach-O section
+           2. 1 + fullpath to library
+           3. 2 + nlist struct output
+           4. Same as 3... for now
+           5. Same as 3... for now
+
+     --swift:
+           0. List swift types
+           1. 0 + Parent classes
+           2. 1 + Protocols
+           3. 2 + Swift type dump
+           4. 3 + Extednded type jump, ObjC bridge methods
+           5. 4 + Commenting in methods
+
+     --objc:
+           0. List Objective-C classes
+           1. 0 + Parent classes & library basename for external
+           2. 1 + Fullpath to libraries for external + protocols
+           3. 2 + Objective-C class dump
+           4. 3 + Print properties
+           5. 4 + Print ivars & offsets
 
 ENVIRONMENT
      DSCOLOR Enables color. Alternatively, use -c
@@ -89,7 +126,7 @@ BUGS
 AUTHORS
      Derek Selander @LOLgrep
 
-Darwin                        September 29, 2019                        Darwin
+Darwin                         October 20, 2019                         Darwin
 ```
 <!--man_stop--->
 
@@ -121,7 +158,7 @@ Alternatively, you can skip all of this by simply grabbing the compiled `dsdump`
 
 Compiled SHA1
 ```
-SHA1: ff72c263b04421e82ad3e3acf47c563bfd985ac9
+SHA1: 26d184e09ed1a10336d374ca8bb525204f75be67
 ```
 
 ### Credits

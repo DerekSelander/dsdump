@@ -320,7 +320,7 @@ void test(uintptr_t address) {
             continue;
         }
         auto protocol = payload::CastToDisk<ProtocolDescriptor>(prot);
-        printf(" %s%s%s", dcolor(DSCOLOR_YELLOW), protocol->disk()->Name.get(), color_end());
+        printf(" %s%s%s", dcolor(DSCOLOR_YELLOW_LIGHT), protocol->disk()->Name.get(), color_end());
         if (i != count - 1) {
             putchar(',');
             putchar(' ');
@@ -332,6 +332,10 @@ void test(uintptr_t address) {
 
 - (void)dumpSwiftStruct:(StructDescriptor *)descriptor {
     // Not available till a later version of Swift reflection :|
+    if (xref_options.verbose < VERBOSE_3) {
+        putchar('\n');
+        return;
+    }
     [self dumpProtocolsForTypeContextDescriptor:descriptor];
     printf(" {");
     
@@ -348,26 +352,36 @@ void test(uintptr_t address) {
     }
     auto it = swiftDescriptorToClassDictionary.find(descriptor);
     if (it == swiftDescriptorToClassDictionary.end()) {
-        printf(" {");
+        if (xref_options.verbose >= VERBOSE_3) {
+            printf(" {");
+        }
+        putchar('\n');
         return;
     }
 
     // print Parent class
     [self printParentClassIfApplicable:it->second];
-    if (xref_options.verbose <= VERBOSE_1) {
-         putchar('\n');
-        return;
-    }
     
     // print Protocols
+    if (xref_options.verbose < VERBOSE_2) {
+        putchar('\n');
+        return;
+    }
     [self dumpProtocolsForTypeContextDescriptor:descriptor];
-    printf(" {");
     
     // print Propteries
+    if (xref_options.verbose < VERBOSE_3) {
+        putchar('\n');
+        return;
+    }
+    printf(" {");
     [self dumpTargetTypeContextDescriptorFields:descriptor];
     
+    
     // print objc bridge methods
-    [self extractSwiftCClassObjCMethods:descriptor module:module];
+    if (xref_options.verbose >= VERBOSE_4) {
+        [self extractSwiftCClassObjCMethods:descriptor module:module];
+    }
     
     // print pure Swift Methods
     [self dumpSwiftMethods:descriptor];
@@ -383,6 +397,8 @@ void test(uintptr_t address) {
     auto swiftClassDisk = cls->disk();
     auto superCls = swiftClassDisk->superclass;
     
+    char *libName = NULL;
+    
     // Print out parent, is there a parent class and is it locally implemented?
     if (superCls->isNull()) { // external
         XRBindSymbol *bindSymbol = self.addressObjCDictionary[@((uintptr_t)&cls->load()->superclass)];
@@ -390,6 +406,9 @@ void test(uintptr_t address) {
         dshelpers::simple_demangle(name, outDemangledstring);
         demangledName = outDemangledstring.c_str();
         color = DSCOLOR_GREEN;
+        
+        libName = (char*)self.depdencies[bindSymbol.libOrdinal].UTF8String;
+           
     } else {
         // If here, locally implemented
         auto mangledName = superCls->GetName();
@@ -398,6 +417,9 @@ void test(uintptr_t address) {
         color = DSCOLOR_MAGENTA;
     }
     printf(" : %s%s%s", dcolor(color), demangledName, color_end());
+    if (libName && xref_options.verbose >= VERBOSE_3) {
+        printf(" %s%s%s", dcolor(DSCOLOR_YELLOW), libName, color_end());
+    }
 }
 
 - (void)dumpDescriptors:(const std::vector<TypeContextDescriptor *> &)descriptors module:(const ModuleContextDescriptor* )module {
@@ -418,10 +440,10 @@ void test(uintptr_t address) {
             printf(" %s %s%s%s", getKindString(kind), dcolor(DSCOLOR_CYAN), name, color_end());
         }
         
-        if (xref_options.verbose == VERBOSE_NONE) {
-            putchar('\n');
-            continue;
-        }
+//        if (xref_options.verbose == VERBOSE_NONE) {
+//            putchar('\n');
+//            continue;
+//        }
         switch (kind) {
             case ContextDescriptorKind::Struct: {
                 auto structDescriptor = static_cast<StructDescriptor *>(descriptor);
@@ -447,7 +469,7 @@ void test(uintptr_t address) {
 }
 
 - (void)dumpSwiftEnum:(EnumDescriptor*)enumDescriptor {
-    if (xref_options.verbose < VERBOSE_2) {
+    if (xref_options.verbose < VERBOSE_3) {
         putchar('\n');
         return;
     }
