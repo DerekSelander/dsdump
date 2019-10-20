@@ -22,6 +22,7 @@
 #import <mach/mach.h>
 #import <unordered_map>
 
+#define SOME_DEFAULT_VALUE_FOR_DICT_COUNT 10000
 using namespace std;
 @interface XRMachOLibrary ()
 
@@ -188,9 +189,7 @@ static void ensureSafeAddressForMMap(size_t memory_size) {
             exit(1);
         } else if (magic == MH_MAGIC_64 || magic == MH_CIGAM_64) {
 
-            //_header = *(struct mach_header_64 *)&_data[_file_offset];
             _header = payload::GetData<struct mach_header_64>(0);
-            
             uintptr_t cur = (uintptr_t)DATABUF(sizeof(struct mach_header_64));
             
             for (int i = 0; i < _header->ncmds; i++) {
@@ -229,6 +228,9 @@ static void ensureSafeAddressForMMap(size_t memory_size) {
                     assert(code_segment);
                     
                     uint64_t address = code_segment->vmaddr;
+                    if (!self.symbolEntry) {
+                        self.symbolEntry = [NSMutableDictionary dictionaryWithCapacity:SOME_DEFAULT_VALUE_FOR_DICT_COUNT];
+                    }
                     for(const uint8_t* p = infoStart; (*p != 0) && (p < infoEnd); ) {
                         uint64_t delta = 0;
                         uint32_t shift = 0;
@@ -244,8 +246,6 @@ static void ensureSafeAddressForMMap(size_t memory_size) {
                                     entry.address = address;
                                     _symbolEntry[@(address)] = entry;
                                 }
-
-                         
                                 more = false;
                             }
                         } while (more);
@@ -254,13 +254,10 @@ static void ensureSafeAddressForMMap(size_t memory_size) {
                 } else if (load_cmd->cmd == LC_SYMTAB) {
                     
                     self.symtab = (struct symtab_command *)load_cmd;
-                    
                     self.symbols = GetData<struct nlist_64>(self.symtab->symoff);
                     self.str_symbols = payload::GetData<char>(self.symtab->stroff);
-
-
-                } else if (load_cmd->cmd == LC_DYLD_INFO || load_cmd->cmd == LC_DYLD_INFO_ONLY) {
                     
+                } else if (load_cmd->cmd == LC_DYLD_INFO || load_cmd->cmd == LC_DYLD_INFO_ONLY) {
                     self.dyldInfo = (struct dyld_info_command *)load_cmd;
 //#warning fix this
                     
@@ -338,8 +335,9 @@ static void ensureSafeAddressForMMap(size_t memory_size) {
     
     [exploredSet addObject:path];
 
-    
-    self.symbolEntry = [NSMutableDictionary dictionaryWithCapacity:self.dysymtab->nlocalsym + self.dysymtab->nextdefsym];
+    if (!self.symbolEntry) {
+        self.symbolEntry = [NSMutableDictionary dictionaryWithCapacity:self.dysymtab->nlocalsym + self.dysymtab->nextdefsym];
+    }
     
     // DYLD opcodes contain information about ObjC classes, used for classdump
     if (xref_options.objectiveC_mode || xref_options.swift_mode || xref_options.opcodes) {

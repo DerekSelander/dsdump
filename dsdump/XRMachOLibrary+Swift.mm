@@ -87,6 +87,7 @@ static unordered_map<TargetClassDescriptor<InProcess>*, swift_class*> swiftDescr
 const char *getProtocolRequirementName(ProtocolRequirementFlags::Kind kind);
 
 const char * resolveExternalTypeDescriptorIfNeeded(const char *base);
+
 /********************************************************************************
 // Debugging symbols
 ********************************************************************************/
@@ -118,10 +119,6 @@ void test(uintptr_t address) {
 }
 
 #endif // DEBUG
-
-
-
-
 
 @implementation XRMachOLibrary (Swift)
 
@@ -235,10 +232,14 @@ void test(uintptr_t address) {
             parent = const_cast<ContextDescriptor*>(parent->Parent.get());
         }
         
-
+        
+        if (xref_options.verbose < VERBOSE_3) {
+            putchar('\n');
+            continue;
+        }
         printf(" %s// %zu requirements%s", dcolor(DSCOLOR_GRAY), requirements.size(), color_end());
 
-        if (xref_options.verbose < VERBOSE_4) {
+        if (xref_options.verbose <= VERBOSE_4) {
             putchar('\n');
             continue;
         }
@@ -335,10 +336,11 @@ void test(uintptr_t address) {
     printf(" {");
     
     [self dumpTargetTypeContextDescriptorFields:descriptor];
+    printf(" }\n\n");
 }
 
 
-- (void)dumpSwiftClass:(ClassDescriptor *)descriptor {
+- (void)dumpSwiftClass:(ClassDescriptor *)descriptor module:(const ModuleContextDescriptor*)module {
 
     if (xref_options.verbose == VERBOSE_NONE) {
         putchar('\n');
@@ -352,6 +354,10 @@ void test(uintptr_t address) {
 
     // print Parent class
     [self printParentClassIfApplicable:it->second];
+    if (xref_options.verbose <= VERBOSE_1) {
+         putchar('\n');
+        return;
+    }
     
     // print Protocols
     [self dumpProtocolsForTypeContextDescriptor:descriptor];
@@ -360,8 +366,13 @@ void test(uintptr_t address) {
     // print Propteries
     [self dumpTargetTypeContextDescriptorFields:descriptor];
     
-    // print Methods
+    // print objc bridge methods
+    [self extractSwiftCClassObjCMethods:descriptor module:module];
+    
+    // print pure Swift Methods
     [self dumpSwiftMethods:descriptor];
+    
+    printf(" }\n\n");
 }
 
 - (void)printParentClassIfApplicable:(swift_class*)cls {
@@ -418,25 +429,32 @@ void test(uintptr_t address) {
                 break;
             } case ContextDescriptorKind::Class: {
                 auto classDescriptorDisk = static_cast<ClassDescriptor *>(descriptor);
-                [self dumpSwiftClass:classDescriptorDisk];
+                [self dumpSwiftClass:classDescriptorDisk module:module];
                 break;
             } case ContextDescriptorKind::Protocol:
                 printf("TODO Protocol\n");
                 break;
             case ContextDescriptorKind::Enum: {
-                printf(" {");
                 auto enumDescriptor = static_cast<EnumDescriptor*>(descriptor);
-                [self dumpTargetTypeContextDescriptorFields:enumDescriptor];
+                [self dumpSwiftEnum:enumDescriptor];
                 break;
             }
                 
             default:
                 break;
         }
-        if (xref_options.verbose > VERBOSE_NONE) {
-            printf(" }\n\n");
-        }
     }
+}
+
+- (void)dumpSwiftEnum:(EnumDescriptor*)enumDescriptor {
+    if (xref_options.verbose < VERBOSE_2) {
+        putchar('\n');
+        return;
+    }
+    
+    printf(" {");
+    [self dumpTargetTypeContextDescriptorFields:enumDescriptor];
+    printf(" }\n\n");
 }
 
 - (void)dumpSwiftTypes {
@@ -511,6 +529,63 @@ void test(uintptr_t address) {
     auto ivarsPtr = &ivarListDisk->first_ivar;
     return ivarsPtr->disk();
 }
+
+- (void)extractSwiftCClassObjCMethods:(swift::TypeContextDescriptor *)descriptorDisk module:(const ModuleContextDescriptor* )module {
+    auto castDescriptor = payload::CastToDisk<ClassDescriptor>(descriptorDisk)->disk();
+    auto got = swiftDescriptorToClassDictionary.find(castDescriptor);
+    if (got == swiftDescriptorToClassDictionary.end()) {
+        return;
+    }
+    auto swiftClassDisk = got->second->disk();
+    auto rodata = swiftClassDisk->rodata()->disk();
+    auto rodataDisk = rodata->disk();
+    if (rodataDisk->ivarList == nullptr) {
+        return;
+    }
+    
+    auto methodList = rodataDisk->baseMethodList;
+    if (methodList == nullptr) {
+        return;
+    }
+    
+    auto methodListDisk = methodList->disk();
+    auto methodsPtr = &methodListDisk->first_method;
+    printf("\n");
+    
+    if (xref_options.verbose >= VERBOSE_4) {
+        printf("\t%s// ObjC -> Swift bridged methods%s\n", dcolor(DSCOLOR_GRAY), color_end());
+    }
+    for (int i  = 0; i < methodListDisk->count; i++) {
+        auto &method = methodsPtr[i];
+        auto imp = method.imp->load();
+        const char *resolvedName = NULL;
+        char name[PATH_MAX];
+        
+        auto entry = self.symbolEntry[@((uintptr_t)imp)];
+        std:string str;
+        
+        // Can we find this in the symbol table?
+        if (entry && entry.name) {
+            dshelpers::simple_demangle(entry.name, str);
+            resolvedName = str.c_str();
+        }
+        
+        // No symbol table info to grab? Fuck it, regenerate via ObjC info instead
+        if (!resolvedName) {
+//            auto m = module->Name.get();
+//            const char *moduleName = m != nullptr ? m : "";
+          
+            snprintf(name, PATH_MAX, "@objc %s.%s", descriptorDisk->Name.get(), method.name->disk());
+            resolvedName = name;
+                printf("\t%s%p%s  %s%s%s %s<stripped>%s\n", dcolor(DSCOLOR_GRAY), imp, color_end(), dcolor(DSCOLOR_BOLD), resolvedName, color_end(), dcolor(DSCOLOR_RED), color_end());
+        } else {
+            printf("\t%s%p%s  %s%s%s\n", dcolor(DSCOLOR_GRAY), imp, color_end(), dcolor(DSCOLOR_BOLD), resolvedName, color_end());
+        }
+    }
+//    return methodsPtr->disk();
+    
+}
+
 
 /// AKA properties
 - (void)dumpTargetTypeContextDescriptorFields:(TypeContextDescriptor*)descriptorDisk {
@@ -699,5 +774,4 @@ const char * resolveExternalTypeDescriptorIfNeeded(const char *base) {
     }
     
     return base ;
-    //  return StringRef(base, end - base);
 }
