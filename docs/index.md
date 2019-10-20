@@ -1,5 +1,7 @@
 ## Building a class-dump in 2019
 
+## This is being actively worked on, this message will disappear when I am happy with the writeup
+
 Building out a "class-dump"-like introspection tool for Apple platforms has changed considerably since the original [class-dump](http://stevenygard.com/projects/class-dump/) came out. Learning these new (and old) technologies can be quite intimidating for the uninitiated. 
 
 This article attempts to explain the complete process of programmatically inspecting a [Mach-O](https://en.wikipedia.org/wiki/Mach-O) (Apple) binary by discussing the following:
@@ -25,9 +27,10 @@ if (++a != ++b) {
 
 ---
 
+<a name="apples_mach-o_file_format"></a>
 ### Apple's Mach-O File Format
 
-The Mach-O file format is the "table of contents" and layout of every Mach-O (read Apple) image. This includes executables, frameworks, dylibs, anything that is a compiled executable.
+The Mach-O file format is the "table of contents" and layout of every Mach-O (read Apple) **image**. An image can be a number of different compiled, executable code including (but not limited to) executables, frameworks, dylibs, etc
 
 There are many great sources out there that already cover topic well. 
 
@@ -35,9 +38,9 @@ There are many great sources out there that already cover topic well.
 * [Mirror of OS X ABI Mach-O File Format Reference](https://github.com/aidansteele/osx-abi-macho-file-format-reference)
 * [Inside a Hello World executable on OS X](https://adrummond.net/posts/macho)
 
-And if you want to pay money for a Mach-O tutorials...
+And if you want to pay money for some Mach-O tutorials...
 
-* [Advanced Apple Debugging and Reverse Engineering, Chp 18, 19](https://store.raywenderlich.com/products/advanced-apple-debugging-and-reverse-engineering)
+* [Advanced Apple Debugging and Reverse Engineering, Chp 18, 19](https://store.raywenderlich.com/products/advanced-apple-debugging-and-reverse-engineering) (fair warning, that link benefits me)
 * [MacOS and iOS Internals, Volume I: User Mode, Chp 5](http://www.newosxbook.com/index.php)
 
 
@@ -48,7 +51,7 @@ In the file `<mach-o/loader.h>`, there exists a struct called **`mach_header_64`
 ---
 **Note**
 
-When referring to C headers on your OS X machine, you can usually resolve the header location to the following Terminal command:
+When referring to C System headers on your OS X machine, you can usually resolve the header location to the following Terminal command:
 
 
 ```bash
@@ -83,7 +86,7 @@ Cross reference this with any compiled Terminal executable. I'll pick **grep**, 
 ```bash
 xxd -g 4 -e $(which grep) | head -2
 ```
-The `xxd` command will dump the raw data of an executable to `stdout`. The `-g 4` says to group all the values into 4 bytes, which is perfect since each member in the mach_header_64 struct is 4 bytes. The `-e` option says to format the output in little-endian byte order. If any of this is confusing, The Advanced Apple Deubgging book goes into much more detail about this. 
+The `xxd` command will dump the raw data of an executable to `stdout`. The `-g 4` says to group all the values into 4 bytes, which is perfect since each member in the mach_header_64 struct is a 4 byte value. The `-e` option says to format the output in little-endian byte order. If any of this is confusing, The Advanced Apple Deubgging book goes into much more detail about this. 
 
 This produces something similar to:
 
@@ -97,7 +100,7 @@ Going through the `mach_header_64` struct members:
 * The `0x01000007` can be resolved via `<mach/machine.h>` to realize it's compiled for a `CPU_TYPE_X86_64` type of machine.
 * The `0x80000003` can be resolved via the same `<mach/machine.h>`header to realize it's the or'ing of `CPU_SUBTYPE_X86_ALL|CPU_SUBTYPE_LIB64`
 * The `0x00000002` value is given by the `MH_EXECUTE`, meaning it's an executable (and not a library or something else)
-* Following the `filetype` in the struct is the `ncmds`, which 16 commands (`0x00000013` == 19)
+* Following the `filetype` in the struct is the `ncmds`, with 19 **load commands** (`0x00000013` == 19)
 
 I'll let you figure the remaining struct members out yourself.
 
@@ -131,6 +134,8 @@ https://opensource.apple.com/source/text_cmds/text_cmds-99/grep/grep.c.auto.html
 
 
 ## Symbol Table
+
+One of the load commands is called 
 
 ## DYLD Opcodes and Binding
 <!-- 
@@ -170,3 +175,6 @@ Your Pages site will use the layout and styles from the Jekyll theme you have se
 
 Having trouble with Pages? Check out our [documentation](https://help.github.com/categories/github-pages-basics/) or [contact support](https://github.com/contact) and we’ll help you sort it out.
  -->
+
+
+## ARM64e Disk Pointers
