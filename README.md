@@ -132,7 +132,7 @@ Darwin                         October 20, 2019                         Darwin
 
 ## Compiling
 
-Compiling this will be a bit of a pain in the butt on your end. You'll need to clone the Swift language in the same directory.
+Compiling this will be a bit of a pain in the butt on your end. You'll need to clone the Swift language in the same directory. Swift can't be a submodule to this repo since some of their git cloning scripts won't work :| 
 
 ```bash
 # cd to the same directory as the dsdump repo
