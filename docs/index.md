@@ -2,9 +2,9 @@
 
 ## This is being actively worked on, this message will disappear when I am happy with the writeup
 
-Building out a "class-dump"-like introspection tool for Apple platforms has changed considerably since the original [class-dump](http://stevenygard.com/projects/class-dump/) came out. Learning these new (and old) technologies can be quite intimidating due to the steep learning curve.
+Building out a "class-dump"-like introspection tool for Apple platforms has changed considerably since the original [class-dump](http://stevenygard.com/projects/class-dump/) came out. Learning these new (and old) technologies can be quite intimidating due to the steep learning curve and somewhat hard to find documentation.
 
-This article attempts to explain the complete process of programmatically inspecting a [Mach-O](https://en.wikipedia.org/wiki/Mach-O) (Apple) binary by discussing the following:
+This article *attempts* to explain the complete process of programmatically inspecting a [Mach-O](https://en.wikipedia.org/wiki/Mach-O) (Apple) binary to display the compiled types with Swift and Objective-C by discussing the following:
 
 * [Mach-O File Format](#apples_mach-o_file_format)
 * [The Symbol Table](#the_symbol_table)
@@ -14,25 +14,20 @@ This article attempts to explain the complete process of programmatically inspec
 * ARM64e disk pointers
 
 ---
-**Note:** You *should* be comfortable with C before reading this article. If you can understand this, then you're good to go
-```c
-int32_t* a = NULL;
-int64_t* b = NULL;
-if (++a != ++b) {
-	// you understand pointer arithmetic
-} else {
-	// google "pointer arithmetic"
-}
-```
+**Note:** You *should* be comfortable-ish with C before reading this article. No worries if not though. This writeup takes its time explaining things, but there are a lot of concepts to go through. If you're brand new to this stuff, I'd recommend going through this article in chunks and **do the experiments**.
+
+If you know most of this stuff, I'd recommend just jumping to the appropriate section that you need to learn.
+
+All you script/plugin writers for Ghidra, Frida, Hopper, IDA, jtool, whatever people should *carefully* read the Swift parts because I have recommendations for y'all to take your tools to the next level when resymbolicating stripped Swift symbols. 
 
 ---
 
 <a name="apples_mach-o_file_format"></a>
 ### Apple's Mach-O File Format
 
-The Mach-O file format is the "table of contents" and layout of every Mach-O (read Apple) **image**. An image can be a number of different compiled, executable code including (but not limited to) executables, frameworks, dylibs, etc
+The Mach-O file format is the "table of contents" and layout of every Mach-O (read Apple) **image**. An image is any compiled, executable code including (but not limited to) executables, frameworks, dylibs, etc.
 
-There are many great sources out there that already cover the topic well. 
+There are many great sources out there that already cover this topic well. 
 
 * [PARSING MACH-O FILES](https://lowlevelbits.org/parsing-mach-o-files/)
 * [Mirror of OS X ABI Mach-O File Format Reference](https://github.com/aidansteele/osx-abi-macho-file-format-reference)
@@ -46,7 +41,7 @@ And if you want to pay money for some Mach-O tutorials...
 
 Although, there's many references out there, this stuff will not stick unless you play with it yourself so...
 
-In the file `<mach-o/loader.h>`, there exists a struct called **`mach_header_64`** that is the beginning to all 64-bit Apple executables (well, sorta, it actually depends on some things like FAT files, but don't think about that now). This will very likely apply to you, unless you are running an "ancient" version of OS X with ancient hardware
+In the file `<mach-o/loader.h>`, there exists a C struct called **`mach_header_64`** that is the beginning to all 64-bit Apple executables (well, sorta, it actually depends on some things like FAT files, 32-bit architecture, but don't think about that now). 
 
 ---
 **Note**
@@ -58,7 +53,7 @@ When referring to C System headers on your OS X machine, you can usually resolve
 lolgrep:~$ echo $(xcrun --show-sdk-path)/usr/include
 ```
 
-This resolve to the base directory, so the resolved filepath can be viewed via:
+This resolves to the base directory search path for C system headers, so the resolved filepath can be viewed via:
 
 ```bash
 lolgrep:~$ cat $(xcrun --show-sdk-path)/usr/include/mach-o/loader.h | less -R
@@ -86,21 +81,22 @@ Cross reference this with any compiled executable. I'll pick **grep**, feel free
 ```bash
 lolgrep:~$ xxd -g 4 -e $(which grep) | head -2
 ```
-The `xxd` command will dump the raw data of an executable to `stdout`. The `-g 4` says to group all the values into 4 bytes, which is perfect since each member in the mach_header_64 struct is a 4 byte value. The `-e` option says to format the output in little-endian byte order. If any of this is confusing, The Advanced Apple Deubgging book goes into much more detail about this. 
+The `xxd` command will dump the raw data of an executable to `stdout`. The `-g 4` says to group all the values into 4 bytes, which is perfect since each member in the `mach_header_64` struct is a 4 byte value. The `-e` option says to format the output in little-endian byte order. If any of this is confusing, The [Advanced Apple Deubgging book](https://store.raywenderlich.com/products/advanced-apple-debugging-and-reverse-engineering) (mentioned above) goes into much more detail about this. 
 
-This produces something similar to:
+On my machine, this produces the following output
 
 ```none
 00000000: feedfacf 01000007 80000003 00000002  ................
-00000010: 00000013 00000750 00200085 00000000  ....P..... .....
+00000010: 00000014 00000798 00200085 00000000  .......... .....
 ```
+
 Going through the `mach_header_64` struct members:
 
 * Cross referencing the output with the `<mach-o/loader.h>`, we can see that the `0xfeedfacf` means it's a 64-bit compiled image (`MH_MAGIC_64`).
 * The `0x01000007` can be resolved via `<mach/machine.h>` to realize it's compiled for a `CPU_TYPE_X86_64` type of machine.
-* The `0x80000003` can be resolved via the same `<mach/machine.h>`header to realize it's the or'ing of `CPU_SUBTYPE_X86_ALL|CPU_SUBTYPE_LIB64`
+* The `0x80000003` can be resolved via the same `<mach/machine.h>` header to realize it's the or'ing of `CPU_SUBTYPE_X86_ALL|CPU_SUBTYPE_LIB64`
 * The `0x00000002` value is given by the `MH_EXECUTE`, meaning it's an executable (and not a library or something else)
-* Following the `filetype` in the struct is the `ncmds`, with 19 **load commands** (`0x00000013` == 19)
+* Following the `filetype` in the struct is the `ncmds`, with 20 **load commands** (`0x00000014` == 20)
 
 I'll let you figure the remaining struct members out yourself.
 
@@ -115,23 +111,69 @@ This produces the following on my machine:
 ```none
 Mach header
       magic cputype cpusubtype  caps    filetype ncmds sizeofcmds      flags
- 0xfeedfacf 16777223          3  0x80           2    19       1872 0x00200085
- ```
+ 0xfeedfacf 16777223          3  0x80           2    20       1944 0x00200085
+```
+
+Again, keep an eye on that `ncmds` with the value 20; this is what is going to be discussed next.
 
 ### Load Commands
 
 It's these load commands (given by the `ncmds` from the `mach_header_64`) that can be interesting when exploring a compiled executable.
 
-Use `otool`'s `-l` option to display an image's load commands:
+Each load command begins with a **`LC_`** and whose description/usage is given in `<mach-o/loader.h>`
+
+Use `otool`'s `-l` option to with `grep` to display all the load commands in `grep`
+
+
+```bash
+lolgrep:~$ otool -l $(which grep) | grep LC_ 
+      cmd LC_SEGMENT_64
+      cmd LC_SEGMENT_64
+      cmd LC_SEGMENT_64
+      cmd LC_SEGMENT_64
+      cmd LC_SEGMENT_64
+            cmd LC_DYLD_INFO_ONLY
+     cmd LC_SYMTAB
+            cmd LC_DYSYMTAB
+          cmd LC_LOAD_DYLINKER
+     cmd LC_UUID
+       cmd LC_BUILD_VERSION
+      cmd LC_SOURCE_VERSION
+       cmd LC_MAIN
+          cmd LC_LOAD_DYLIB
+          cmd LC_LOAD_DYLIB
+          cmd LC_LOAD_DYLIB
+          cmd LC_LOAD_DYLIB
+      cmd LC_FUNCTION_STARTS
+      cmd LC_DATA_IN_CODE
+      cmd LC_CODE_SIGNATURE
+```
+
+And of course you can make sure the `ncmds` count from the `mach_header_64` matches line output... 
+
+```bash
+lolgrep:~$ otool -l $(which grep) | grep LC_ | wc -l
+20
+```
+
+Remove the `grep` filtering and display the full output:
 
 ```bash
 lolgrep:~$ otool -l $(which grep)
 ```
 
-When exploring memory and the load commands, different areas of memory are grouped together. These Mach-O groupings are called **Segments**. Segments will have different memory permissions. For example in `grep`:
+`otool -l` produces *a lot* of output, but focus on the initial `LC_SEGMENT_64` load commands...
+
+When exploring memory and the load commands, different areas of memory are grouped together. These Mach-O groupings are called **segments**. Segments will have different memory permissions. For example, executing the following for `grep`:
+
 
 ```bash 
 lolgrep:~$ otool -l $(which grep) | grep LC_SEGMENT -A10
+```
+
+Will display the Mach-O segments contained in `grep`, which will look something like...
+
+```none
       cmd LC_SEGMENT_64
   cmdsize 72
   segname __PAGEZERO
@@ -156,27 +198,24 @@ lolgrep:~$ otool -l $(which grep) | grep LC_SEGMENT -A10
    nsects 7
     flags 0x0
 --
-...
 ```
 
-There's a Mach-O segment called **__PAGEZERO** which when loaded into memory, has no memory permissions (see `maxprot`, and `initprot`). That means you can read, write, nor execute anything that resides in this memory.  
+There's a Mach-O segment called **`__PAGEZERO`** which when loaded into memory, has no memory permissions (see `maxprot`, and `initprot`). That means you can't read, write, nor execute anything that resides in this memory segment.  Hitting this memory is what happens when you ferck up a pointer in C or dereference an implicitly unwrapped optional in Swift... *it's a dead zone in memory that's designed to catch nil/NULL/nullptr bugs in your code by killing the process*.
 
-Below the `__PAGEZERO` segment, there's the `__TEXT` segment. This segment has readable and executable permissions due to the `initprot` value. How did I translate the value 5 to readable and writable? 
+Below the `__PAGEZERO` segment, there's the `__TEXT` segment. This segment has readable and executable permissions determined from the `initprot` value. How did I translate the value 5 to readable and writable? 
 
-Think of this in bits
+Think of this 5 value in bits...
 
-```
+```none
 exeuctable writeable readable
 1          1         1
 ```
 
-The value 5 is 0b101 in binary, meaning everything except writable.
+The value 5 is `0b101` in binary, meaning everything *except* writable.
 
-The next interesting part is the `nsects` value immediately below the `initprot` field. Inside a Mach-O Segment, there can be 0 or more "subcomponents" called **sections**.
+The next interesting part is the `nsects` value immediately below the `initprot` field. Inside a Mach-O Segment, there can be 0 or more "subcomponents" called **sections**. These sections group certain parts of functionality in an executable. Inside the `__TEXT` segment, there are 7 sections for `grep`
 
-These sections group certain parts of functionality in an executable. Inside the `__TEXT` segment, there are 7 sections for `grep`
-
-Using `grep` to only show the Mach-O sections in `grep` 
+Using `grep` to only show the Mach-O sections in `grep`...
 
 ```bash
 lolgrep:~$ otool -l $(which grep) | grep __TEXT -B2 -A9
@@ -226,9 +265,9 @@ There are many, many interesting Mach-O sections. One could write a novel on jus
 
 #### File Offsets => Virtual Addresses (and back)
 
-The Mach-O sections provide a great insight into the virtual address as well as the file offset on disk.
+The Mach-O load command section info provide a translation into the virtual address of stuff loaded into memory and to the file offsets on disk for an image.
 
-Consider an extremely simple C file, **ex.c**:
+Consider the following C file, **ex.c**:
 
 ```c
 int SomeGlobalInt = 8;
@@ -238,12 +277,12 @@ int main() {
 }
 ```
 
-Upon compiling and querying the Mach-O section locations for the global integers
+Upon compiling...
 ```bash
 lolgrep:~$ clang ex.c -o ex
 ```
 
-Using the `nm` tool (which displays symbol table information, more on that later...)
+...then querying the `*GlobalInt` integer symbols using the `nm` tool (which displays symbol table information, more on that later...)
 
 ```bash
 lolgrep:~$ nm -m ex | grep GlobalInt
@@ -251,11 +290,9 @@ lolgrep:~$ nm -m ex | grep GlobalInt
 0000000100001000 (__DATA,__data) external _SomeGlobalInt
 ```
 
-The `-m` option says to show the Mach-O section when displaying locally implemented symbols
+The `-m` option displays the Mach-O section when displaying locally implemented symbols in the symbol table. These global integers are located in the `__DATA` segment inside the `__data` section, starting at virtual address `0x000000100001000` and `0x00000100001004`
 
-The globals are located in the `__DATA` segment inside the `__data` section, at virtual address `0x000000100001000` and `0x00000100001004`
-
-One can translate these virtual addresses to the file offset by consulting the Mach-O section load commands.
+One can translate these virtual addresses to the image file offset by consulting the Mach-O section load commands.
 
 ```bash
 lolgrep:~$ otool -l ex | grep __data -A10
@@ -272,7 +309,7 @@ lolgrep:~$ otool -l ex | grep __data -A10
  reserved2 0
  ```
 
-The size of the `__data` section is 8 bytes (due to the 2 4 byte integers). The virtual address of the `__data` section is at `0x0000000100001000`. The offset on disk in the executable to the `__data` section is at `4096`. 
+The size of the `__data` section is 8 bytes (due to the 2 4 byte integers, and nothing else). The virtual address of the `__data` section is at `0x0000000100001000`. The offset on disk in the executable to the `__data` section is at `4096`. 
 
 You can verify this with `xxd` again...
 
@@ -286,14 +323,81 @@ Breaking the options down:
 * `-e`     : little endian mode
 * `-s 4096`: Start at offset 4096
 
-You can use the following format to translate virtual addresses to file offsets with the following formula: 
+Here you can see at offset 4096 (or 0x1000 in hex) the value of 8 followed by the value of 7, which matches the assigned values for `SomeGlobalInt` and `SecondGlobalInt` in the source code.
+
+This means one can translate virtual load addresses to file offsets (and back) with the following format: 
 
 ```c
-resolved_file_offset = (virtual_symbol_address - containing_macho_section_virtual_address) + contain_macho_section_file_offset
+symbol_offset_address = (virtual_symbol_address - containing_macho_section_virtual_address) + contain_macho_section_file_offset
 ```
 
 
-#### NO pie disable pie 
+### PIE
+
+Ohhhh but it gets a bit more confusing than that. In addition to the vritual load address, the OS can shift a loaded image's virtual addresses to a different starting base address to help mitigate attacks. This is called **Address Space Layout Randomization** or simply **ASLR**.  
+
+Since an image can have a different address everytime it loads, this means that referencing to virtual addresses needs to be able to reference addresses not based on an absolute virtual address value, but via a relative load address from the current memory address. This is known as a Position Indenpendent Executable.  
+
+By default every `MH_EXECUTE` you compile is position independent. You can confirm this with the following experimet:
+
+Given the following C file, **ex2.c**:
+
+```c
+#include <stdio.h>
+int main() {
+  printf("main is at: %p\n", main);
+  return 0;
+}
+```
+
+```bash
+lolgrep:~$ clang ex2.c
+```
+
+Then running it a couple times:
+
+```bash
+lolgrep:~$ ex2
+main is at: 0x1025c9f50
+lolgrep:~$ ex2
+main is at: 0x101eeef50
+lolgrep:~$ ex2
+main is at: 0x109fcaf50
+```
+
+But try getting the load address of `main`...
+
+```bash
+lolgrep:~$ nm ex2 | grep main
+0000000100000f50 T _main
+```
+
+On my compilation, main is at `0000000100000f50`. This means that the virtual address `0000000100000f50` is being shifted every time the program is run. You can remove this automatic feature in `clang` easily enough
+
+```bash
+lolgrep:~$ clang ex2.c -fno-pie -o ex2_nopie
+```
+
+Now giving it a couple runs...
+
+```bash
+lolgrep:~$ ex2_nopie
+main is at: 0x100000f50
+lolgrep:~$ ex2_nopie
+main is at: 0x100000f50
+lolgrep:~$ ex2_nopie
+main is at: 0x100000f50
+```
+
+You can also observe the PIE bit in the Mach-O header. Compare the `ex2` and `ex2_nopie` executables together:
+
+```bash
+lolgrep:~$ diff -y <(xxd -g 4 -e ex2 | head -2)  <(xxd -g 4 -e ex2_nopie | head -2)
+00000000: feedfacf 01000007 80000003 00000002  .............. 00000000: feedfacf 01000007 80000003 00000002  ..............
+00000010: 00000010 00000558 00200085 00000000  ....X..... ... | 00000010: 0000000f 00000510 00000085 00000000  ..............
+```
+
+Check out the second to last row in the lower right.  You'll see a `00200085` vs a `00000085`. If you were to consult the `<mach-o/loader.h>` header you'll see a `#define  MH_PIE 0x200000`, which tells the loader (dyld) that it is capable to slide this program's base address around to a different value.
 
 
 
