@@ -1,4 +1,4 @@
-## Building a class-dump in <del>2019</del> 2020
+# Building a class-dump in <del>2019</del> 2020
 
 ## This is being actively worked on, this message will disappear when I am happy with the writeup
 
