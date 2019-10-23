@@ -92,7 +92,7 @@ On my machine, this produces the following output
 
 Going through the `mach_header_64` struct members:
 
-* Cross referencing the output with the `<mach-o/loader.h>`, we can see that the `0xfeedfacf` means it's a 64-bit compiled image (`MH_MAGIC_64`).
+* Cross referencing the `xxd` output with the `mach_header_64` found in `<mach-o/loader.h>`, we can see that the `0xfeedfacf` means it's a 64-bit compiled image (`MH_MAGIC_64`).
 * The `0x01000007` can be resolved via `<mach/machine.h>` to realize it's compiled for a `CPU_TYPE_X86_64` type of machine.
 * The `0x80000003` can be resolved via the same `<mach/machine.h>` header to realize it's the or'ing of `CPU_SUBTYPE_X86_ALL|CPU_SUBTYPE_LIB64`
 * The `0x00000002` value is given by the `MH_EXECUTE`, meaning it's an executable (and not a library or something else)
@@ -149,20 +149,22 @@ lolgrep:~$ otool -l $(which grep) | grep LC_
       cmd LC_CODE_SIGNATURE
 ```
 
-And of course you can make sure the `ncmds` count from the `mach_header_64` matches line output... 
+And of course you can make sure the `ncmds` count from the `mach_header_64` matches the line output count... 
 
 ```bash
 lolgrep:~$ otool -l $(which grep) | grep LC_ | wc -l
 20
 ```
 
-Remove the `grep` filtering and display the full output:
+Each of these commands does something specific. For example **`LC_LOAD_DYLIB`** is an instruction to load a framework (like `Cocoa`, or `UIKit` into the process's address space). The `LC_MAIN` specifies the address to start the `main` function to the program.
+
+Now that you have a overview of the load commands are, remove the `grep` filtering and display the full output:
 
 ```bash
 lolgrep:~$ otool -l $(which grep)
 ```
 
-`otool -l` produces *a lot* of output, but focus on the initial `LC_SEGMENT_64` load commands...
+`otool -l` produces *a lot* of output, but focus on the initial `LC_SEGMENT_64` load commands closer to the beginning...
 
 When exploring memory and the load commands, different areas of memory are grouped together. These Mach-O groupings are called **segments**. Segments will have different memory permissions. For example, executing the following for `grep`:
 
@@ -198,11 +200,12 @@ Will display the Mach-O segments contained in `grep`, which will look something 
    nsects 7
     flags 0x0
 --
+...
 ```
 
-There's a Mach-O segment called **`__PAGEZERO`** which when loaded into memory, has no memory permissions (see `maxprot`, and `initprot`). That means you can't read, write, nor execute anything that resides in this memory segment.  Hitting this memory is what happens when you ferck up a pointer in C or dereference an implicitly unwrapped optional in Swift... *it's a dead zone in memory that's designed to catch nil/NULL/nullptr bugs in your code by killing the process*.
+There's a Mach-O segment called **`__PAGEZERO`** which when loaded into memory, has no memory permissions (see `maxprot`, and `initprot`). That means you can't read, write, nor execute anything that resides in this memory segment.  Hitting this memory is what happens when you fack up a pointer in C or dereference an implicitly unwrapped optional in Swift... *it's a dead zone in memory that's designed to catch `nil`/`NULL`/`nullptr` bugs in your code by killing the process*.
 
-Below the `__PAGEZERO` segment, there's the `__TEXT` segment. This segment has readable and executable permissions determined from the `initprot` value. How did I translate the value 5 to readable and writable? 
+Below the `__PAGEZERO` segment, there's the `__TEXT` segment. This segment has readable and executable permissions determined from the `initprot` value. How can one translate the value 5 to readable and writable? 
 
 Think of this 5 value in bits...
 
@@ -261,11 +264,11 @@ Section
 
 From the above output, the first section inside the `__TEXT` segment is a section (confusingly) called `__text`. It's this section where compiled code (typically, unless someone is doing something sneaky) resides.
 
-There are many, many interesting Mach-O sections. One could write a novel on just this topic. Again, check out the links above to learn more about the different types of sections. 
+There are many, many interesting Mach-O sections. One could write a novel on just this topic. Again, check out the Mach-O links above to learn more about the different types of sections. 
 
 #### File Offsets => Virtual Addresses (and back)
 
-The Mach-O load command section info provide a translation into the virtual address of stuff loaded into memory and to the file offsets on disk for an image.
+The Mach-O segment/section load command section info provide a translation into the virtual address of stuff loaded into memory and to the file offsets on disk for an image.
 
 Consider the following C file, **ex.c**:
 
@@ -290,9 +293,9 @@ lolgrep:~$ nm -m ex | grep GlobalInt
 0000000100001000 (__DATA,__data) external _SomeGlobalInt
 ```
 
-The `-m` option displays the Mach-O section when displaying locally implemented symbols in the symbol table. These global integers are located in the `__DATA` segment inside the `__data` section, starting at virtual address `0x000000100001000` and `0x00000100001004`
+The `-m` option displays the Mach-O section when displaying locally implemented symbols in the symbol table. From the output, these global integers are located in the `__DATA` segment inside the `__data` section, starting at virtual address `0x000000100001000` and `0x00000100001004`
 
-One can translate these virtual addresses to the image file offset by consulting the Mach-O section load commands.
+One can translate these virtual addresses to the image file offset by consulting the Mach-O section load commands and hunting for the `__data` Mach-O section.
 
 ```bash
 lolgrep:~$ otool -l ex | grep __data -A10
@@ -331,14 +334,15 @@ This means one can translate virtual load addresses to file offsets (and back) w
 symbol_offset_address = (virtual_symbol_address - containing_macho_section_virtual_address) + contain_macho_section_file_offset
 ```
 
+This trick is used extensively to find information in a file. For example, a pointer will reference another area in memory which is done through a virtual address. Using the above method, if you know the virtual address, you can obtain the file offset of what it is pointing to on disk. All pointers in memory will reference virtual addresses, not file offsets.
 
 ### PIE
 
 Ohhhh but it gets a bit more confusing than that. In addition to the vritual load address, the OS can shift a loaded image's virtual addresses to a different starting base address to help mitigate attacks. This is called **Address Space Layout Randomization** or simply **ASLR**.  
 
-Since an image can have a different address everytime it loads, this means that referencing to virtual addresses needs to be able to reference addresses not based on an absolute virtual address value, but via a relative load address from the current memory address. This is known as a Position Indenpendent Executable.  
+Since an image can have a different address everytime it loads, this means that referencing to virtual addresses needs to be able to reference addresses not based on an absolute virtual address value, but via a relative load address from the current memory address. This is known as a Position Indenpendent Executable or **PIE**.  
 
-By default every `MH_EXECUTE` you compile is position independent. You can confirm this with the following experimet:
+By default every `MH_EXECUTE` you compile is position independent. You can confirm this with the following exerpiment:
 
 Given the following C file, **ex2.c**:
 
@@ -350,11 +354,13 @@ int main() {
 }
 ```
 
+Compile it...
+
 ```bash
-lolgrep:~$ clang ex2.c
+lolgrep:~$ clang ex2.c -o ex2
 ```
 
-Then running it a couple times:
+Then run it a couple times...
 
 ```bash
 lolgrep:~$ ex2
@@ -365,14 +371,16 @@ lolgrep:~$ ex2
 main is at: 0x109fcaf50
 ```
 
-But try getting the load address of `main`...
+Notice how the address of `main` changes from load to load. This is because the executables starting base address is changing for each run.
+
+But try getting the load address of `main` through the `nm` command:
 
 ```bash
 lolgrep:~$ nm ex2 | grep main
 0000000100000f50 T _main
 ```
 
-On my compilation, main is at `0000000100000f50`. This means that the virtual address `0000000100000f50` is being shifted every time the program is run. You can remove this automatic feature in `clang` easily enough
+On my compilation, main is at `0000000100000f50`. This means that the virtual address `0000000100000f50` is being shifted every time the program is run. You can remove this automatic feature in `clang` easily enough via the following:
 
 ```bash
 lolgrep:~$ clang ex2.c -fno-pie -o ex2_nopie
@@ -389,7 +397,7 @@ lolgrep:~$ ex2_nopie
 main is at: 0x100000f50
 ```
 
-You can also observe the PIE bit in the Mach-O header. Compare the `ex2` and `ex2_nopie` executables together:
+You can even observe the PIE bit in the Mach-O header. Compare the `ex2` and `ex2_nopie` executables together:
 
 ```bash
 lolgrep:~$ diff -y <(xxd -g 4 -e ex2 | head -2)  <(xxd -g 4 -e ex2_nopie | head -2)
@@ -397,8 +405,15 @@ lolgrep:~$ diff -y <(xxd -g 4 -e ex2 | head -2)  <(xxd -g 4 -e ex2_nopie | head 
 00000010: 00000010 00000558 00200085 00000000  ....X..... ... | 00000010: 0000000f 00000510 00000085 00000000  ..............
 ```
 
-Check out the second to last row in the lower right.  You'll see a `00200085` vs a `00000085`. If you were to consult the `<mach-o/loader.h>` header you'll see a `#define  MH_PIE 0x200000`, which tells the loader (dyld) that it is capable to slide this program's base address around to a different value.
+Compare the values in the second to last row in the lower right.  You'll see a `00200085` vs a `00000085`. If you were to consult the `<mach-o/loader.h>`...
 
+```bash
+lolgrep:~$ cat $(xcrun --show-sdk-path)/usr/include/mach-o/loader.h | grep PIE
+```
+
+header you'll see a `#define  MH_PIE 0x200000`, which tells the loader (dyld) that it is capable to slide this program's base address around to a different value.
+
+*Even though a program's base address might change around when it's loaded into memory, the virtual addresses that are referenced in the image will never change on disk*.
 
 
 ### LC_SOURCE_VERSION
