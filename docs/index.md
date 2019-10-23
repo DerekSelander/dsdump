@@ -1,4 +1,4 @@
-## Building a class-dump in 2019
+## Building a class-dump in <del>2019</del> 2020
 
 ## This is being actively worked on, this message will disappear when I am happy with the writeup
 
@@ -14,7 +14,7 @@ This article *attempts* to explain the complete process of programmatically insp
 * ARM64e disk pointers
 
 ---
-**Note:** You *should* be comfortable-ish with C before reading this article. No worries if not though. This writeup takes its time explaining things, but there are a lot of concepts to go through. If you're brand new to this stuff, I'd recommend going through this article in chunks and **do the experiments**.
+**Note:** You *should* be comfortable-ish with C and `man`'ing Terminal documentation before reading this article. No worries if not though. This writeup takes its time explaining things, but there are a lot of concepts to go through. If you're brand new to this stuff, I'd recommend going through this article in chunks and **do the experiments**.
 
 If you know most of this stuff, I'd recommend just jumping to the appropriate section that you need to learn.
 
@@ -415,6 +415,14 @@ header you'll see a `#define  MH_PIE 0x200000`, which tells the loader (dyld) th
 
 *Even though a program's base address might change around when it's loaded into memory, the virtual addresses that are referenced in the image will never change on disk*.
 
+<a name="the_symbol_table"></a>
+## Symbol Table
+
+The symbol table plays an immensily important role of declaring what symbols it implements (read: C/C++/Obj-C/Swfit/whatever methods/functions/code/declarations/variables) as well as what symbols it relies upon for that image to function.
+
+     cmd LC_SYMTAB
+            cmd LC_DYSYMTAB
+
 
 ### LC_SOURCE_VERSION
 
@@ -423,10 +431,6 @@ https://opensource.apple.com/tarballs/text_cmds/text_cmds-99.tar.gz
 https://opensource.apple.com/source/text_cmds/text_cmds-99/grep/grep.c.auto.html
 
 
-<a name="the_symbol_table"></a>
-## Symbol Table
-
-One of the load commands is called 
 
 <a name="dyld_opcodes_and_binding"></a>
 ## DYLD Opcodes and Binding
