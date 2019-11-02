@@ -7,14 +7,18 @@ Building out a "class-dump"-like introspection tool for Apple platforms has chan
 This article *attempts* to explain the complete process of programmatically inspecting a [Mach-O](https://en.wikipedia.org/wiki/Mach-O) (Apple) binary to display the compiled types with Swift and Objective-C by discussing the following:
 
 * [Mach-O File Format](#apples_mach-o_file_format)
+    * [Load Commands](#load_commands)
+    * [File Offsets => Virtual Addresses and back](#file_offsets_to_virtual_addresses)
+        * [PIE](#pie)
 * [The Symbol Table](#the_symbol_table)
+    * [Symbol Table Stripping](#symbol_table_stripping)     
 * [DYLD Opcodes and Binding](#dyld_opcodes_and_binding)
 * Objective-C Class Layout
 * Swift Types Layout
 * ARM64e disk pointers
 
 ---
-**Note:** You *should* be comfortable-ish with C and `man`'ing Terminal documentation before reading this article. No worries if not though. This writeup takes its time explaining things, but there are a lot of concepts to go through. If you're brand new to this stuff, I'd recommend going through this article in chunks and **do the experiments**.
+**Note:** You *should* be comfortable-ish with C and `man`'ing Terminal documentation before reading this article. No worries if not though. This writeup takes its time explaining things, but there are a lot of concepts to go through. If you're brand new to this stuff, I'd recommend going through this articlens in chunks and **do the experiments**.
 
 If you know most of this stuff, I'd recommend just jumping to the appropriate section that you need to learn.
 
@@ -116,6 +120,7 @@ Mach header
 
 Again, keep an eye on that `ncmds` with the value 20; this is what is going to be discussed next.
 
+<a name="load_commands"></a>
 ### Load Commands
 
 It's these load commands (given by the `ncmds` from the `mach_header_64`) that can be interesting when exploring a compiled executable.
@@ -149,16 +154,16 @@ lolgrep:~$ otool -l $(which grep) | grep LC_
       cmd LC_CODE_SIGNATURE
 ```
 
-And of course you can make sure the `ncmds` count from the `mach_header_64` matches the line output count... 
+Make sure the `ncmds` count (20 for my version of `grep`) from the `mach_header_64` matches the load command count... 
 
 ```bash
 lolgrep:~$ otool -l $(which grep) | grep LC_ | wc -l
 20
 ```
 
-Each of these commands does something specific. For example **`LC_LOAD_DYLIB`** is an instruction to load a framework (like `Cocoa`, or `UIKit` into the process's address space). The `LC_MAIN` specifies the address to start the `main` function to the program.
+Each of these commands does something specific. For example **`LC_LOAD_DYLIB`** is an instruction to load a framework (like `Cocoa`, or `UIKit` into the process's address space). The `LC_MAIN` specifies the address to start the `main` function to the program. Exhaustively describing all the load commands could be a bit boring to most, so check out the `<mach-o/loader.h>` or other writeups if you're interested in learning more about load commands.
 
-Now that you have a overview of the load commands are, remove the `grep` filtering and display the full output:
+Now that you have a overview of the load commands, remove the `grep` filtering and display the full output:
 
 ```bash
 lolgrep:~$ otool -l $(which grep)
@@ -203,7 +208,7 @@ Will display the Mach-O segments contained in `grep`, which will look something 
 ...
 ```
 
-There's a Mach-O segment called **`__PAGEZERO`** which when loaded into memory, has no memory permissions (see `maxprot`, and `initprot`). That means you can't read, write, nor execute anything that resides in this memory segment.  Hitting this memory is what happens when you fack up a pointer in C or dereference an implicitly unwrapped optional in Swift... *it's a dead zone in memory that's designed to catch `nil`/`NULL`/`nullptr` bugs in your code by killing the process*.
+There's a Mach-O segment called **`__PAGEZERO`** which when loaded into memory, has no memory permissions (see `maxprot`, and `initprot`). That means you can't read, write, nor execute anything that resides in this memory segment.  Hitting this memory is what happens when you fack up a pointer in C or dereference an implicitly unwrapped optional in Swift... *it's a dead zone in memory that's designed to catch `nil`/`NULL`/`nullptr` dereference bugs in your code by killing the process*.
 
 Below the `__PAGEZERO` segment, there's the `__TEXT` segment. This segment has readable and executable permissions determined from the `initprot` value. How can one translate the value 5 to readable and writable? 
 
@@ -211,7 +216,7 @@ Think of this 5 value in bits...
 
 ```none
 exeuctable writeable readable
-1          1         1
+1          0         1
 ```
 
 The value 5 is `0b101` in binary, meaning everything *except* writable.
@@ -266,9 +271,10 @@ From the above output, the first section inside the `__TEXT` segment is a sectio
 
 There are many, many interesting Mach-O sections. One could write a novel on just this topic. Again, check out the Mach-O links above to learn more about the different types of sections. 
 
-#### File Offsets => Virtual Addresses (and back)
+<a name="file_offsets_to_virtual_addresses"></a>
+### File Offsets => Virtual Addresses (and back)
 
-The Mach-O segment/section load command section info provide a translation into the virtual address of stuff loaded into memory and to the file offsets on disk for an image.
+The Mach-O segment/section load command info provide a translation into the virtual address of stuff loaded into memory and to the file offsets on disk for an image.
 
 Consider the following C file, **ex.c**:
 
@@ -293,7 +299,7 @@ lolgrep:~$ nm -m ex | grep GlobalInt
 0000000100001000 (__DATA,__data) external _SomeGlobalInt
 ```
 
-The `-m` option displays the Mach-O section when displaying locally implemented symbols in the symbol table. From the output, these global integers are located in the `__DATA` segment inside the `__data` section, starting at virtual address `0x000000100001000` and `0x00000100001004`
+The `-m` option displays the Mach-O section when displaying locally implemented symbols in the symbol table. From the output, these global integers are located in the `__DATA` segment inside the `__data` section, starting at virtual address `0x000000100001000` (`_SomeGlobalInt`) and `0x00000100001004` (`_SecondGlobalInt`).
 
 One can translate these virtual addresses to the image file offset by consulting the Mach-O section load commands and hunting for the `__data` Mach-O section.
 
@@ -314,7 +320,7 @@ lolgrep:~$ otool -l ex | grep __data -A10
 
 The size of the `__data` section is 8 bytes (due to the 2 4 byte integers, and nothing else). The virtual address of the `__data` section is at `0x0000000100001000`. The offset on disk in the executable to the `__data` section is at `4096`. 
 
-You can verify this with `xxd` again...
+You can verify this with `xxd` again by dumping the raw bytes...
 
 ```bash
 lolgrep:~$ xxd -g 4 -e -s 4096 ex  | head -1
@@ -334,9 +340,10 @@ This means one can translate virtual load addresses to file offsets (and back) w
 symbol_offset_address = (virtual_symbol_address - containing_macho_section_virtual_address) + contain_macho_section_file_offset
 ```
 
-This trick is used extensively to find information in a file. For example, a pointer will reference another area in memory which is done through a virtual address. Using the above method, if you know the virtual address, you can obtain the file offset of what it is pointing to on disk. All pointers in memory will reference virtual addresses, not file offsets.
+This trick is used extensively in [dsdump](https://github.com/DerekSelander/dsdump) to find information in a file. For example, a pointer will reference another area in memory via a virtual address. Using the above method, if you know the virtual address, you can obtain the file offset of what it is pointing to on disk. All pointers in memory will reference virtual addresses, not file offsets.
 
-### PIE
+<a name="pie"></a>
+#### PIE
 
 Ohhhh but it gets a bit more confusing than that. In addition to the vritual load address, the OS can shift a loaded image's virtual addresses to a different starting base address to help mitigate attacks. This is called **Address Space Layout Randomization** or simply **ASLR**.  
 
@@ -373,20 +380,20 @@ main is at: 0x109fcaf50
 
 Notice how the address of `main` changes from load to load. This is because the executables starting base address is changing for each run.
 
-But try getting the load address of `main` through the `nm` command:
+Observe the load address of `main` through the `nm` command:
 
 ```bash
 lolgrep:~$ nm ex2 | grep main
 0000000100000f50 T _main
 ```
 
-On my compilation, main is at `0000000100000f50`. This means that the virtual address `0000000100000f50` is being shifted every time the program is run. You can remove this automatic feature in `clang` easily enough via the following:
+On my compilation, `main` is at `0x00000100000f50`. This means that the virtual address `0x00000100000f50` is being shifted every time the program is run. You can remove this automatic feature in `clang` easily enough via the following:
 
 ```bash
 lolgrep:~$ clang ex2.c -fno-pie -o ex2_nopie
 ```
 
-Now giving it a couple runs...
+Now give it a couple runs...
 
 ```bash
 lolgrep:~$ ex2_nopie
@@ -405,23 +412,341 @@ lolgrep:~$ diff -y <(xxd -g 4 -e ex2 | head -2)  <(xxd -g 4 -e ex2_nopie | head 
 00000010: 00000010 00000558 00200085 00000000  ....X..... ... | 00000010: 0000000f 00000510 00000085 00000000  ..............
 ```
 
-Compare the values in the second to last row in the lower right.  You'll see a `00200085` vs a `00000085`. If you were to consult the `<mach-o/loader.h>`...
+Compare the values in the second to last row in the lower right.  You'll see a `00200085` vs a `00000085`. Consult the `<mach-o/loader.h>` header for the phrase **PIE**...
 
 ```bash
-lolgrep:~$ cat $(xcrun --show-sdk-path)/usr/include/mach-o/loader.h | grep PIE
+lolgrep:~$  cat $(xcrun --show-sdk-path)/usr/include/mach-o/loader.h | grep PIE -A3
+#define MH_PIE 0x200000     /* When this bit is set, the OS will
+             load the main executable at a
+             random address.  Only used in
+             MH_EXECUTE filetypes.
 ```
 
-header you'll see a `#define  MH_PIE 0x200000`, which tells the loader (dyld) that it is capable to slide this program's base address around to a different value.
+You'll see a `#define  MH_PIE 0x200000`, which tells the loading framework (**dyld**) that it is capable to slide this program's base address around to a different value.
 
 *Even though a program's base address might change around when it's loaded into memory, the virtual addresses that are referenced in the image will never change on disk*.
 
 <a name="the_symbol_table"></a>
 ## Symbol Table
 
-The symbol table plays an immensily important role of declaring what symbols it implements (read: C/C++/Obj-C/Swfit/whatever methods/functions/code/declarations/variables) as well as what symbols it relies upon for that image to function.
+The symbol table plays an immensily important role of declaring what symbols it implements as well as what symbols it relies upon for that image to correctly function. All code and any variables that survive out of the scope of code is a candidate to be put into the symbol table for what an image implements. 
 
+For example:
+
+```c
+int someGlobalNumber = 5;
+int foo(void) {
+  int someNumber = 4;
+  static someStaticNumber = 7;
+  return someNumber + someStaticNumber + someGlobalNumber; 
+}
+```
+
+In the above example, the `foo` function along with `someStaticNumber` and `someGlobalNumber` *could* end up in the symbol table, but the `someNumber` variable inside the function would not (typically) show up in the symbol table. Notice how `someStaticNumber` and `someGlobalNumber` survive outside the scope of the `foo` function, so *could* end up in the symbol table. Now, I said "*could*" because it's quite possible to hide symbols that are private and shouldn't be exposed to other modules, but more on that later.  
+
+As mentioned, the symbol table references internally implemented and *externally referenced* symbols. Build and 
+look at an example of an externally implemented symbol. Given the following **ex3.m** file:
+
+```objc
+@import Foundation;
+
+char *someData = "hello";
+void someFunction() {}
+
+int main() {
+  printf("some val\n");
+  NSLog(@"some different value");
+}
+```
+
+Then compile...
+
+```bash
+lolgrep:/tmp$ clang -fmodules ex3.m -o ex3
+```
+
+Give it a run... 
+
+```bash
+lolgrep:/tmp$ ex3
+some val
+2019-10-25 17:27:34.956 ex3[19476:2277376] some different value
+```
+
+Now, you didn't implement the code for `printf` nor `NSLog`, so look at how that's being referenced in the symbol table
+
+```bash
+lolgrep:/tmp$ nm ex3
+                 U _NSLog
+                 U ___CFConstantStringClassReference
+0000000100002010 d __dyld_private
+0000000100000000 T __mh_execute_header
+0000000100000f30 T _main
+                 U _printf
+0000000100002018 D _someData
+0000000100000f20 T _someFunction
+                 U dyld_stub_binder
+```
+
+You'll see undefined external symbols preceeded by a uppercase 'U'. It's `dyld`'s job to find the corresponding symbol in the appropriate library based upon the symbol table information. For the local symbols, you'll see a 'T' for (`__TEXT`) for `someFunction` and `main` and `D` (`__DATA`) for `someData`. We'll talk about how this type of T/D information is determined a couple paragraphs down...
+
+### Symbol Table Implementation
+
+You got the high up, now it's jump into the weeds to see the symbol table data structures in action. 
+
+The location of the symbol table is given by the **`LC_SYMTAB`** Mach-O load command. The symbol command is just an array of symbols of a C struct called **`nlist_64`** (we're discussing 64-bit executables only here). This struct can be found in `<mach-o/nlist.h>` and has the following format:
+
+```c
+struct nlist_64 {
+    union {
+        uint32_t  n_strx; /* index into the string table */
+    } n_un;
+    uint8_t n_type;        /* type flag, see below */
+    uint8_t n_sect;        /* section number or NO_SECT */
+    uint16_t n_desc;       /* see <mach-o/stab.h> */
+    uint64_t n_value;      /* value of this symbol (or stab offset) */
+};
+```
+
+Repeating, the symbol table is an array of the above struct whose size is given by the **`LC_SYMTAB`** load command. 
+
+Find the symbol table offset in the ex3 binary:
+
+<a name="lc_symtab"></a>
+```bash
+lolgrep:/tmp$ otool -l ex3 | grep LC_SYMTAB -A5
      cmd LC_SYMTAB
-            cmd LC_DYSYMTAB
+ cmdsize 24
+  symoff 12488
+   nsyms 9
+  stroff 12652
+ strsize 136
+```
+
+In this example, the symbol table starts at offset **12488** into the ex3 image.
+
+Dump the raw bytes at the `symoff` value and do it for `nsyms` lines:
+
+```bash
+lolgrep:/tmp$ hexdump -s 12488 -e '1/4 "%08x " 1/1 "%02x " 1/1 "%02x " 1/2 "%04x " 1/8 "%010x" "\n"' ex3 | head -9
+00000076 0e 0a 0000 0100002010
+00000002 0f 01 0010 0100000000
+00000016 0f 01 0000 0100000f30
+0000001c 0f 0a 0000 0100002018
+00000026 0f 01 0000 0100000f20
+00000034 01 00 0300 0000000000
+0000003b 01 00 0200 0000000000
+0000005d 01 00 0100 0000000000
+00000065 01 00 0100 0000000000
+```
+You gotta ❤️ the ugly formatting of the `hexdump` command...
+
+Start at offset 12488 with the `-s` option. After that, there is the huge formatted output string declared by the `-e` option. The `1/4 "%08x "` part will output the first 4 byte column that references the `n_un` union (containing the 4 byte `n_strx` value in the `nlist_64` struct). The 1 in the 1/4 says to do it one time for a size of 4 bytes. The `"%08x "` says to display this 4 byte value in hex and make sure to pad it with up to 8 zeros if needed. A single byte (eight 1's or 0's, AKA bits) can occupy 2 digits in hex, so an easy rule is to multiply the size of your data by 2 when printing it in hex. To hammer this concept home, the value 255 (aka 2^8) will have the hex value 0xFF. 
+
+The process repeats again. The ` 1/1 "%02x "` value says to print one byte only once (for the `n_type` value in the `nlist_64` struct) and format the output to have 2 bytes in hex.
+
+The same process is repeated for the `n_sect` value which is also a type of `uint8_t`.  Finally, the 2 byte `uint16_t` value for `n_desc` is printed, then the 8 byte `uint64_t` value for `n_value` is printed.
+
+Cross reference the raw `nlist_64` data from `hexdump` to the much-easier-to-type format from `nm`:
+
+```bash
+lolgrep:/tmp$ nm -xp ex3
+0000000100002010 0e 0a 0000 00000076 __dyld_private
+0000000100000000 0f 01 0010 00000002 __mh_execute_header
+0000000100000f30 0f 01 0000 00000016 _main
+0000000100002018 0f 0a 0000 0000001c _someData
+0000000100000f20 0f 01 0000 00000026 _someFunction
+0000000000000000 01 00 0300 00000034 _NSLog
+0000000000000000 01 00 0200 0000003b ___CFConstantStringClassReference
+0000000000000000 01 00 0100 0000005d _printf
+0000000000000000 01 00 0100 00000065 dyld_stub_binder
+```
+
+The `-x` will display the raw data of the `nlist_64` struct, the `-p` option will display the symbols in numerical order (instead of symbol table name order). 
+
+The `nm` command will also grab the name of the symbol which can be derived from the offset of the `n_strx` into the blob of characters given by the `stroff` in the Mach-O `LC_SYMTAB` [obtained earlier, which had the `stroff`  value **12652**](#lc_symtab) and whose size is given by the `strsize` value. 
+
+Going after the first symbol, the **__dyld_private** symbol has an offset of **0x00000076** (noticed I added a 0x to the beginning of the value to ensure it's interpreted as hex) into the `stroff`. Use `xxd` to verify this:
+
+```bash
+lolgrep:/tmp$ xxd -s $(( 0x00000076 + 12652 )) ex3 | head -2
+000031e2: 5f5f 6479 6c64 5f70 7269 7661 7465 0000  __dyld_private..
+000031f2: 0000                                     ..
+```
+
+### Abbreviated `nlist_64` Overview
+
+The symbol table's `nlist_64` array really can give off an impressive amount of information about an image. There is a lot of info in `<mach-o/nlist.h>`, but some highlights will be reviewed below. 
+
+Looking at the `nlist_64` value for the `someData` and `someFunction` symbols given by `nm` above...
+
+```bash
+0000000100002018 0f     0a      0000   0000001c _someData
+0000000100000f20 0f     01      0000   00000026 _someFunctin
+n_value          n_type uint8_t n_desc n_strx   
+```
+
+* The `n_value` will give the virtual address if the symbol is *implemented* locally
+* The `n_type` contains a whole bunch of information packed into 8 bytes. For this particular case, the value 0x0f can be seen as a bit mask for `N_EXT` (0x01) and `N_SECT` (0x0e) (see header). The `N_EXT` says it's a "public" symbol (so you can `dlopen`/`dlsym` it), the `N_SECT` tells us that the symbols Mach-O section is described in the following field. 
+* As seen earlier, the `n_strx` (last hex column) will provde an index into the array of characters for the symbols name. 
+* The `n_sect` will indicate where the symbol is located in the Mach-O executable starting at index 1 (not 0 like most arrays). You can confirm this with the following experiment:
+
+```bash 
+lolgrep:/tmp$ otool -l ex3 | grep sectname
+  sectname __text
+  sectname __stubs
+  sectname __stub_helper
+  sectname __cstring
+  sectname __unwind_info
+  sectname __got
+  sectname __cfstring
+  sectname __objc_imageinfo
+  sectname __la_symbol_ptr
+  sectname __data
+```
+
+Note how the the `someFunction` symbol is at the `__text` Mach-O section (index 1 in `n_sect`), the `someData` is at `__data` section due to the 0x0a (AKA 10).
+
+You can confirm this with `nm`'s `-m` option:
+
+```bash
+lolgrep:/tmp$ nm -m ex3 | grep some
+0000000100002018 (__DATA,__data) external _someData
+0000000100000f20 (__TEXT,__text) external _someFunction
+```
+
+The `n_desc` value isn't of too much use for local symbols, so let's look at the `nlist_64` values whose symbols are defined outside of ex3
+
+```bash
+0000000000000000 01     00      0300   00000034 _NSLog
+0000000000000000 01     00      0200   0000003b ___CFConstantStringClassReference
+0000000000000000 01     00      0100   0000005d _printf
+n_value          n_type uint8_t n_desc n_strx   
+```
+
+Notice how the `n_value` (first column) is set to 0 for undefined symbols; they're not implemented locally, so they shouldn't have a local virtual address. The `N_EXT` bit is set (0x01) for the `n_type`, meaning the symbol is a public symbol. For the `n_sect` value (3rd column), these are all set to 0x00 or `NO_SECT`, meaning the Mach-O section is undefined (makes sense, they're external symbols). Now let's pick up on the remaining `nlist_64` members.
+
+* The `n_desc` can do a number of things, but for this case, it is telling us which library the symbol can be found in (provided the symbol has two-level namespacing, Google that on your own time). These values in `n_desc` provide an index into the Mach-O load commands for external libraries.
+
+```bash
+lolgrep:/tmp$ otool -L ex3 | awk '{print $1}'
+ex3:
+/usr/lib/libSystem.B.dylib
+/System/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation
+/System/Library/Frameworks/Foundation.framework/Versions/C/Foundation
+```  
+
+From the above, `NSLog` is expected to be found in Foundation (0x0300), `__CFConstantStringClassReference` is from CoreFoundation (0x0200), `printf` is from libSystem.B.dylib (0x0100)
+
+Confirm this is true with `nm`:
+
+```bash
+lolgrep:/tmp$ nm -m ex3  | grep undefined
+                 (undefined) external _NSLog (from Foundation)
+                 (undefined) external ___CFConstantStringClassReference (from CoreFoundation)
+                 (undefined) external _printf (from libSystem)
+                 (undefined) external dyld_stub_binder (from libSystem)
+```
+
+As homework, navigate to Foundation and confirm a symbol named `NSLog` exists there that is public for use.
+
+<a name="symbol_table_stripping"></a>
+### Symbol Table Stripping
+
+Compile and execute `ex4.c`
+
+```c
+#include <stdio.h>
+
+void someFunction() {  printf("yay\n"); }
+
+int main() {
+  someFunction();
+  return 0;
+}
+```
+
+```bash
+lolgrep:/tmp$ clang ex4.c -o ex4
+```
+
+Check out the symbols with `nm`
+
+```bash
+lolgrep:/tmp$ nm ex4
+0000000100002008 d __dyld_private
+0000000100000000 T __mh_execute_header
+0000000100000f70 T _main
+                 U _printf
+0000000100000f50 T _someFunction
+                 U dyld_stub_binder
+```
+
+Now, **strip** the ex4 image
+
+```bash
+lolgrep:/tmp$ strip ex4
+```
+
+Stripping the symbol table will remove unneeded symbols. Dump the symbol table:
+
+```bash
+lolgrep:/tmp$  nm ex4
+0000000100000000 T __mh_execute_header
+                 U _printf
+                 U dyld_stub_binder
+```
+
+Weird, the symbols aren't there, but will it still run?
+
+```bash
+lolgrep:/tmp$ ex4
+yay
+```
+
+In a `MH_EXECUTE`, any C/Objective-C/Swift functions don't need to be externally available so that information can be removed from the symbol table. Why is that? A `MH_EXECUTE` type of file should be ran by itself, it shouldn't be loaded into another address space!
+
+What if we compiled this as a shared library? What would happen then? Compile ex4.c but add the `-shared` option
+
+
+```bash
+lolgrep:/tmp$ clang -shared ex4.c -o ex4.shared
+```
+
+Ensure the ex4.shared file is the correct type after compiling
+
+```bash
+lolgrep:/tmp$ file ex4.shared
+ex4.shared: Mach-O 64-bit dynamically linked shared library x86_64
+```
+
+Check out the symbols... 
+
+```bash
+lolgrep:/tmp$ nm ex4.shared
+0000000000002008 d __dyld_private
+0000000000000f70 T _main
+                 U _printf
+0000000000000f50 T _someFunction
+                 U dyld_stub_binder
+```
+
+Then run the `strip` command and check out the differences. What is different compared to the `MH_EXECUTE` image and why do you think that is? 
+
+Public symbols in shared libraries can't be stripped out because there could be consumers in other images that rely on those symbols, so they need to keep their names intact.
+
+
+
+For this version of `grep` (`LC_SOURCE_VERSION 101.11.1`), 
+
+
+If you are new to this stuff and interesting in reverse engineering here's a tip for you:
+
+*Never jump straight into the assembly of an executable, look at the symbol table's external symbols references first along with the `LC_LOAD_DYLIB` load commands to determine which frameworks it references. You should want to know all the symbols an image references to get an idea of what the image's functionality before jumping into any assembly...*
+
+
+In addition to the `LC_SYMTAB` command, there's a helper load command called **`LC_DYSYMTAB`**, which provides indexes into the symbol table for symbols that are implemented and symbols that the image relies upon.
+
 
 
 ### LC_SOURCE_VERSION
