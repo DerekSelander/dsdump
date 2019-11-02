@@ -11,14 +11,16 @@ This article *attempts* to explain the complete process of programmatically insp
     * [File Offsets => Virtual Addresses and back](#file_offsets_to_virtual_addresses)
         * [PIE](#pie)
 * [The Symbol Table](#the_symbol_table)
-    * [Symbol Table Stripping](#symbol_table_stripping)     
+    * [`nlist_64` Overview](#nlist_64_overview)
+    * [Symbol Table Implementation](#symbol_table_implementation)    
+    * [Symbol Table Stripping](#symbol_table_stripping)
 * [DYLD Opcodes and Binding](#dyld_opcodes_and_binding)
 * Objective-C Class Layout
 * Swift Types Layout
 * ARM64e disk pointers
 
 ---
-**Note:** You *should* be comfortable-ish with C and `man`'ing Terminal documentation before reading this article. No worries if not though. This writeup takes its time explaining things, but there are a lot of concepts to go through. If you're brand new to this stuff, I'd recommend going through this articlens in chunks and **do the experiments**.
+**Note:** You *should* be comfortable-ish with C and `man`'ing Terminal documentation before reading this article. No worries if not though. This writeup takes its sweet time explaining things, but there are a lot of concepts to go through. If you're brand new to this stuff, I'd recommend going through the sections *in chunks over several days* and **do the experiments**.
 
 If you know most of this stuff, I'd recommend just jumping to the appropriate section that you need to learn.
 
@@ -85,6 +87,7 @@ Cross reference this with any compiled executable. I'll pick **grep**, feel free
 ```bash
 lolgrep:~$ xxd -g 4 -e $(which grep) | head -2
 ```
+
 The `xxd` command will dump the raw data of an executable to `stdout`. The `-g 4` says to group all the values into 4 bytes, which is perfect since each member in the `mach_header_64` struct is a 4 byte value. The `-e` option says to format the output in little-endian byte order. If any of this is confusing, The [Advanced Apple Deubgging book](https://store.raywenderlich.com/products/advanced-apple-debugging-and-reverse-engineering) (mentioned above) goes into much more detail about this. 
 
 On my machine, this produces the following output
@@ -123,7 +126,7 @@ Again, keep an eye on that `ncmds` with the value 20; this is what is going to b
 <a name="load_commands"></a>
 ### Load Commands
 
-It's these load commands (given by the `ncmds` from the `mach_header_64`) that can be interesting when exploring a compiled executable.
+It's these load commands (whose count is given by the `ncmds` from the `mach_header_64`) that can be interesting when exploring a compiled executable.
 
 Each load command begins with a **`LC_`** and whose description/usage is given in `<mach-o/loader.h>`
 
@@ -459,13 +462,13 @@ int main() {
 }
 ```
 
-Then compile...
+Compile ex3.m
 
 ```bash
 lolgrep:/tmp$ clang -fmodules ex3.m -o ex3
 ```
 
-Give it a run... 
+Then give it a run... 
 
 ```bash
 lolgrep:/tmp$ ex3
@@ -490,6 +493,7 @@ lolgrep:/tmp$ nm ex3
 
 You'll see undefined external symbols preceeded by a uppercase 'U'. It's `dyld`'s job to find the corresponding symbol in the appropriate library based upon the symbol table information. For the local symbols, you'll see a 'T' for (`__TEXT`) for `someFunction` and `main` and `D` (`__DATA`) for `someData`. We'll talk about how this type of T/D information is determined a couple paragraphs down...
 
+<a name="symbol_table_implementation"></a>
 ### Symbol Table Implementation
 
 You got the high up, now it's jump into the weeds to see the symbol table data structures in action. 
@@ -541,7 +545,7 @@ lolgrep:/tmp$ hexdump -s 12488 -e '1/4 "%08x " 1/1 "%02x " 1/1 "%02x " 1/2 "%04x
 ```
 You gotta ❤️ the ugly formatting of the `hexdump` command...
 
-Start at offset 12488 with the `-s` option. After that, there is the huge formatted output string declared by the `-e` option. The `1/4 "%08x "` part will output the first 4 byte column that references the `n_un` union (containing the 4 byte `n_strx` value in the `nlist_64` struct). The 1 in the 1/4 says to do it one time for a size of 4 bytes. The `"%08x "` says to display this 4 byte value in hex and make sure to pad it with up to 8 zeros if needed. A single byte (eight 1's or 0's, AKA bits) can occupy 2 digits in hex, so an easy rule is to multiply the size of your data by 2 when printing it in hex. To hammer this concept home, the value 255 (aka 2^8) will have the hex value 0xFF. 
+Start at offset 12488 with the `-s` option. After that, there is the huge formatted output string declared by the `-e` option. The `1/4 "%08x "` part will output the first 4 byte column that references the `n_un` union (containing the 4 byte `n_strx` value in the `nlist_64` struct). The 1 in the 1/4 says to do it one time for a size of 4 bytes. The `"%08x "` says to display this 4 byte value in hex and make sure to pad it with up to 8 zeros if needed. A single byte (eight 1's or 0's, AKA bits) can occupy 2 digits in hex, so an easy rule is to multiply the size of your data by 2 when printing it in hex. To hammer this concept home, the decimal value 255 (aka 2^8) will have the hex value 0xFF. 
 
 The process repeats again. The ` 1/1 "%02x "` value says to print one byte only once (for the `n_type` value in the `nlist_64` struct) and format the output to have 2 bytes in hex.
 
@@ -574,16 +578,17 @@ lolgrep:/tmp$ xxd -s $(( 0x00000076 + 12652 )) ex3 | head -2
 000031f2: 0000                                     ..
 ```
 
-### Abbreviated `nlist_64` Overview
+<a name="nlist_64_overview"></a>
+### `nlist_64` Overview
 
 The symbol table's `nlist_64` array really can give off an impressive amount of information about an image. There is a lot of info in `<mach-o/nlist.h>`, but some highlights will be reviewed below. 
 
 Looking at the `nlist_64` value for the `someData` and `someFunction` symbols given by `nm` above...
 
 ```bash
+n_value          n_type uint8_t n_desc n_strx   
 0000000100002018 0f     0a      0000   0000001c _someData
 0000000100000f20 0f     01      0000   00000026 _someFunctin
-n_value          n_type uint8_t n_desc n_strx   
 ```
 
 * The `n_value` will give the virtual address if the symbol is *implemented* locally
@@ -618,10 +623,10 @@ lolgrep:/tmp$ nm -m ex3 | grep some
 The `n_desc` value isn't of too much use for local symbols, so let's look at the `nlist_64` values whose symbols are defined outside of ex3
 
 ```bash
+n_value          n_type uint8_t n_desc n_strx   
 0000000000000000 01     00      0300   00000034 _NSLog
 0000000000000000 01     00      0200   0000003b ___CFConstantStringClassReference
 0000000000000000 01     00      0100   0000005d _printf
-n_value          n_type uint8_t n_desc n_strx   
 ```
 
 Notice how the `n_value` (first column) is set to 0 for undefined symbols; they're not implemented locally, so they shouldn't have a local virtual address. The `N_EXT` bit is set (0x01) for the `n_type`, meaning the symbol is a public symbol. For the `n_sect` value (3rd column), these are all set to 0x00 or `NO_SECT`, meaning the Mach-O section is undefined (makes sense, they're external symbols). Now let's pick up on the remaining `nlist_64` members.
@@ -704,23 +709,22 @@ lolgrep:/tmp$ ex4
 yay
 ```
 
-In a `MH_EXECUTE`, any C/Objective-C/Swift functions don't need to be externally available so that information can be removed from the symbol table. Why is that? A `MH_EXECUTE` type of file should be ran by itself, it shouldn't be loaded into another address space!
+In a `MH_EXECUTE` type image, any C/Objective-C/Swift functions don't need to be externally available so that information can be removed from the symbol table. Why is that? A `MH_EXECUTE` type of file should be ran by itself, it shouldn't be loaded into another address space!
 
-What if we compiled this as a shared library? What would happen then? Compile ex4.c but add the `-shared` option
-
+What if this was compiled as a shared library? What would happen then? Compile ex4.c, but add the `-shared` option
 
 ```bash
 lolgrep:/tmp$ clang -shared ex4.c -o ex4.shared
 ```
 
-Ensure the ex4.shared file is the correct type after compiling
+Ensure the ex4.shared file is the correct `MH_DYLIB` type after compiling:
 
 ```bash
 lolgrep:/tmp$ file ex4.shared
 ex4.shared: Mach-O 64-bit dynamically linked shared library x86_64
 ```
 
-Check out the symbols... 
+Check out the symbols via `nm`... 
 
 ```bash
 lolgrep:/tmp$ nm ex4.shared
@@ -731,9 +735,18 @@ lolgrep:/tmp$ nm ex4.shared
                  U dyld_stub_binder
 ```
 
-Then run the `strip` command and check out the differences. What is different compared to the `MH_EXECUTE` image and why do you think that is? 
+Then run the `strip` command and check out the differences. What is difference compared to the `MH_EXECUTE` image and why do you think that is? 
 
-Public symbols in shared libraries can't be stripped out because there could be consumers in other images that rely on those symbols, so they need to keep their names intact.
+Public symbols in shared libraries won't be stripped out because there could be consumers in other images that rely on those symbols, so they need to keep their names intact.
+
+
+## Objective-C Class Layout
+
+Objective-C still plays quite a relevant role——even in Swift. A pure Swift class (i.e. `class ASwiftClass {}`) will inherit from an Objective-C class called **SwiftClass** on all Apple platforms. I'd expect this to change in the future, but not for at least a couple years.
+
+In addition, Swift methods *can* be stripped out of the symbol table, but Objective-C methods can still be resolved via other methods (as you'll see shortly). If a Swift class overrides an Objective-C method (i.e. `viewDidLoad`), there'll be a compiler generated Objective-C bridging method (called a [thunk](https://en.wikipedia.org/wiki/Thunk)) which retains and rearranges assembly registers to the Swift calling convention. The thunk method is visible on the Objective-C side, while the actual Swift method can be stripped out. You'll see at the end of this writeup that you can infer the stripped Swift method by using this knowledge and the Swift reflection type knowledge introduced later.
+
+### 
 
 
 
