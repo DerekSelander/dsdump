@@ -123,8 +123,10 @@ Mach header
 
 Again, keep an eye on that `ncmds` with the value 20; this is what is going to be discussed next.
 
+---
 <a name="load_commands"></a>
 ### Load Commands
+--- 
 
 It's these load commands (whose count is given by the `ncmds` from the `mach_header_64`) that can be interesting when exploring a compiled executable.
 
@@ -274,8 +276,10 @@ From the above output, the first section inside the `__TEXT` segment is a sectio
 
 There are many, many interesting Mach-O sections. One could write a novel on just this topic. Again, check out the Mach-O links above to learn more about the different types of sections. 
 
+---
 <a name="file_offsets_to_virtual_addresses"></a>
 ### File Offsets => Virtual Addresses (and back)
+---
 
 The Mach-O segment/section load command info provide a translation into the virtual address of stuff loaded into memory and to the file offsets on disk for an image.
 
@@ -345,8 +349,10 @@ symbol_offset_address = (virtual_symbol_address - containing_macho_section_virtu
 
 This trick is used extensively in [dsdump](https://github.com/DerekSelander/dsdump) to find information in a file. For example, a pointer will reference another area in memory via a virtual address. Using the above method, if you know the virtual address, you can obtain the file offset of what it is pointing to on disk. All pointers in memory will reference virtual addresses, not file offsets.
 
+---
 <a name="pie"></a>
 #### PIE
+---
 
 Ohhhh but it gets a bit more confusing than that. In addition to the vritual load address, the OS can shift a loaded image's virtual addresses to a different starting base address to help mitigate attacks. This is called **Address Space Layout Randomization** or simply **ASLR**.  
 
@@ -429,8 +435,10 @@ You'll see a `#define  MH_PIE 0x200000`, which tells the loading framework (**dy
 
 *Even though a program's base address might change around when it's loaded into memory, the virtual addresses that are referenced in the image will never change on disk*.
 
+---
 <a name="the_symbol_table"></a>
 ## Symbol Table
+---
 
 The symbol table plays an immensily important role of declaring what symbols it implements as well as what symbols it relies upon for that image to correctly function. All code and any variables that survive out of the scope of code is a candidate to be put into the symbol table for what an image implements. 
 
@@ -493,8 +501,10 @@ lolgrep:/tmp$ nm ex3
 
 You'll see undefined external symbols preceeded by a uppercase 'U'. It's `dyld`'s job to find the corresponding symbol in the appropriate library based upon the symbol table information. For the local symbols, you'll see a 'T' for (`__TEXT`) for `someFunction` and `main` and `D` (`__DATA`) for `someData`. We'll talk about how this type of T/D information is determined a couple paragraphs down...
 
+---
 <a name="symbol_table_implementation"></a>
 ### Symbol Table Implementation
+---
 
 You got the high up, now it's jump into the weeds to see the symbol table data structures in action. 
 
@@ -578,8 +588,10 @@ lolgrep:/tmp$ xxd -s $(( 0x00000076 + 12652 )) ex3 | head -2
 000031f2: 0000                                     ..
 ```
 
+---
 <a name="nlist_64_overview"></a>
-### `nlist_64` Overview
+### nlist_64 Overview
+---
 
 The symbol table's `nlist_64` array really can give off an impressive amount of information about an image. There is a lot of info in `<mach-o/nlist.h>`, but some highlights will be reviewed below. 
 
@@ -655,8 +667,10 @@ lolgrep:/tmp$ nm -m ex3  | grep undefined
 
 As homework, navigate to Foundation and confirm a symbol named `NSLog` exists there that is public for use.
 
+---
 <a name="symbol_table_stripping"></a>
 ### Symbol Table Stripping
+---
 
 Compile and execute `ex4.c`
 
@@ -739,14 +753,127 @@ Then run the `strip` command and check out the differences. What is difference c
 
 Public symbols in shared libraries won't be stripped out because there could be consumers in other images that rely on those symbols, so they need to keep their names intact.
 
-
-## Objective-C Class Layout
+---
+## Objective-C
+---
 
 Objective-C still plays quite a relevant role——even in Swift. A pure Swift class (i.e. `class ASwiftClass {}`) will inherit from an Objective-C class called **SwiftClass** on all Apple platforms. I'd expect this to change in the future, but not for at least a couple years.
 
 In addition, Swift methods *can* be stripped out of the symbol table, but Objective-C methods can still be resolved via other methods (as you'll see shortly). If a Swift class overrides an Objective-C method (i.e. `viewDidLoad`), there'll be a compiler generated Objective-C bridging method (called a [thunk](https://en.wikipedia.org/wiki/Thunk)) which retains and rearranges assembly registers to the Swift calling convention. The thunk method is visible on the Objective-C side, while the actual Swift method can be stripped out. You'll see at the end of this writeup that you can infer the stripped Swift method by using this knowledge and the Swift reflection type knowledge introduced later.
 
-### 
+---
+### Objective-C Class List
+---
+
+Using the Mach-O knowledge you've built up earlier, it's quite easy to hunt for Objective-C classes that are built into an image. All you have to do is look for the **`__DATA_CONST.__objc_classlist`** Mach-O section in an executable.
+
+Build up a simple executable with Objective-C code:
+
+```objc
+@import Foundation;
+
+@interface AClass : NSObject
+@end
+
+@interface AnotherClass : AClass
+@end
+
+int main() { return 0; }
+```
+
+Compile with the debugging information flag (`-g`)
+
+```bash
+clang ex6.m -fmodules -o ex6 -g
+```
+
+Debug the program with **lldb**,  set a breakpoint on the `main` function, then run the program:
+
+```bash
+lldb -s <(echo -e "b main\nrun") ex6
+```
+
+---
+**Note:** By default, LLDB disables PIE when executing programs. That means virtual addresses referenced in Mach-O load commands for an `MH_EXECUTE` image will likely be the same realized virtual memory address at runtime (provided you didn't override LLDB's settings). 
+
+---
+Use this knowledge to run `otool` inside of the LLDB program to query the runtime location of the `__objc_classlist` Mach-O section:
+
+
+```bash
+(lldb) platform shell otool -l ex6 | grep classlist -A3
+  sectname __objc_classlist
+   segname __DATA_CONST
+      addr 0x0000000100001000
+      size 0x0000000000000010
+```
+
+For my instance, the `__objc_classlist` starts at `0x0000000100001000` as is the size of 0x10 bytes (the size of 2 pointers). Confirm that this address (`0x0000000100001000`) is Mach-O section loaded at runtime:
+
+```bash
+(lldb) image lookup -va 0x0000000100001000
+      Address: ex6[0x0000000100001000] (ex6.__DATA_CONST.__objc_classlist + 0)
+      Summary: (void *)0x0000000100002148: AClass
+       Module: file = "/tmp/ex6", arch = "x86_64"
+```
+
+This `__objc_classlist` section is an array of pointers to Objective-C classes implemented by that image! Confirm this by dereferencing the address at `0x0000000100001000` and `0x0000000100001008`:
+
+```bash
+(lldb) x/2gx 0x0000000100001000
+0x100001000: 0x0000000100002148 0x0000000100002198
+```
+It's the `0x0000000100002148` and the `0x0000000100002198` that represents Objective-C classes. Print both of these classes out.
+
+```bash
+(lldb) exp -l objc -- (Class)0x0000000100002148
+(Class) $2 = AClass
+(lldb) exp -l objc -- (Class)0x0000000100002198
+(Class) $3 = AnotherClass
+```
+
+---
+
+**Note:** As of around clang version `clang-1100.0.33.8` (in Xcode 11), the default configuration for compiling the Objective-C `__objc_class_list` Mach-O section was moved from the `__DATA` Mach-O segment to the `__DATA_CONST` Mach-O segment. This change is discussed in the DYLD opcodes part of the writeup, but just be aware that if you have an older version of clang, you'll see `__objc_class_list` in the `__DATA` Mach-O segment.
+
+---
+
+
+---
+### Objc4
+---
+
+The most recent opensource Objective-C class layout can be found in a header named **[objc-runtime.new.h](https://opensource.apple.com/source/objc4/objc4-756.2/runtime/objc-runtime-new.h.auto.html)**
+
+This C struct is called **`objc_class`** 
+
+All instances of an Objective-C class will have a pointer to this `objc_class` struct at offset 0. Below is a *simplified* layout of the `objc_class` struct.
+
+
+```objc
+struct objc_class {
+    struct objc_class* isa;        // size 8 bytes, offset +0x0
+    struct objc_class* superclass; // size 8 bytes, offset +0x8
+    struct bucket_t *_buckets;     // size 8 bytes, offset +0x10
+    mask_t _mask;                  // size 4 bytes, offset +0x14
+    mask_t _occupied;              // size 4 bytes, offset +0x18
+    uintptr_t bits;                // size 8 bytes, offset +0x20
+```
+
+* The `isa` references the `objc_class`. On an Objective-C class instance, say `NSFileManager`, the instance at offset 0 will be the reference to `objc_class`.  The `objc_class`
+* The same thing happens except it will do it for the parent class
+... Skipping `_buckets`, `_mask`, and `_occupied` because they're not applicable to this writeup...
+* The `bits` value is the "guts" to the Objective-C class and are a bit complicated in design. The `bits` value contains a pointer to a struct of type **class_ro_t** (discussed below). However, once the Objective-C class is "initialized" and loaded into memory through first invocation, this `bits` value will change to point to a struct of type **`class_rw_t`** (not discussed below, Google on your own time). To make it even more WTF, this `bits` pointer will pack additional bits in non-pointer aligned values. That is, on 64-bit systems, a pointer will always reside on an address ending with either a 0x0 or a 0x8. That means the first 3 bits can be used to store misc information (like if an Objective-C class is written in Swift!) 
+
+If you want to resolve the pointer from the `bits` value, you'd have to bitwise AND it with **0x00007ffffffffff8UL**. This is defined as the **`FAST_DATA_MASK`** in the objc-runtime-new.h header.
+
+---
+### The `class_ro_t` struct
+---
+
+
+
+### Source Version
 
 
 
