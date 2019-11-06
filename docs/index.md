@@ -11,14 +11,15 @@ This article *attempts* to explain the complete process of programmatically insp
 * [Mach-O File Format](#apples_mach-o_file_format)
     * [Load Commands](#load_commands)
     * [File Offsets => Virtual Addresses and back](#file_offsets_to_virtual_addresses)
-        * [PIE](#pie)
+    * [PIE](#pie)
 * [The Symbol Table](#the_symbol_table)
     * [`nlist_64` Overview](#nlist_64_overview)
     * [Symbol Table Implementation](#symbol_table_implementation)    
     * [Symbol Table Stripping](#symbol_table_stripping)
-* [DYLD Opcodes and Binding](#dyld_opcodes_and_binding)
 * Objective-C Class Layout
+    * [How to Disappoint Swift Developers](#how_to_disappoint_swift_developers)
 * Swift Types Layout
+* [DYLD Opcodes and Binding](#dyld_opcodes_and_binding)
 * ARM64e disk pointers
 
 ---
@@ -32,7 +33,7 @@ And now, here we go:
 
 ---
 <a name="apples_mach-o_file_format"></a>
-## Apple's Mach-O File Format
+## Mach-O File Format
 ---
 
 The Mach-O file format is the "table of contents" and layout of every Mach-O (read Apple) **image**. An image is any compiled, executable code including (but not limited to) executables, frameworks, dylibs, etc.
@@ -114,7 +115,7 @@ Keep an eye on that `ncmds` with the value 20; this is what's going to be discus
 
 ---
 <a name="load_commands"></a>
-### Load Commands
+## Mach-O File Format.Load Commands
 --- 
 
 It's these load commands (whose count is given by the `ncmds` from the `mach_header_64`) that can be interesting when exploring a compiled executable.
@@ -267,7 +268,7 @@ There are many, many interesting Mach-O sections. One could write a novel on jus
 
 ---
 <a name="file_offsets_to_virtual_addresses"></a>
-### File Offsets => Virtual Addresses (and back)
+## Mach-O File Format.File Offsets => Virtual Addresses (and back)
 ---
 
 The Mach-O segment/section load command info provide a translation into the virtual address of stuff loaded into memory and to the file offsets on disk for an image.
@@ -355,7 +356,7 @@ This trick is used extensively in [dsdump](https://github.com/DerekSelander/dsdu
 
 ---
 <a name="pie"></a>
-#### PIE
+## Mach-O File Format.PIE
 ---
 
 Ohhhh but it gets a bit more confusing than that. In addition to the vritual load address, the OS can shift a loaded image's virtual addresses on runtime to a different starting base address to help mitigate attacks. This is called **Address Space Layout Randomization** or simply **ASLR**.  
@@ -681,8 +682,7 @@ Compile the following `ex4.c` code:
 ```c
 #include <stdio.h>
 
-void someFunction() {  printf("yay\n"); }
-
+void someFunction() { printf("yay\n"); }
 int main() {
   someFunction();
   return 0;
@@ -770,7 +770,7 @@ Objective-C still plays quite a relevant role——even in Swift. A pure Swift c
 In addition, Swift methods *can* be stripped out of the symbol table, but Objective-C methods can still be resolved via other methods (as you'll see shortly). If a Swift class overrides an Objective-C method (i.e. `viewDidLoad`), there'll be a compiler generated Objective-C bridging method (called a [thunk](https://en.wikipedia.org/wiki/Thunk)) which retains and rearranges assembly registers to the Swift calling convention. The thunk method is visible on the Objective-C side, while the actual Swift method can be stripped out. You'll see at the end of this writeup that you can infer the stripped Swift method by using this knowledge and the Swift reflection type knowledge introduced later.
 
 ---
-### Objective-C Class List
+## Objective-C.Class List
 ---
 
 Using the Mach-O knowledge you've built up earlier, it's quite easy to hunt for Objective-C classes that are built into an image. All you have to do is look for the **`__DATA_CONST.__objc_classlist`** Mach-O section in an executable.
@@ -844,7 +844,7 @@ It's the dereferenced values, `0x0000000100002148` and the `0x0000000100002198` 
 > **Note:** As of around clang version `clang-1100.0.33.8` (in Xcode 11), the default configuration for compiling the Objective-C `__objc_class_list` Mach-O section was moved from the `__DATA` Mach-O segment to the `__DATA_CONST` Mach-O segment. This change is discussed in the DYLD opcodes part of the writeup, but just be aware that if you have an older version of clang, you'll see `__objc_class_list` in the `__DATA` Mach-O segment.
 
 ---
-### Objc4
+## Objective-C.Objc4
 ---
 
 The most recent opensource Objective-C class layout (at the time of writing this) can be found in a header named **[objc-runtime.new.h](https://opensource.apple.com/source/objc4/objc4-756.2/runtime/objc-runtime-new.h.auto.html)**
@@ -877,7 +877,7 @@ struct objc_class {
 If you want to resolve the pointer from the `bits` value, you'd have to bitwise AND it with **0x00007ffffffffff8UL**. This is defined as the **`FAST_DATA_MASK`** in the objc-runtime-new.h header.
 
 ---
-### How to Disappoint Swift Developers
+## Objective-C.How to Disappoint Swift Developers
 ---
 
 Earlier, I said all pure Swift classes on Apple platforms are really just Objective-C classes underneath, so let's prove that.
@@ -971,7 +971,7 @@ Oh no! There's no 2 in that 0x00007fff811c6c50 value! All your Swift classes on 
 I anticipate this will change in a couple years, but for now, it's always fun to bring Swift developers down to my level 😈
 
 ---
-### The `class_ro_t` struct
+## Objective-C.The `class_ro_t` struct
 ---
 
 
