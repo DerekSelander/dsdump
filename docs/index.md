@@ -307,7 +307,7 @@ lolgrep:/tmp$ nm -m ex | grep GlobalInt
 
 You'll (hopefully) see the global integer symbols in the output.
 
-The `-m` option of the `nm` command displays the Mach-O section when printing *locally* implemented symbols in the symbol table. For *externally* symbols, the `-m` option will display the library the symbol is located from. This will be discussed in much more detail below.
+The `-m` option of the `nm` command displays the Mach-O section when printing *locally* implemented symbols in the symbol table. For *external* symbols, the `-m` option will display the library the symbol is located from. This will be discussed in much more detail below.
 
 From the output, these global integers are located in the Mach-O `__DATA` segment inside the `__data` section, starting at virtual address `0x000000100001000` (`_SomeGlobalInt`) and `0x00000100001004` (`_SecondGlobalInt`).
 
@@ -333,14 +333,15 @@ The size of the `__data` section is 8 bytes (due to the 2 4 byte integers, and n
 You can verify this with `xxd` again by dumping the raw bytes...
 
 ```bash
-lolgrep:/tmp$ xxd -g 4 -e -s 4096 ex  | head -1
-00001000: 00000008 00000007 00000000 00000000  ................
+lolgrep:/tmp$ xxd -g 4 -e -s 4096 -c 8 ex  | head -1
+00001000: 00000008 00000007                    ........
 ```
 
 Breaking the options down:
 * `-g 4`   : group into 4 bytes
 * `-e`     : little endian mode
 * `-s 4096`: Start at offset 4096
+* `-c 8`   : Stop after displaying 8 bytes (each int was 4 bytes)
 
 Here you can see at offset 4096 (or 0x1000 in hex) the value of 8 followed by the value of 7, which matches the assigned values for `SomeGlobalInt` and `SecondGlobalInt` in the source code.
 
@@ -350,7 +351,7 @@ This means one can translate virtual load addresses to file offsets (and back) w
 symbol_offset_address = (virtual_symbol_address - containing_macho_section_virtual_address) + contain_macho_section_file_offset
 ```
 
-This trick is used extensively in [dsdump](https://github.com/DerekSelander/dsdump) to find information in a file. For example, a pointer will reference another area in memory via a virtual address. Using the above method, if you know the virtual address, you can obtain the file offset of what it's pointing to on disk.
+This trick is used extensively in [dsdump](https://github.com/DerekSelander/dsdump) to find information in a file. For example, a pointer will reference another area in memory through a virtual address. Using the above method, if you know the virtual address, you can obtain the file offset of what it's pointing to on disk.
 
 *All compiled code pointers will reference virtual addresses, not file offsets on disk.*
 
@@ -363,7 +364,7 @@ Ohhhh but it gets a bit more confusing than that. In addition to the vritual loa
 
 Since an image can have a different address everytime it loads, this means that referencing to virtual addresses needs to be able to reference addresses not based on an absolute virtual address value, but via a relative load address from the current memory address. This is known as a Position Indenpendent Executable or **PIE**.  
 
-By default every `MH_EXECUTE` you compile is position independent. You can confirm this with the following exerpiment:
+By default, every `MH_EXECUTE` you compile is position independent. You can confirm this with the following exerpiment:
 
 Given the following C file, **ex2.c**:
 
@@ -504,11 +505,11 @@ lolgrep:/tmp$ nm ex3
                  U dyld_stub_binder
 ```
 
-You'll see undefined external symbols preceeded by a uppercase 'U'. It's `dyld`'s job to find the corresponding symbol in the appropriate library based upon the symbol table information. For the local symbols, you'll see a 'T' for (`__TEXT`) for `someFunction` and `main` and `D` (`__DATA`) for `someData`. We'll talk about how this type of T/D information is determined a couple paragraphs down...
+You'll see undefined external symbols preceeded by a uppercase 'U'. It's `dyld`'s job to find the corresponding symbol in the appropriate library based upon the symbol table information. For the local symbols, you'll see a 'T' for (`__TEXT`) for `someFunction` and `main` and `D` (`__DATA`) for `someData`. We'll talk about how this information is determined a couple paragraphs down...
 
 ---
 <a name="symbol_table_implementation"></a>
-### Symbol Table Implementation
+## Symbol Table Implementation
 ---
 
 You got the high up, now it's jump into the weeds to see the symbol table data structures in action. 
@@ -595,7 +596,7 @@ lolgrep:/tmp$ xxd -s $(( 0x00000076 + 12652 )) ex3 | head -1
 
 ---
 <a name="nlist_64_overview"></a>
-### nlist_64 Overview
+## nlist_64 Overview
 ---
 
 The symbol table's `nlist_64` array really can give off an impressive amount of information about an image. There is a lot of info in `<mach-o/nlist.h>`, but some highlights will be reviewed below. 
@@ -670,14 +671,14 @@ lolgrep:/tmp$ nm -m ex3  | grep undefined
                  (undefined) external dyld_stub_binder (from libSystem)
 ```
 
-As homework, navigate to location of the `Foundation` framework and confirm a symbol named `NSLog` exists there that is public for use.
+As homework, navigate to the location of the `Foundation` framework (given by the `otool -L ex3` command earlier) and confirm a symbol named `NSLog` exists there that is public for use.
 
 ---
 <a name="symbol_table_stripping"></a>
-### Symbol Table Stripping
+## Symbol Table Stripping
 ---
 
-Compile the following `ex4.c` code:
+Create the **`ex4.c`** file with the following code:
 
 ```c
 #include <stdio.h>
@@ -689,7 +690,7 @@ int main() {
 }
 ```
 
-Compile:
+Compile the ex4.c file:
 
 ```bash
 lolgrep:/tmp$ clang ex4.c -o ex4
@@ -713,7 +714,7 @@ Now, **`strip`** the ex4 image
 lolgrep:/tmp$ strip ex4
 ```
 
-Stripping the symbol table will remove unneeded symbols. Dump the symbol table:
+Stripping the symbol table will remove uneeded symbols. Dump the symbol table:
 
 ```bash
 lolgrep:/tmp$  nm ex4
@@ -731,7 +732,7 @@ yay
 
 In a `MH_EXECUTE` type image, any C/Objective-C/Swift functions don't need to be externally available so that information can be removed from the symbol table. Why is that? A `MH_EXECUTE` type of file should be ran by itself, it shouldn't be loaded into another address space!
 
-> **Note:** Just because there's no symbol in the symbol table for some code doesn't mean that you can't infer that a function is there. The **`LC_FUNCTION_STARTS`** load command will export a list of all the function/method locations (*only code, NOT data*) that are implemented by an image. **[It contained in format called ULEB](https://en.wikipedia.org/wiki/ULEB)**. This is useful for debuggers and crash analytics.
+> **Note:** Just because there's no symbol in the symbol table for some code doesn't mean that you can't infer that a function is there. The **`LC_FUNCTION_STARTS`** load command will export a list of all the function/method locations (*only code, NOT data*) that are implemented by an image. This information is formatted in **[ULEB](https://en.wikipedia.org/wiki/ULEB)**. This is useful for debuggers and crash analytics.
 
 What if the above code was compiled as a shared library? What would happen to the symbol table? Compile ex4.c, but now add the `-shared` option:
 
@@ -739,7 +740,7 @@ What if the above code was compiled as a shared library? What would happen to th
 lolgrep:/tmp$ clang -shared ex4.c -o ex4.shared
 ```
 
-Ensure the ex4.shared file is the correct `MH_DYLIB` `filetype` (from `mach_header_64`, remember?) after compiling:
+Ensure the ex4.shared file is the correct `MH_DYLIB` `filetype` (from `mach_header_64`, remember? 😛) after compiling:
 
 ```bash
 lolgrep:/tmp$ file ex4.shared
@@ -757,7 +758,7 @@ lolgrep:/tmp$ nm ex4.shared
                  U dyld_stub_binder
 ```
 
-Then run the `strip` command and check out the differences. What is difference compared to the `MH_EXECUTE` image and why do you think that is? 
+Then run the `strip` command and check out the differences. What is the difference compared to the `MH_EXECUTE` image and why do you think that is? 
 
 Public symbols in shared libraries won't be stripped out because there could be consumers in other images that rely on those symbols, so they need to keep their names intact.
 
@@ -765,9 +766,9 @@ Public symbols in shared libraries won't be stripped out because there could be 
 ## Objective-C
 ---
 
-Objective-C still plays quite a relevant role——even in Swift. A pure Swift class (i.e. `class ASwiftClass {}`) will inherit from an Objective-C class called **SwiftClass** on all Apple platforms (you'll verify this is the case in a second).
+Objective-C still plays quite a relevant role—even in Swift. A pure Swift class (i.e. `class ASwiftClass {}`) will inherit from an Objective-C class called **SwiftClass** on all Apple platforms (you'll verify this in a second).
 
-In addition, Swift methods *can* be stripped out of the symbol table, but Objective-C methods can still be resolved via other methods (as you'll see shortly). If a Swift class overrides an Objective-C method (i.e. `viewDidLoad`), there'll be a compiler generated Objective-C bridging method (called a [thunk](https://en.wikipedia.org/wiki/Thunk)) which retains and rearranges assembly registers to the Swift calling convention. The thunk method is visible on the Objective-C side, while the actual Swift method can be stripped out. You'll see at the end of this writeup that you can infer the stripped Swift method by using this knowledge and the Swift reflection type knowledge introduced later.
+In addition, Swift methods *can* be stripped out of the symbol table, but Objective-C methods can still be resolved via other ways (as you'll see shortly). If a Swift class overrides an Objective-C method (i.e. `viewDidLoad`), there'll be a compiler generated Objective-C bridging method (called a [thunk](https://en.wikipedia.org/wiki/Thunk)) which retains and rearranges assembly registers to the Swift calling convention. The thunk method is visible on the Objective-C side, while the actual Swift method can be stripped out. You'll see at the end of this writeup that you can infer the stripped Swift method by using this knowledge and the Swift reflection type knowledge introduced later.
 
 ---
 ## Class List
@@ -792,13 +793,13 @@ int main() { return 0; }
 Compile ex5.m with the debugging information flag (`-g`):
 
 ```bash
-clang ex5.m -fmodules -o ex5 -g
+lolgrep:/tmp$ clang ex5.m -fmodules -o ex5 -g
 ```
 
 Debug the program with **lldb**,  set a breakpoint on the `main` function, then run the program:
 
 ```bash
-lldb -s <(echo -e "b main\nrun") ex5
+lolgrep:/tmp$ lldb -s <(echo -e "b main\nrun") ex5
 ```
 
 > **Note:** By default, LLDB disables PIE when executing programs. That means virtual addresses referenced in Mach-O load commands for an `MH_EXECUTE` image will likely be the same realized virtual memory address at runtime (provided you didn't override LLDB's settings). 
@@ -940,9 +941,9 @@ On my machine, the pointer for `APureSwiftClass` (AKA a `objc_class*`, AKA a `Cl
 0x100002158: 0x00000001000020b2 (bits!)
 ```
 
-I've annotated the above output. Looking at the `bits` of the `objc_class` do you see how there is a 2 in the least significant bit? 
+I've annotated the above output. Looking at the `bits` of the `objc_class` do you see how there is a 2 in the least significant hexadecimal value? 
 
-If you were to consult the [runtime header](https://opensource.apple.com/source/objc4/objc4-756.2/runtime/objc-runtime-new.h.auto.html), you'll see **`FAST_IS_SWIFT_STABLE`** that has the following declaration:
+If you were to consult the [objc-runtime-new.h file](https://opensource.apple.com/source/objc4/objc4-756.2/runtime/objc-runtime-new.h.auto.html), you'll see **`FAST_IS_SWIFT_STABLE`** has the following declaration:
 
 ```c
 #define FAST_IS_SWIFT_STABLE    (1UL<<1)
@@ -966,36 +967,13 @@ This class is called **`_SwiftObject`**. And what is it?
 0x7fff91b6d498: 0x00007fff811c6c50
 ```
 
-Oh no! There's no 2 in that 0x00007fff811c6c50 value! All your Swift classes on Apple platforms really just inherit from an Objective-C class underneath. Womp womp.
+Oh no! There's no 2 in that `0x00007fff811c6c50` value! All your Swift classes on Apple platforms really just inherit from an Objective-C class underneath. Womp womp.
 
 I anticipate this will change in a couple years, but for now, it's always fun to bring Swift developers down to my level 😈
 
 ---
-## The `class_ro_t` struct
----
+## The bits value revisited (class_ro_t vs class_rw_t)
 
-The `class_ro_t` struct is the "key" value to exploring an Objective-C class. It's the gateway to the class's name, it's methods, it's properties, it's instance variables, etc. 
-
-Here's the *simplified* `class_ro_t` layout:
-
-```c
-struct class_ro_t {
-    uint32_t flags;
-    uint32_t instanceStart;
-    uint32_t instanceSize;
-    uint32_t reserved;
-
-    const uint8_t * ivarLayout;
-    const char * name;
-    method_list_t * baseMethodList;  // An array for method_t
-    protocol_list_t * baseProtocols; // An array for protocol_t
-    const ivar_list_t * ivars;       // An array for ivar_t
-    const uint8_t * weakIvarLayout;
-    property_list_t *baseProperties; // An array for property_t
-}
-```
-
-Using this knowledge, find the `const char* name` of this Swift class. Continue using LLDB. Earlier, you obtained the `objc_class*` of the `APureSwiftClass` via the `__objc_classlist` Mach-O section. This time, use Apple's **`NSClassFromString`** API to get the same address.
 
 While LLDB is still paused (if not run it again and break on `main`), in the `main` function of ex6, execute the following Swift code:
 
@@ -1008,7 +986,7 @@ While LLDB is still paused (if not run it again and break on `main`), in the `ma
 Note how that `0x0000000100002138` (or equivalent on your computer) address matches with the dereferenced value obtained from `__objc_classlist` Mach-O section you found earlier.
 
 
-Now remember, whenever you reference a class, you are initializing it, and changing the `bits` value from a `class_ro_t*` to a `class_rw_t*`.
+> **Note:** remember, whenever you reference a class, you're initializing it, and changing the `bits` value from a `class_ro_t*` to a `class_rw_t*`. Executing the `NSClassFromString`, `po`'ing a class in LLDB, or executing a `e APureSwiftClass.self` in LLDB will initialize the class. As of right noww, the `APureSwiftClass` should be initialized.
 
 Rerun the program with the `run` command.
 
@@ -1044,11 +1022,11 @@ Rerun the earlier command and inspect the `objc_class` struct's `bits` value:
 0x100002158: 0x0000000100501682 <- bits, AKA (class_rw_t* | FAST_IS_SWIFT_STABLE)
 ```
 
-The `bits` param has now changed to the `class_rw_t` pointer + the FAST_IS_SWIFT_STABLE
+The `bits` param has now changed to the `class_rw_t* | FAST_IS_SWIFT_STABLE`
 
-> *If you a building out an Objective-C runtime introspection tool, and you're testing the tool on itself, make sure you know the correct struct that is in the `bits` value*. I burned *a lot* of hours working with the wrong struct if I accidentially initialized an Objective-C class by `po`'ing it in LLDB
+> *If you're a building out an Objective-C runtime introspection tool, and you're testing the tool on itself, make sure you know the correct struct that resides in the `bits` value*. I burned *a lot* of hours working with the wrong struct by accidentially initializing Objective-C classes by `po`'ing them in LLDB 🤦‍♂️
 
-Fortunately, for both the `class_ro_t` struct and the `class_rw_t` struct, they both have `int32_t` flags value right at the beginning, which among other things, tells if this class is initialized. The value is (1 << 31, AKA 0x80000000) to see if the class is initialized.
+Fortunately, the `class_ro_t` and the `class_rw_t` struct  both have `int32_t` flags value right at the beginning, which among other things, tells if this class is initialized. The value is (1 << 31, AKA 0x80000000) to see if the class is initialized.
 
 In the above example if I didn't know if a class was initialized, I'd start with the `bits` value, 0x0000000100501682. I'd remove the Swift bit packed flags, turning the value into **0x0000000100501680**. Then, I'd dereference this value with a size of 32bits in LLDB
 
@@ -1057,8 +1035,34 @@ In the above example if I didn't know if a class was initialized, I'd start with
 0x100501680: 0x80080000
 ```
 
-From that 0x8 in the most significant bit, I can see that this class has already been initialized meaning I am working with an `class_rw_t` struct.
+From that 0x8 in the most significant bit, I can see that this class has already been initialized, meaning I am working with an `class_rw_t` struct.
 
+---
+## The `class_ro_t` struct
+---
+
+The `class_ro_t` struct is the "key" value to exploring an Objective-C class. It's the gateway to the class's name, it's methods, it's properties, it's instance variables, etc. 
+
+Here's a *simplified* `class_ro_t` layout:
+
+```c
+struct class_ro_t {
+    uint32_t flags;
+    uint32_t instanceStart;
+    uint32_t instanceSize;
+    uint32_t reserved;
+
+    const uint8_t * ivarLayout;
+    const char * name;
+    method_list_t * baseMethodList;  // An array for method_t
+    protocol_list_t * baseProtocols; // An array for protocol_t
+    const ivar_list_t * ivars;       // An array for ivar_t
+    const uint8_t * weakIvarLayout;
+    property_list_t *baseProperties; // An array for property_t
+}
+```
+
+Using this knowledge, find the `const char* name` of this Swift class. Continue using LLDB. Earlier, you obtained the `objc_class*` of the `APureSwiftClass` via the `__objc_classlist` Mach-O section. This time, use Apple's **`NSClassFromString`** API to get the same address.
 
 ### Source Version
 
