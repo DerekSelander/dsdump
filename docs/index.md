@@ -23,13 +23,13 @@ This article *attempts* to explain the complete process of programmatically insp
 * ARM64e disk pointers
 
 ---
-**Note:** You *should* be comfortable-ish with C and `man`'ing Terminal documentation before reading this article. No worries if not though. This writeup takes its sweet time explaining things, but there are a lot of concepts to go through. If you're brand new to this stuff, I'd recommend going through the sections *in chunks over several days* and **do the experiments**. This is a loooooooong writeup but if you can get through this whole thing, you'll have a very good understanding of how a lot of internals work and you can go build your own introspection tool. Yay...
+**Note:** You *should* be comfortable-ish with C and [`man`](http://man7.org/linux/man-pages/man1/man.1.html)'ing Terminal commands before reading this article. No worries if not though. This writeup takes its sweet time explaining things, but there's a lot of concepts to go through. If you're brand new to this stuff, I'd recommend going through the sections *in chunks over several days* and **do the experiments**. This is a loooooooong writeup, but if you can get through this whole thing, you'll have a very good understanding of how a lot of internals work. Yay...
 
 If you know most of this stuff, I'd recommend just jumping to the appropriate section that you need to learn.
 
-All you script/plugin writers for Ghidra, Frida, Hopper, IDA, jtool, whatever people should *carefully* read the Swift parts because I have recommendations for y'all to take your tools to the next level when resymbolicating stripped Swift symbols. 
+All you script/plugin writers for Ghidra, Frida, Hopper, IDA, jtool, & friends should *carefully* read the Swift parts because I have recommendations for y'all to take your tools to the next level when resymbolicating stripped Swift symbols. 
 
-And now, here we go:
+<img style="text-align:center;" src="https://media.giphy.com/media/8YmZ14DOpivXMuckSI/giphy.gif" alt="And here we go">
 
 ---
 <a name="apples_mach-o_file_format"></a>
@@ -46,7 +46,7 @@ There are many great sources out there that already cover this topic well.
 
 And if you want to pay money for some Mach-O tutorials...
 
-* [Advanced Apple Debugging and Reverse Engineering, Chp 18, 19](https://store.raywenderlich.com/products/advanced-apple-debugging-and-reverse-engineering) (fair warning, that link benefits me)
+* [Advanced Apple Debugging and Reverse Engineering, Chp 18, 19](https://store.raywenderlich.com/products/advanced-apple-debugging-and-reverse-engineering) (written by yours truly)
 * [MacOS and iOS Internals, Volume I: User Mode, Chp 5](http://www.newosxbook.com/index.php)
 
 
@@ -72,7 +72,7 @@ struct mach_header_64 {
 };
 ```
 
-Cross reference this with any compiled executable. I'll pick **grep**, feel free to pick anything else:
+Cross reference this with any *compiled* executable. I'll pick **grep**, feel free to pick anything else:
 
 ```bash
 lolgrep:~$ xxd -g 4 -e $(which grep) | head -2
@@ -95,9 +95,9 @@ Going through the `mach_header_64` struct members:
 * The `0x00000002` value is given by the `MH_EXECUTE`, meaning it's an executable (and not a library or something else).
 * Following the `filetype` in the struct is the `ncmds`, with 20 **load commands** (0x00000014 == 20)
 
-I'll let you figure the remaining struct members out yourself 👍
+If you're new to this stuff, check out the `<mach/machine.h>` header to make sure I'm telling the truth. I'll let you figure the remaining struct members out yourself 👍
 
-You can view this in an alternative way by running `otool -h` to view the Mach-O header:
+You can view the `mach_header_64` in an alternative way by running `otool -h` to view the Mach-O header:
 
 ```bash
 lolgrep:~$ otool -h $(which grep)
@@ -122,7 +122,7 @@ It's these load commands (whose count is given by the `ncmds` from the `mach_hea
 
 Each load command begins with a **`LC_`** and whose description/usage is given in `<mach-o/loader.h>`
 
-Use `otool`'s `-l` option to with `grep` to display all the load commands in `grep`:
+Use `otool`'s `-l` option with `grep` to display all the load commands in `grep`:
 
 
 ```bash
@@ -166,7 +166,9 @@ lolgrep:~$ otool -l $(which grep)
 
 `otool -l` produces *a lot* of output, but focus on the initial `LC_SEGMENT_64` load commands closer to the beginning...
 
-When exploring memory and the load commands, different areas of memory are grouped together. These Mach-O groupings are called **segments**. Segments will have different memory permissions. For example, executing the following for `grep`:
+When exploring memory and the load commands, different areas of memory are grouped together. These Mach-O groupings are called **segments**. Segments will have different memory permissions. 
+
+Execute the following for your Terminal command:
 
 
 ```bash 
@@ -203,9 +205,9 @@ Will display the Mach-O segments contained in `grep`, which will look something 
 ...
 ```
 
-There's a Mach-O segment called **`__PAGEZERO`** which when loaded into memory, has no memory permissions (see `maxprot`, and `initprot`). That means you can't read, write, nor execute anything that resides in this memory segment.  Hitting this memory is what happens when you fack up a pointer in C or dereference an implicitly unwrapped optional in Swift... *it's a dead zone in memory that's designed to catch `nil`/`NULL`/`nullptr` dereference bugs in your code by killing the process*.
+There's a Mach-O segment called **`__PAGEZERO`** which when loaded into memory, has no memory permissions (see `maxprot`, and `initprot`). That means you can't read, write, nor execute anything that resides in this memory segment.  Hitting this memory is what happens when you fack up a pointer in C or dereference an implicitly unwrapped optional in Swift... *it's a dead zone in memory that's designed to catch implicitly unwrapped (`!`)/`nil`/`NULL`/`nullptr` dereference bugs in your code by killing the process*.
 
-Below the `__PAGEZERO` segment, there's the `__TEXT` segment. This segment has readable and executable permissions determined from the `initprot` value. How can one translate the value 5 to readable and writable? 
+Below the `__PAGEZERO` segment, there's the `__TEXT` segment. This segment has readable and executable permissions determined from the **`initprot`** value. How can one translate the value 5 to readable and writable? 
 
 Think of this 5 value in bits...
 
@@ -216,9 +218,9 @@ exeuctable writeable readable
 
 The value 5 is `0b101` in binary, meaning everything *except* writable.
 
-The next interesting part is the `nsects` value immediately below the `initprot` field. Inside a Mach-O Segment, there can be 0 or more "subcomponents" called **sections**. These sections group certain parts of functionality in an executable. Inside the `__TEXT` segment, there are 7 sections for `grep`
+The next interesting part is the `nsects` value immediately below the `initprot` field. Inside a Mach-O Segment, there can be 0 or more "subcomponents" called **sections**. These sections group certain parts of functionality in an executable. In the above example, inside the `__TEXT` segment, there are 7 sections for `grep`.
 
-Using `grep` to only show the Mach-O sections in `grep`...
+Use `grep` to only show the Mach-O sections in `grep`...
 
 ```bash
 lolgrep:~$ otool -l $(which grep) | grep __TEXT -B2 -A9
@@ -262,9 +264,11 @@ Section
 ...
 ```
 
-From the above output, the first section inside the `__TEXT` segment is a section (confusingly) called `__text`. It's this section where compiled code (typically, unless someone is doing something sneaky) resides.
+From the above output, the first section inside the `__TEXT` segment is a section (confusingly) called `__text`. It's this section where compiled code resides (unless someone is doing something sneaky).
 
-There are many, many interesting Mach-O sections. One could write a novel on just this topic. Again, check out the Mach-O links above to learn more about the different types of sections. 
+>**Note:** You'll often see both the segment and section grouped together via a period to specify the exact Mach-O location. For example, using the above paragraph, I could also say all compiled code resides in the `__TEXT.__text` section. Most tools out there use this methodology.
+
+There are many, many interesting Mach-O sections. One could write a novel on just this topic. Again, check out the Mach-O links above to learn more about the different types of Mach-O sections. 
 
 ---
 <a name="file_offsets_to_virtual_addresses"></a>
@@ -282,7 +286,7 @@ lolgrep:~$ cd /tmp
 lolgrep:/tmp$
 ```
 
-And create **ex.c** with the following code:
+Create **ex.c** with the following code:
 
 ```c
 int SomeGlobalInt = 8;
@@ -292,12 +296,13 @@ int main() {
 }
 ```
 
-Upon compiling...
+Compile ex.c: 
+
 ```bash
 lolgrep:/tmp$ clang ex.c -o ex
 ```
 
-...then querying the `*GlobalInt` integer symbols using the `nm` tool (which displays symbol table information, more on that later)
+...then query the `*GlobalInt` integer symbols using the `nm` tool (which displays symbol table information, more on that later)
 
 ```bash
 lolgrep:/tmp$ nm -m ex | grep GlobalInt
@@ -328,19 +333,19 @@ lolgrep:/tmp$ otool -l ex | grep __data -A10
  reserved2 0
  ```
 
-The size of the `__data` section is 8 bytes (due to the 2 4 byte integers, and nothing else). The virtual address of the `__data` section is at `0x0000000100001000`. The offset on disk in the executable to the `__data` section is at `4096`. 
+The `size` member indicates the size of the `__data` section (which is 8 bytes due to the 2 4 byte integers). The virtual address of the `__data` section is at `0x0000000100001000`. The offset on disk in the executable to the `__data` section is at `4096`. 
 
-You can verify this with `xxd` again by dumping the raw bytes...
+You can verify this with `xxd` again by dumping the raw bytes at offset **4096** (or equivalent for your compilation)...
 
 ```bash
-lolgrep:/tmp$ xxd -g 4 -e -s 4096 -c 8 ex  | head -1
+lolgrep:/tmp$ xxd -g 4 -e -s 4096 -c 8 ex
 00001000: 00000008 00000007                    ........
 ```
 
 Breaking the options down:
 * `-g 4`   : group into 4 bytes
 * `-e`     : little endian mode
-* `-s 4096`: Start at offset 4096
+* `-s 4096`: Start at offset 4096, given by the `offset` member
 * `-c 8`   : Stop after displaying 8 bytes (each int was 4 bytes)
 
 Here you can see at offset 4096 (or 0x1000 in hex) the value of 8 followed by the value of 7, which matches the assigned values for `SomeGlobalInt` and `SecondGlobalInt` in the source code.
@@ -351,9 +356,16 @@ This means one can translate virtual load addresses to file offsets (and back) w
 symbol_offset_address = (virtual_symbol_address - containing_macho_section_virtual_address) + contain_macho_section_file_offset
 ```
 
-This trick is used extensively in [dsdump](https://github.com/DerekSelander/dsdump) to find information in a file. For example, a pointer will reference another area in memory through a virtual address. Using the above method, if you know the virtual address, you can obtain the file offset of what it's pointing to on disk.
+This trick is used extensively in [dsdump](https://github.com/DerekSelander/dsdump) to find information in a file. For example, a pointer will reference another area in memory through a virtual address. Using the above method, if you know the virtual address, you can obtain the file offset of what the pointer is pointing to on disk.
 
 *All compiled code pointers will reference virtual addresses, not file offsets on disk.*
+
+
+You saw the file offsets for on disk, now you'll check out the virtual addresses when loaded into memory. Let's see what the values are for the virtual addresses. Use Apple's debugger **LLLDB** to inspect the virtual memory addresses `*GlobalInt`'s
+
+```bash
+lldb ex -s <(echo -e "b main\n run\n x/2wx 0x00000100001000")
+```
 
 ---
 <a name="pie"></a>
@@ -610,7 +622,7 @@ raw data:        0000000100002018 0f     0a      0000   0000001c _someData
 </pre>
 
 * The `n_value` will give the virtual address *if the symbol is implemented locally*.
-* The `n_type` contains a whole bunch of information packed into 8 bytes. For this particular case, the value 0x0f can be seen as a bit mask for `N_EXT` (0x01) and `N_SECT` (0x0e) (see header). The `N_EXT` says it's a "public" symbol (so you can `dlopen`/`dlsym` it), the `N_SECT` tells us that the symbol's Mach-O section is described in the `nlist_64`'s `n_sect` field. 
+* The `n_type` contains a whole bunch of information packed into 8 bits. For this particular case, the value 0x0f can be seen as a bit mask for `N_EXT` (0x01) and `N_SECT` (0x0e) (see header). The `N_EXT` says it's a "public" symbol (so you can [`dlopen`](http://man7.org/linux/man-pages/man3/dlopen.3.html)/[`dlsym`](http://man7.org/linux/man-pages/man3/dlsym.3.html) it), the `N_SECT` tells us that the symbol's Mach-O section is described in the `nlist_64`'s `n_sect` field. 
 * As seen earlier, the `n_strx` (last hex column) will provde an index into the array of characters for the symbols name. 
 * The `n_sect` will indicate where the symbol is located in the Mach-O executable starting at index 1 (not 0 like most arrays). Confirm this with the following experiment:
 
@@ -986,7 +998,7 @@ While LLDB is still paused (if not run it again and break on `main`), in the `ma
 Note how that `0x0000000100002138` (or equivalent on your computer) address matches with the dereferenced value obtained from `__objc_classlist` Mach-O section you found earlier.
 
 
-> **Note:** remember, whenever you reference a class, you're initializing it, and changing the `bits` value from a `class_ro_t*` to a `class_rw_t*`. Executing the `NSClassFromString`, `po`'ing a class in LLDB, or executing a `e APureSwiftClass.self` in LLDB will initialize the class. As of right noww, the `APureSwiftClass` should be initialized.
+> **Note:** remember, whenever you reference a class, you're initializing it, and changing the `bits` value from a `class_ro_t*` to a `class_rw_t*`. Executing the `NSClassFromString`, `po`'ing a class in LLDB, or executing a `e APureSwiftClass.self` in LLDB will initialize the class. As of right noww, the `APureSwiftClass` should be initialized, meaning the `class_rw_t*` value will reside in the `bits` field. The `class_ro_t` will point to memory contained in a Mach-O section, the `class_rw_t` will point to a heap allocated reference due to the runtime not knowing how many methods there are in the ObjC class (ObjC categories, associated objects, other runtime fun, etc.) until the class is loaded.
 
 Rerun the program with the `run` command.
 
@@ -994,7 +1006,7 @@ Rerun the program with the `run` command.
 (lldb) run
 ```
 
-The program should have reset itself to the start of the `main` function. Since ASLR is disabled, dump the address for the `APureSwiftClass` (mine was 0x0000000100002138) **without** initializing it.
+The program should have reset itself to the start of the `main` function. Since ASLR is disabled, the virtual addresses will remain unchanged from run to run. Dump the address for the `APureSwiftClass` (mine was 0x0000000100002138) **without** initializing the class (i.e. no `po`'ing).
 
 
 ```bash
@@ -1004,7 +1016,7 @@ The program should have reset itself to the start of the `main` function. Since 
 0x100002158: 0x00000001000020b2 <- bits, AKA (class_ro_t* | FAST_IS_SWIFT_STABLE)
 ```
 
-Keep a record of the `bits` value as it will change in once sec. My value is **`0x00000001000020b2`**
+Keep a record of the `bits` value as it will change in once second. My value is **`0x00000001000020b2`**
 
 Initialize the `APureSwiftClass` via Swift:
 
@@ -1026,22 +1038,22 @@ The `bits` param has now changed to the `class_rw_t* | FAST_IS_SWIFT_STABLE`
 
 > *If you're a building out an Objective-C runtime introspection tool, and you're testing the tool on itself, make sure you know the correct struct that resides in the `bits` value*. I burned *a lot* of hours working with the wrong struct by accidentially initializing Objective-C classes by `po`'ing them in LLDB 🤦‍♂️
 
-Fortunately, the `class_ro_t` and the `class_rw_t` struct  both have `int32_t` flags value right at the beginning, which among other things, tells if this class is initialized. The value is (1 << 31, AKA 0x80000000) to see if the class is initialized.
+Fortunately, the `class_ro_t` and the `class_rw_t` struct both have `int32_t flags` value right at the beginning. The `flags` member can tell you if the class is initialized via the value is (1 << 31, AKA 0x80000000).
 
-In the above example if I didn't know if a class was initialized, I'd start with the `bits` value, 0x0000000100501682. I'd remove the Swift bit packed flags, turning the value into **0x0000000100501680**. Then, I'd dereference this value with a size of 32bits in LLDB
+In the above example, if I didn't know if a class was initialized at runtime, I'd start with the `bits` value (`0x0000000100501682`). I'd remove the Swift bit packed flags, turning the value into **`0x0000000100501680`**. Then, I'd dereference this value with a size of 32 bits in LLDB
 
 ```bash
 (lldb) x/wx 0x0000000100501680
 0x100501680: 0x80080000
 ```
 
-From that 0x8 in the most significant bit, I can see that this class has already been initialized, meaning I am working with an `class_rw_t` struct.
+The 0x8 in the most significant bit means the class has already been initialized, meaning the `bits` value is a `class_rw_t*`.
 
 ---
-## The `class_ro_t` struct
+## The class_ro_t struct
 ---
 
-The `class_ro_t` struct is the "key" value to exploring an Objective-C class. It's the gateway to the class's name, it's methods, it's properties, it's instance variables, etc. 
+The `class_ro_t` struct is the "key" value to exploring an Objective-C class. It's the gateway to the class's name, it's methods, it's properties, it's instance variables, etc. And *unlike* the `class_rw_t` struct, this value in the `__DATA.__objc_const` Mach-O section, meaning one can query this information programatically (just like class-dump).  
 
 Here's a *simplified* `class_ro_t` layout:
 
