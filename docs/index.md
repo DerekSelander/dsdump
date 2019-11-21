@@ -9,8 +9,8 @@ Building out a "class-dump"-like introspection tool for Apple platforms has chan
 This article *attempts* to explain the complete process of programmatically inspecting a [Mach-O](https://en.wikipedia.org/wiki/Mach-O) (Apple) binary to display the compiled Swift types and Objective-C classes by discussing the following:
 
 * [I. Mach-O File Format](#apples_mach-o_file_format)
-    * [1.1 mach-o/loader.h](#loader_h)
-    * [1.2 Load Commands](#load_commands)
+    * [1.1 The Mach-O Header](#mach_o_header)
+    * [1.2 Mach-O Load Commands](#load_commands)
     * [1.3 File Offsets => Virtual Addresses and back](#file_offsets_to_virtual_addresses)
     * [1.4 Virtual Addresses at Runtime](#virtual_address_at_runtime)
     * [1.5 PIE](#pie)
@@ -43,10 +43,10 @@ All you script/plugin writers for Ghidra, Frida, Hopper, IDA, jtool, & friends s
 
 ---
 <a name="apples_mach-o_file_format"></a>
-## 1. Mach-O File Format
+## I. Mach-O File Format
 ---
 
-The Mach-O file format is the "table of contents" and layout of every Mach-O (read Apple) **image**. An image is any compiled, executable code including (but not limited to) executables, frameworks, dylibs, etc. Understanding the Mach-O format is great if you want to know where stuff is located on disk and where it will be when loaded into memory.
+The Mach-O file format is the "table of contents" and layout found right at the beginning of every Mach-O (read Apple) **image**. An image is any compiled, executable code including (but not limited to) executables, frameworks, dylibs, etc. Understanding the Mach-O format is great if you want to know where stuff is located on disk and where it will be when loaded into memory.
 
 There are many great sources out there that already cover this topic well. 
 
@@ -63,8 +63,8 @@ And if you want to pay money for some Mach-O tutorials...
 But this stuff won't stick unless you play around with it and do the experiments. Time to get your hands dirty.
 
 ---
-<a name="loader_h"></a>
-## 1.1 mach-o/loader.h
+<a name="mach_o_header"></a>
+## 1.1 The Mach-O Header
 ---
 
 In the file `<mach-o/loader.h>`, there exists a C struct called **`mach_header_64`** that is the beginning to all 64-bit compiled Apple images (well, sorta, it actually depends on some things like FAT files, 32-bit architecture, but don't think about that now). 
@@ -131,7 +131,7 @@ Keep an eye on that `ncmds` with the value 20; this is what's going to be discus
 
 ---
 <a name="load_commands"></a>
-## 1.2 Load Commands
+## 1.2 Mach-O Load Commands
 --- 
 
 It's these load commands (whose count is given by the `ncmds` from the `mach_header_64`) that can be interesting when exploring a compiled executable.
@@ -332,7 +332,7 @@ The `-m` option of the `nm` command displays the Mach-O section when printing *l
 
 From the output, these global integers are located in the Mach-O `__DATA` segment inside the `__data` section, starting at virtual address `0x000000100001000` (`_SomeGlobalInt`) and `0x00000100001004` (`_SecondGlobalInt`).
 
-One can translate these virtual addresses to the image file offset by consulting the Mach-O section load commands and hunting for the `__data` Mach-O section.
+One can translate these virtual addresses to the image file offset by consulting the Mach-O section load commands and hunting for the `__DATA.__data` Mach-O section.
 
 ```bash
 lolgrep:/tmp$ otool -l ex | grep __data -A10
@@ -381,7 +381,7 @@ This trick is used extensively in [dsdump](https://github.com/DerekSelander/dsdu
 ## 1.4 Virtual Addresses at Runtime
 ---
 
-You saw the file offsets on disk, you'll now check out the virtual addresses of the C `int`s when they're loaded into memory. Use Apple's debugger, **LLLDB**, to inspect the addresses in the **ex** program you compiled earlier. 
+You saw the file offsets on disk, you'll now check out the virtual addresses of the C `int`s when they're loaded into memory. Use Apple's debugger, **LLDB**, to inspect the addresses in the **ex** program you compiled earlier. 
 
 Execute the following:
 
@@ -564,7 +564,7 @@ some val
 2019-10-25 17:27:34.956 ex3[19476:2277376] some different value
 ```
 
-You didn't implement the code for `printf` nor `NSLog`, so look at how that's being referenced in the symbol table:
+You didn't implement the code for `printf` nor `NSLog`. Use `nm` to look at how that's being referenced in the symbol table:
 
 ```bash
 lolgrep:/tmp$ nm ex3
@@ -601,6 +601,7 @@ struct nlist_64 {
     uint64_t n_value;      /* value of this symbol (or stab offset) */
 };
 ```
+The individual fields will be discussed in detail below. 
 
 Find the symbol table offset in the compiled **ex3** image:
 
@@ -655,7 +656,7 @@ lolgrep:/tmp$ nm -xp ex3
 0000000000000000 01 00 0100 00000065 dyld_stub_binder
 ```
 
-The `-x` will display the raw data of the `nlist_64` struct (be aware that the -`x` output flips the first `n_strx` and `n_value` around in output since the `n_value` is considered to be the most important). Next up, the `-p` option will display the symbols in numerical order (instead of symbol table name order). 
+The `-x` will display the raw data of the `nlist_64` struct (be aware that the `-x` output flips the first `n_strx` and `n_value` around in output since the `n_value` is considered to be the most important). Next up, the `-p` option will display the symbols in numerical order (instead of symbol table name order). 
 
 The `nm` command will also grab the name of the symbol which can be derived from the offset of the `n_strx` into the blob of characters given by the `stroff` in the Mach-O `LC_SYMTAB` [obtained earlier, which had the `stroff`  value **12652**](#lc_symtab) and whose size is given by the `strsize` value. 
 
@@ -666,6 +667,8 @@ lolgrep:/tmp$ xxd -s $(( 0x00000076 + 12652 )) ex3 | head -1
 000031e2: 5f5f 6479 6c64 5f70 7269 7661 7465 0000  __dyld_private..
 ```
 
+The bash **`$(( expr ))`** command will perform arithmetic on your behalf, adding 0x00000076 to 12652.
+
 And that's how the `nm` command can programmatically find the names for these symbols!
 
 ---
@@ -673,12 +676,12 @@ And that's how the `nm` command can programmatically find the names for these sy
 ## 2.3 nlist_64 Overview
 ---
 
-The symbol table's `nlist_64` array really can give off an impressive amount of information about an image. There is a lot of info in `<mach-o/nlist.h>`, but some highlights will be reviewed below. 
+The symbol table's `nlist_64` array really can give off an impressive amount of information about an image. There's a lot of info in `<mach-o/nlist.h>`, but some highlights will be reviewed below. 
 
-Looking at the `nlist_64` value for the `someData` and `someFunction` symbols given by `nm` above...
+Looking at the `nlist_64` value for the `someData` and `someFunction` symbols given by `nm` above on ex3...
 
 <pre>
-nlist_64 fields: n_value          n_type uint8_t n_desc n_strx   
+nlist_64 fields: n_value          n_type n_sect  n_desc n_strx   
 raw data:        0000000100002018 0f     0a      0000   0000001c _someData
                  0000000100000f20 0f     01      0000   00000026 _someFunctin
 </pre>
@@ -686,7 +689,7 @@ raw data:        0000000100002018 0f     0a      0000   0000001c _someData
 * The `n_value` will give the virtual address *if the symbol is implemented locally*.
 * The `n_type` contains a whole bunch of information packed into 8 bits. For this particular case, the value 0x0f can be seen as a bit mask for `N_EXT` (0x01) and `N_SECT` (0x0e) (see header). The `N_EXT` says it's a "public" symbol (so you can [`dlopen`](http://man7.org/linux/man-pages/man3/dlopen.3.html)/[`dlsym`](http://man7.org/linux/man-pages/man3/dlsym.3.html) it), the `N_SECT` tells us that the symbol's Mach-O section is described in the `nlist_64`'s `n_sect` field. 
 * As seen earlier, the `n_strx` (last hex column) will provde an index into the array of characters for the symbol's name. 
-* The `n_sect` will indicate where the symbol is located in the Mach-O executable starting at index 1 (not 0 like most arrays). Confirm this with the following experiment:
+* The `n_sect` will indicate where the symbol is located in the Mach-O sections which starts at index 1 (not 0 like most arrays). Confirm this is true with the following experiment:
 
 ```bash 
 lolgrep:/tmp$ otool -l ex3 | grep sectname
@@ -702,9 +705,9 @@ lolgrep:/tmp$ otool -l ex3 | grep sectname
   sectname __data
 ```
 
-Note how the `someFunction` symbol is at the `__text` Mach-O section (index 1 in `n_sect`), the `someData` is at `__data` section due to the 0x0a (AKA 10).
+  Note how the `someFunction` symbol is at the `__text` Mach-O section (index 1 in `n_sect`), the `someData` is at `__data` section due to the 0x0a (AKA 10).
 
-Cross reference the data gathered from manually parsing `n_sect` with the output of `nm`'s `-m` option:
+  Cross reference the data gathered from manually parsing `n_sect` with the output of `nm`'s `-m` option:
 
 ```bash
 lolgrep:/tmp$ nm -m ex3 | grep some
@@ -712,16 +715,16 @@ lolgrep:/tmp$ nm -m ex3 | grep some
 0000000100000f20 (__TEXT,__text) external _someFunction
 ```
 
-* The `n_desc` value isn't of too much use for local symbols, so let's look at the `nlist_64` values whose symbols are defined outside of ex3:
+* Continuing with `nlist_64`'s attributes, the `n_desc` value isn't of too much use for local symbols, so let's look at the `nlist_64` values whose symbols are defined outside of ex3:
 
 <pre>
-nlist_64 fields: n_value          n_type uint8_t n_desc n_strx   
+nlist_64 fields: n_value          n_type n_sect  n_desc n_strx   
 raw data:        0000000000000000 01     00      0300   00000034 _NSLog
                  0000000000000000 01     00      0200   0000003b ___CFConstantStringClassReference
                  0000000000000000 01     00      0100   0000005d _printf
 </pre>
 
-Notice how the `n_value` (first column) is set to 0 for undefined symbols; they're not implemented locally, so they shouldn't have a local virtual address. The `N_EXT` bit is set (0x01) for the `n_type`, meaning the symbol is a public symbol. For the `n_sect` value (3rd column), these are all set to 0x00 or `NO_SECT`, meaning the Mach-O section is undefined (makes sense, they're external symbols). Now let's pick up on the remaining `nlist_64` members.
+  Notice how the `n_value` (first column) is set to 0 for undefined symbols; they're not implemented locally, so they shouldn't have a local virtual address. The `N_EXT` bit is set (0x01) for the `n_type`, meaning the symbol is a public symbol. For the `n_sect` value (3rd column), these are all set to 0x00 or `NO_SECT`, meaning the Mach-O section is undefined (makes sense, they're external symbols). Now let's pick up on the remaining `nlist_64` members.
 
 * The `n_desc` can do a number of things, but for this case, it is telling us which library the symbol can be found in (provided the symbol has two-level namespacing, Google that on your own time). These values in `n_desc` provide an index into the Mach-O load commands for external libraries.
 
@@ -814,7 +817,7 @@ What if the above code was compiled as a shared library? What would happen to th
 lolgrep:/tmp$ clang -shared ex4.c -o ex4.shared
 ```
 
-Ensure the ex4.shared file is the correct `MH_DYLIB` `filetype` (from `mach_header_64`, remember? 😛) after compiling:
+Ensure the ex4.shared file is the correct `MH_DYLIB` `filetype` (from `mach_header_64`'s `filetype`, remember? 😛) after compiling:
 
 ```bash
 lolgrep:/tmp$ file ex4.shared
@@ -842,13 +845,13 @@ Public symbols in shared libraries won't be stripped out because there could be 
 
 Objective-C still plays quite a relevant role—even in Swift. A pure Swift class (i.e. `class ASwiftClass {}`) will inherit from an Objective-C class called **SwiftClass** on all Apple platforms (you'll verify this in a second).
 
-In addition, Swift methods *can* be stripped out of the symbol table, but Objective-C methods can still be resolved via other ways (as you'll see shortly). If a Swift class overrides an Objective-C method (i.e. `viewDidLoad`), there'll be a compiler generated Objective-C bridging method (called a [thunk](https://en.wikipedia.org/wiki/Thunk)) which retains and rearranges assembly registers to the Swift calling convention. The thunk method is visible on the Objective-C side, while the actual Swift method can be stripped out. You'll see at the end of this writeup that you can infer the stripped Swift method by using this knowledge and the Swift reflection type knowledge introduced later.
+In addition, Swift methods *can* be stripped out of the symbol table, but Objective-C methods can still be resolved via other ways (as you'll see shortly). If a Swift class overrides an Objective-C method (i.e. `viewDidLoad`), there'll be a compiler generated Objective-C bridging method (called a [thunk](https://en.wikipedia.org/wiki/Thunk)) which retains and rearranges assembly registers to the Swift calling convention. The thunk method is visible on the Objective-C side, while the actual Swift method can be stripped out. You'll see at the end of this writeup that you can infer the stripped Swift method by using this Objective-C class knowledge and the Swift reflection type knowledge introduced later.
 
 ---
 ## 3.1 Objective-C Class List
 ---
 
-Using the Mach-O knowledge you've built up earlier, it's quite easy to hunt for Objective-C classes that are built into an image. All you have to do is look for the **`__DATA_CONST.__objc_classlist`** Mach-O section in an executable.
+Using the Mach-O knowledge you've built up earlier, it's quite easy to hunt for Objective-C classes that are built into an image. All you have to do is look for the **`__DATA_CONST.__objc_classlist`** (or `__DATA.__objc_classlist` if pre iOS-13) Mach-O section in an image.
 
 Build up an executable with Objective-C code and name it **ex5.m**:
 
@@ -880,7 +883,6 @@ lolgrep:/tmp$ lldb -s <(echo -e "b main\nrun") ex5
 
 With PIE disabled via LLDB, use this knowledge to run `otool` inside of the LLDB program to query the runtime location of the `__objc_classlist` Mach-O section:
 
-
 ```bash
 (lldb) platform shell otool -l ex5 | grep classlist -A3
   sectname __objc_classlist
@@ -889,7 +891,9 @@ With PIE disabled via LLDB, use this knowledge to run `otool` inside of the LLDB
       size 0x0000000000000010
 ```
 
-For my instance, the `__objc_classlist` starts at `0x0000000100001000` which has a size of 0x10 bytes (the size of 2 pointers). Confirm that this address (`0x0000000100001000`) is the `__objc_classlist` Mach-O section loaded at runtime:
+> **Note:** It's worth noting that LLDB does have the functionality to dump Mach-O sectrions (via **(lldb) image dump section [ImageName]**), although I am not very happy with the output of that command.
+
+For my instance, the `__objc_classlist` starts at `0x0000000100001000` which has a size of 0x10 bytes (the size of 2 pointers). Confirm that this address (`0x0000000100001000`) is the `__DATA_CONST.__objc_classlist` Mach-O section loaded at runtime:
 
 ```bash
 (lldb) image lookup -va 0x0000000100001000
@@ -898,16 +902,14 @@ For my instance, the `__objc_classlist` starts at `0x0000000100001000` which has
        Module: file = "/tmp/ex5", arch = "x86_64"
 ```
 
-This `__objc_classlist` section is an array of pointers to Objective-C classes implemented by that image! Confirm this by dereferencing the address at `0x0000000100001000` and `0x0000000100001008`:
+This `__DATA_CONST.__objc_classlist` section is an array of pointers to Objective-C classes implemented by that image! Confirm this by dereferencing the address at `0x0000000100001000` and `0x0000000100001008`:
 
 ```bash
 (lldb) x/2gx 0x0000000100001000
 0x100001000: 0x0000000100002148 0x0000000100002198
 ```
 
-
-TODO___ change this 
-The `x` command is an LLDB command whose syntax was cherry picked over from [GDB](https://en.wikipedia.org/wiki/GNU_Debugger). The `x` command will examine memory at the provided address.  The `gx` says to format the dereferenced memory in giant words (8 bytes) and format the dereferenced output in hexadecimal. The 2 says to do it twice, once at address `0x0000000100001000` and once at address `0x0000000100001008`
+You should be already familiar with the `x` LLDB command from earlier. The `gx` in this command says to format the dereferenced memory in giant words (8 bytes) and format the dereferenced output in hexadecimal. The 2 says to do it twice, once at address `0x0000000100001000` and once at address `0x0000000100001008`
 
 It's the dereferenced values, `0x0000000100002148` and the `0x0000000100002198` that represents Objective-C classes. Print both of these classes out:
 
@@ -924,11 +926,13 @@ It's the dereferenced values, `0x0000000100002148` and the `0x0000000100002198` 
 ## 3.2 Objc4
 ---
 
-The most recent opensource Objective-C class layout (at the time of writing this) can be found in a header named **[objc-runtime.new.h](https://opensource.apple.com/source/objc4/objc4-756.2/runtime/objc-runtime-new.h.auto.html)**
+It's quite insightful to look at the source code to build Objective-C.
 
-This C struct is called **`objc_class`** 
+The most recent opensource Objective-C class layout (at the time of writing this) can be found in a header named **[objc4/objc4-756.2/objc-runtime.new.h](https://opensource.apple.com/source/objc4/objc4-756.2/runtime/objc-runtime-new.h.auto.html)**
 
-All instances of an Objective-C class will have a pointer to this `objc_class` struct at offset 0. Below is a *simplified* layout of the `objc_class` struct.
+> **Note:** You can determine the version of your Objective-C runtime via a `otool -l /usr/lib/libobjc.A.dylib | grep SOURCE -A2 | tail -1`. This value will (hopefully) have a corresponding source code version on Apple's [https://opensource.apple.com/source/objc4/](https://opensource.apple.com/source/objc4/). Sometimes your version will be ahead of Apple's opensource listings since they take their sweet time publishing it. For this writeup, my Objective-C runtime version (779.1) is ahead of Apple's opensource listing (756.2)
+
+In this header file, there is a C struct is called **`objc_class`**. All instances of an Objective-C class will have a pointer to this `objc_class` struct at offset 0. Below is a *simplified* layout of the `objc_class` struct.
 
 
 ```objc
@@ -943,7 +947,9 @@ struct objc_class {
 
 * The `isa` references the `objc_class` data. This is a clever layout because not only do heap allocated instances have the `isa` at offset 0, but so do all `objc_class`'s have an `isa` at offset 0. This is subtle, but important so this is going into emphasized text: 
 
-    A heap allocated object's `isa` will be an `objc_class` that contains all the **instance** methods (i.e. `-[NSFileManager fileExistsAtPath:isDirectory:]`). The heap allocated object's `isa`'s `isa` is called a **Meta Class** which contains all of the **class** methods (i.e. `+[NSFileManager defaultManager]`). *a meta class has no isa (it's set to `NULL`)*. This means, that if you were to build an Objective-C introspection tool, you'd need to go after the Objective-C class (given by the `__objc_classlist` Mach-O section) and the meta class (given by the `isa` from the list of classes in the `__objc_classlist` Mach-O section) to find all class/instance methods implemented in that image (don't even think about Objective-C categories yet, we'll build up to that).
+    > *A heap allocated object's `isa` will be an `objc_class` that contains all the **instance** methods (i.e. `-[NSFileManager fileExistsAtPath:isDirectory:]`). The heap allocated object's `isa`'s `isa` is called a **Meta Class** which contains all of the **class** methods (i.e. `+[NSFileManager defaultManager]`). a meta class has no isa (it's set to `NULL`)*. 
+
+    This means, that if you were to build an Objective-C introspection tool, you'd need to go after the Objective-C class (given by the `__objc_classlist` Mach-O section) and the meta class (given by the `isa` from the list of classes in the `__objc_classlist` Mach-O section) to find all class/instance methods implemented in that image (don't even think about Objective-C categories yet, we'll build up to that).*
 
 * The `superclass` is the same idea, except it's just a reference to the "parent `isa`".
 
@@ -1008,7 +1014,7 @@ Confirm this address contains the class of interest:
 
 > **Note:** By executing the above LLDB command, you are **initializing** the class for runtime. This will essentially change the `objc_class`'s `bits` from a `class_ro_t` to the `class_rw_t`. But for this particular example, it doesn't matter, since you're going after the non-pointer aligned bits. 
 
-On my machine, the pointer for `APureSwiftClass` (AKA a `objc_class*`, AKA a `Class`) starts at **0x0000000100002138**. Deference this value for the raw `objc_class` data:
+On my machine, the pointer for `APureSwiftClass` (AKA a `objc_class*`, AKA a `Class`) starts at **0x0000000100002138**. Dereference this value 5 times to display the raw `objc_class` data:
 
 ```bash
 (lldb) x/5gx 0x0000000100002138
@@ -1027,7 +1033,7 @@ If you were to consult the [objc-runtime-new.h file](https://opensource.apple.co
 
 This is the bit that says if a class is Objective-C or Swift.
 
-Now do the same thing for the `superclass`. First figure out what it's called:
+Now do the same thing for the `superclass` whose address you obtained in the previous LLDB command. First figure out what it's called:
 
 ```bash
 (lldb) exp -l objc -- (Class)0x00007fff91b6d478
@@ -1062,7 +1068,7 @@ While LLDB is still paused (if not run it again and break on `main`), in the `ma
 Note how that `0x0000000100002138` (or equivalent on your computer) address matches with the dereferenced value obtained from `__objc_classlist` Mach-O section you found earlier.
 
 
-> **Note:** remember, whenever you reference a class, you're initializing it, and changing the `bits` value from a `class_ro_t*` to a `class_rw_t*`. Executing the `NSClassFromString`, `po`'ing a class in LLDB, or executing a `e APureSwiftClass.self` in LLDB will initialize the class. As of right noww, the `APureSwiftClass` should be initialized, meaning the `class_rw_t*` value will reside in the `bits` field. The `class_ro_t` will point to memory contained in a Mach-O section, the `class_rw_t` will point to a heap allocated reference due to the runtime not knowing how many methods there are in the ObjC class (ObjC categories, associated objects, other runtime fun, etc.) until the class is loaded.
+> **Note:** remember, whenever you reference a class, you're initializing it, and changing the `bits` value from a `class_ro_t*` to a `class_rw_t*`. Executing the `NSClassFromString`, `po`'ing a class in LLDB, or executing a `e APureSwiftClass.self` in Swift via LDLB will initialize the class. As of right noww, the `APureSwiftClass` should be initialized, meaning the `class_rw_t*` value will reside in the `bits` field. The `class_ro_t*` will point to memory contained in a Mach-O section, the `class_rw_t*` will point to a heap allocated reference due to the runtime not knowing how many methods there are in the ObjC class (ObjC categories, associated objects, other runtime fun, etc.) until the class is loaded.
 
 Rerun the program with the `run` command.
 
@@ -1138,34 +1144,118 @@ struct class_ro_t {
 }
 ```
 
-Using this knowledge, find the `const char* name` of this Swift class. Continue using LLDB. Earlier, you obtained the `objc_class*` of the `APureSwiftClass` via the `__DATA_CONST.__objc_classlist` Mach-O section. This time, use Apple's **`NSClassFromString`** API to get the same address.
+Using this knowledge, find the `const char* name` of this Swift class. While still in LLDB, start a fresh run of the program
 
-### Source Version
+```bash
+(lldb) run
+There is a running process, kill it and restart?: [Y/n] Y
+```
 
+Execution should stop at the `main` breakpoint you made earlier. This time, query the (same) address you obtained through Mach-O/NSClassFromString, but this time use LLDB's symbol lookup functionality:
 
+```bash
+(lldb) image lookup -s "type metadata for ex6.APureSwiftClass"
+1 symbols match 'type metadata for ex6.APureSwiftClass' in /tmp/ex6:
+        Address: ex6[0x0000000100002138] (ex6.__DATA.__data + 64)
+        Summary: type metadata for ex6.APureSwiftClass
+```
+The **type metadata** is Swift's naming convention for an Objective-C class. More on that later. 
 
-For this version of `grep` (`LC_SOURCE_VERSION 101.11.1`), 
+You'll see the familiar `0x0000000100002138` starting address for the Objective-C class called `APureSwiftClass`. Grab the `bits`:
 
+```bash
+(lldb) x/5gx 0x0000000100002138
+0x100002138: 0x0000000100002100 0x00007fff91b6d478
+0x100002148: 0x00007fff63aa1400 0x0000000000000000
+0x100002158: 0x00000001000020b2
+```
 
-If you are new to this stuff and interesting in reverse engineering here's a tip for you:
+Remove the Swift class mask to turn the `bits` value into the `class_ro_t` pointer and dereference it 4 times:
 
-*Never jump straight into the assembly of an executable, look at the symbol table's external symbols references first along with the `LC_LOAD_DYLIB` load commands to determine which frameworks it references. You should want to know all the symbols an image references to get an idea of what the image's functionality before jumping into any assembly...*
+```bash
+(lldb) x/4gx 0x00000001000020b0
+0x1000020b0: 0x0000001000000080 flags + instanceStart 0x0000000000000010 reserved + instanceSize
+0x1000020c0: 0x0000000000000000 ivarLayout            0x0000000100000f00 <- name!!!
+```
 
+The above output has the fields included to make the raw data easier to read.
 
-In addition to the `LC_SYMTAB` command, there's a helper load command called **`LC_DYSYMTAB`**, which provides indexes into the symbol table for symbols that are implemented and symbols that the image relies upon.
+In my program's memory, the name of this class is found at address **`0x0000000100000f00`**. Dereference the address in string format.
 
+```bash
+(lldb) x/s 0x0000000100000f00
+0x100000f00: "_TtC3ex615APureSwiftClass"
+```
 
+That's how one can programmatically traverse every Objective-C class in an image and find it's name!
 
-### LC_SOURCE_VERSION
+There's many more components to reading the `class_ro_t` struct, but that can be reviewed on your own time.
 
-https://opensource.apple.com/tarballs/text_cmds/text_cmds-99.tar.gz
-
-https://opensource.apple.com/source/text_cmds/text_cmds-99/grep/grep.c.auto.html
+---
+## 3.6 Other Mach-O ObjC Sections
+---
 
 
 
 <a name="dyld_opcodes_and_binding"></a>
-## DYLD Opcodes and Binding
+## IV. DYLD Opcodes and Binding
+
+Although this concept might be dry to many, it's essential knowledge for understanding how Swift types and Objective-C classes interact with each other with different images. How can a class's superclass be referenced in a different image? 
+
+This is the job for **dyld opcodes**. In the Mach-O **LC_DYLD_INFO_ONLY** load command, there exists a series of opcodes that tell dyld what symbols and where to bind them. This happens as soon as an image is loaded into memory. 
+
+Many tools out there (including Apple's `dyldinfo`'s `-opcodes` tool) only report the finite states deciphered by the opcodes, many tools don't display the realized virtual addresses that these opcodes will bind to.
+
+Build out the following Objective-C file called **ex7.m**:
+
+```objc
+@import Foundation;
+
+@interface SubArray : NSArray
+@end
+@implementation SubArray
+@end
+
+int main () { return 0; }
+```
+
+Compile it: 
+
+```bash
+lolgrep:/tmp$ clang -fmodules ex7.m  -o ex7
+```
+
+Query the virtual location to the `SubArray` Objective-C class:
+
+```bash
+lolgrep:/tmp$ nm ex7 | grep SubArray
+00000001000020b8 S _OBJC_CLASS_$_SubArray
+0000000100002090 S _OBJC_METACLASS_$_SubArray
+```
+
+The `SubArray` class starts at `00000001000020b8`, whose `isa` will contain the value `0x00000100002090` (the meta class). But what about it's superclass? The address at `00000001000020c0` (SubArray's start address + the size of a pointer) needs to be bound to the `NSArray` class; *this is where the opcodes come in*.
+
+>**Note:** Frankly speaking, Apple's `dyldinfo`'s `opcodes` option kinda sucks to for this information because it only displays the opcodes it interprets, it doesn't display the realized virtual addresses that it will bind code/data to. That's why [dsdump](https://github.com/DerekSelander/dsdump)'s `-O` option is better suited to showcase this:
+
+Use `dsdump`'s `-O` option to display the opcodes:
+
+```bash
+lolgrep:/tmp$ dsdump -O ex7 | head -5
+0x0000 BIND_OPCODE_SET_DYLIB_ORDINAL_IMM (2)
+0x0001 BIND_OPCODE_SET_SYMBOL_TRAILING_FLAGS_IMM (0x00, _OBJC_CLASS_$_NSArray)
+0x0018 BIND_OPCODE_SET_TYPE_IMM (1)
+0x0019 BIND_OPCODE_SET_SEGMENT_AND_OFFSET_ULEB (3, 0x000000C0) (0x1000020C0)
+0x001C BIND_OPCODE_DO_BIND (0x1000020C0, _OBJC_CLASS_$_NSArray)
+```
+
+Here you can see the resolved `0x1000020C0` address be bound to by the `NSArray` class.
+
+Verify this via LLDB using the above memory debugging strategies on your own time.
+
+
+<a name="swift"></a>
+## Swift
+
 
 
 <a name="arm64e"></a>
