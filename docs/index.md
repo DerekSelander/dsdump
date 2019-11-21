@@ -1204,7 +1204,10 @@ Although this concept might be dry to many, it's essential knowledge for underst
 
 This is the job for **dyld opcodes**. In the Mach-O **LC_DYLD_INFO_ONLY** load command, there exists a series of opcodes that tell dyld what symbols and where to bind them. This happens as soon as an image is loaded into memory. 
 
-Many tools out there (including Apple's `dyldinfo`'s `-opcodes` tool) only report the finite states deciphered by the opcodes, many tools don't display the realized virtual addresses that these opcodes will bind to.
+
+---
+## 4.1 Dyld 
+---
 
 Build out the following Objective-C file called **ex7.m**:
 
@@ -1219,23 +1222,23 @@ Build out the following Objective-C file called **ex7.m**:
 int main () { return 0; }
 ```
 
-Compile it: 
+Compile ex7.m, making sure to include the `-fno-pie` option: 
 
 ```bash
-lolgrep:/tmp$ clang -fmodules ex7.m  -o ex7
+lolgrep:/tmp$ clang -fmodules ex7.m  -o ex7 -fno-pie
 ```
 
 Query the virtual location to the `SubArray` Objective-C class:
 
 ```bash
 lolgrep:/tmp$ nm ex7 | grep SubArray
-00000001000020b8 S _OBJC_CLASS_$_SubArray
-0000000100002090 S _OBJC_METACLASS_$_SubArray
+00000001000010c8 S _OBJC_CLASS_$_SubArray
+00000001000010a0 S _OBJC_METACLASS_$_SubArray
 ```
 
-The `SubArray` class starts at `00000001000020b8`, whose `isa` will contain the value `0x00000100002090` (the meta class). But what about it's superclass? The address at `00000001000020c0` (SubArray's start address + the size of a pointer) needs to be bound to the `NSArray` class; *this is where the opcodes come in*.
+The `SubArray` class starts at `0x000001000010c8`, whose `isa` will contain the value `0x000001000010a0` (the meta class). But what about it's superclass? The address at `0x000001000010d0` (SubArray's start address + the size of a pointer) needs to be bound to the `NSArray` class; *this is where the opcodes come in*.
 
->**Note:** Frankly speaking, Apple's `dyldinfo`'s `opcodes` option kinda sucks to for this information because it only displays the opcodes it interprets, it doesn't display the realized virtual addresses that it will bind code/data to. That's why [dsdump](https://github.com/DerekSelander/dsdump)'s `-O` option is better suited to showcase this:
+>**Note:** Frankly speaking, Apple's `dyldinfo`'s `-opcodes` option is a bit disappoint for this information because it only displays the opcodes it interprets, it doesn't display the realized virtual addresses that it will bind symbols to. That's why [dsdump](https://github.com/DerekSelander/dsdump)'s `-O` option is better suited to showcase this:
 
 Use `dsdump`'s `-O` option to display the opcodes:
 
@@ -1244,19 +1247,44 @@ lolgrep:/tmp$ dsdump -O ex7 | head -5
 0x0000 BIND_OPCODE_SET_DYLIB_ORDINAL_IMM (2)
 0x0001 BIND_OPCODE_SET_SYMBOL_TRAILING_FLAGS_IMM (0x00, _OBJC_CLASS_$_NSArray)
 0x0018 BIND_OPCODE_SET_TYPE_IMM (1)
-0x0019 BIND_OPCODE_SET_SEGMENT_AND_OFFSET_ULEB (3, 0x000000C0) (0x1000020C0)
-0x001C BIND_OPCODE_DO_BIND (0x1000020C0, _OBJC_CLASS_$_NSArray)
+0x0019 BIND_OPCODE_SET_SEGMENT_AND_OFFSET_ULEB (2, 0x000000D0) (0x1000010D0)
+0x001C BIND_OPCODE_DO_BIND (0x1000010D0, _OBJC_CLASS_$_NSArray)
 ```
 
-Here you can see the resolved `0x1000020C0` address be bound to by the `NSArray` class.
+Let's break each instruction down:
 
-Verify this via LLDB using the above memory debugging strategies on your own time.
+
+Here you can see the resolved `0x1000010D0` address be bound to by the `NSArray` class.
+
+You can even verify at runtime via `dyld`'s debugging environment variables (see `man dyld`).
+
+Add the **`DYLD_PRINT_BINDINGS=1`** env var to the ex7 executable and observe the output.
+
+```bash
+lolgrep:/tmp$ DYLD_PRINT_BINDINGS=1 ex7
+```
+
+This will produce output similar to the following:
+
+```bash
+dyld: bind: ex7:0x1000010D0 = CoreFoundation:_OBJC_CLASS_$_NSArray, *0x1000010D0 = 0x7FFF895E11C0
+dyld: bind: ex7:0x1000010A8 = CoreFoundation:_OBJC_METACLASS_$_NSArray, *0x1000010A8 = 0x7FFF895E1E40
+dyld: bind: ex7:0x1000010A0 = libobjc.A.dylib:_OBJC_METACLASS_$_NSObject, *0x1000010A0 = 0x7FFF91AC90F0
+dyld: bind: ex7:0x1000010B0 = libobjc.A.dylib:__objc_empty_cache, *0x1000010B0 = 0x7FFF63AA1400
+dyld: bind: ex7:0x1000010D8 = libobjc.A.dylib:__objc_empty_cache, *0x1000010D8 = 0x7FFF63AA1400
+```
+
+Again, observe the `NSArray` class being bound to address `0x1000010D0` (or equivalent) at runtime.
+
+*Understanding the binding opcodes is incredibly important to infer what symbol is being used from another image since these addresses are `nil`'d out while on disk. It's only at load time will these addresses get bound to an actual address so dyld opcode knowledge is a must for building a class-dump tool.*  
+
+Once you obtain a symbol name from the binding opcodes, you can consult the 
 
 
 <a name="swift"></a>
 ## Swift
 
-
+Finally! You got to Swift! Unlike all the previous concepts, exploring Swift types is evolving at a rapid pace. So much so that I must say that 
 
 <a name="arm64e"></a>
 ## ARM64e Disk Pointers
