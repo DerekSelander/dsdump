@@ -28,10 +28,11 @@ This article *attempts* to explain the complete process of programmatically insp
 * [IV. DYLD Opcodes and Binding](#dyld_opcodes_and_binding)
 * [V. Swift](#swift)
     * Swift Types Layout
+    * [5.2 Swift Types Layout]()
 * [VI. ARM64e](#arm64e)
 
 
-You *should* be comfortable-ish with C and [`man`](http://man7.org/linux/man-pages/man1/man.1.html)'ing Terminal commands before reading this article. No worries if not though. This writeup takes its sweet time explaining things, but there's a lot of concepts to go through. If you're brand new to this stuff, I'd recommend going through the sections *in chunks over several days* and **do the experiments**. This is a loooooooong writeup, but if you can get through this whole thing, you'll have a very good understanding of how a lot of internals work. Yay...
+This writeup takes its sweet time explaining things, but there's a lot of concepts to go through. If you're brand new to this stuff, I'd recommend going through the sections *in chunks over several days* and **do the experiments**. This is a loooooooong writeup, but if you can get through this whole thing, you'll have a very good understanding of how a lot of internals work. Yay...
 
 If you know most of this stuff, I'd recommend just jumping to the appropriate section that you need to learn.
 
@@ -94,7 +95,7 @@ lolgrep:~$ xxd -g 4 -e $(which grep) | head -2
 
 The `xxd` command will dump the raw data of an executable to `stdout`. The `-g 4` says to group all the values into 4 bytes, which is perfect since each member in the `mach_header_64` struct is a 4 byte value. The `-e` option says to format the output in little-endian byte order (i.e. anything after a mac PowerPC).
 
->**Note:** Now's as good as time as any to mention type sizes in a programming language. An `int` in C on a 64 bit system will (*typically*) take up 32 bits or 4 bytes of storage. An `Int` in Swift will take up 64 bits or 8 bytes of storage. A pointer *to any type of a value* will take up the full 64 bits in size in both languages. In `Swift`, you can use the `MemoryLayout` type to verify size. In the C language family, use the `sizeof` function to determine the size of a type. Check out [this link](https://swiftunboxed.com/internals/size-stride-alignment/) for a good writeup that dives further in to this.
+>**Note:** Now's as good as time as any to mention type sizes in a programming language. An `int` in C on a 64 bit system will (*typically*) take up 32 bits or 4 bytes of storage. An `Int` in Swift will take up 64 bits or 8 bytes of storage. A pointer *to any type of a value* will take up the full 64 bits in size in both languages. In `Swift`, you can use the `MemoryLayout` type to verify size. In the C language family, use the `sizeof` function to determine the size of a type. Check out [this Swift link](https://swiftunboxed.com/internals/size-stride-alignment/) or [this generic languages link](https://gankra.github.io/blah/rust-layouts-and-abis/#alignment) for a good writeup that dives further in to this.
 
 After executing the above Terminal command, this produces the following output on my machine:
 
@@ -807,7 +808,7 @@ lolgrep:/tmp$ ex4
 yay
 ```
 
-In a `MH_EXECUTE` type image, any C/Objective-C/Swift functions don't need to be externally available so that information can be removed from the symbol table. Why is that? A `MH_EXECUTE` type of file should be ran by itself, it shouldn't be loaded into another address space!
+In a `MH_EXECUTE` type image, any C/Objective-C/Swift function don't need to be externally available so that information can be removed from the symbol table. Why is that? A `MH_EXECUTE` type of file should be ran by itself, it shouldn't be loaded into another address space!
 
 > **Note:** Just because there's no symbol in the symbol table for some code doesn't mean that you can't infer that a function is there. The **`LC_FUNCTION_STARTS`** load command will export a list of all the function/method locations (*only code, NOT data*) that are implemented by an image. This information is formatted in **[ULEB](https://en.wikipedia.org/wiki/ULEB)**. This is useful for debuggers and crash analytics.
 
@@ -965,7 +966,7 @@ If you want to resolve the pointer from the `bits` value, you'd have to bitwise 
 
 Earlier, I said all pure Swift classes on Apple platforms are really just Objective-C classes underneath, so let's prove that.
 
-Compile the following !!Swift!! file, **ex6.swift**:
+Create the following Swift file, **ex6.swift**:
 
 ```swift
 class APureSwiftClass {}
@@ -1174,13 +1175,26 @@ Remove the Swift class mask to turn the `bits` value into the `class_ro_t` point
 
 ```bash
 (lldb) x/4gx 0x00000001000020b0
-0x1000020b0: 0x0000001000000080 flags + instanceStart 0x0000000000000010 reserved + instanceSize
-0x1000020c0: 0x0000000000000000 ivarLayout            0x0000000100000f00 <- name!!!
+0x1000020b0: 0x0000001000000080 0x0000000000000010
+0x1000020c0: 0x0000000000000000 0x0000000100000f00 
+```
+
+Cross referencing the `class_ro_t` struct with the dumped memory:
+
+```c
+struct class_ro_t {
+    uint32_t flags; // 0x00000080
+    uint32_t instanceStart; // 0x00000010
+    uint32_t instanceSize; // 0x00000010
+    uint32_t reserved; // 0x00000000
+    const uint8_t * ivarLayout; // 0x0000000000000000
+    const char * name; // 0x0000000100000f00
+...
 ```
 
 The above output has the fields included to make the raw data easier to read.
 
-In my program's memory, the name of this class is found at address **`0x0000000100000f00`**. Dereference the address in string format.
+In my program's memory, the name of this class is found at address **`0x0000000100000f00`**. Dereference the address using `x`'s string format.
 
 ```bash
 (lldb) x/s 0x0000000100000f00
@@ -1206,7 +1220,7 @@ This is the job for **dyld opcodes**. In the Mach-O **LC_DYLD_INFO_ONLY** load c
 
 
 ---
-## 4.1 Dyld 
+## 4.1 Finding Opcodes 
 ---
 
 Build out the following Objective-C file called **ex7.m**:
@@ -1222,13 +1236,13 @@ Build out the following Objective-C file called **ex7.m**:
 int main () { return 0; }
 ```
 
-Compile ex7.m, making sure to include the `-fno-pie` option: 
+Compile ex7.m, make sure to include the `-fno-pie` option: 
 
 ```bash
 lolgrep:/tmp$ clang -fmodules ex7.m  -o ex7 -fno-pie
 ```
 
-Query the virtual location to the `SubArray` Objective-C class:
+Query the virtual address location of the `SubArray` Objective-C class:
 
 ```bash
 lolgrep:/tmp$ nm ex7 | grep SubArray
@@ -1236,9 +1250,9 @@ lolgrep:/tmp$ nm ex7 | grep SubArray
 00000001000010a0 S _OBJC_METACLASS_$_SubArray
 ```
 
-The `SubArray` class starts at `0x000001000010c8`, whose `isa` will contain the value `0x000001000010a0` (the meta class). But what about it's superclass? The address at `0x000001000010d0` (SubArray's start address + the size of a pointer) needs to be bound to the `NSArray` class; *this is where the opcodes come in*.
+The `SubArray` class starts at `0x000001000010c8` (for me), whose `isa` will contain the value `0x000001000010a0` (the meta class). But what about it's superclass? The address at `0x000001000010d0` (`SubArray`'s start address + the size of a pointer) needs to be bound to the `NSArray` class; *this is where the opcodes come in*.
 
->**Note:** Frankly speaking, Apple's `dyldinfo`'s `-opcodes` option is a bit disappoint for this information because it only displays the opcodes it interprets, it doesn't display the realized virtual addresses that it will bind symbols to. That's why [dsdump](https://github.com/DerekSelander/dsdump)'s `-O` option is better suited to showcase this:
+>**Note:** Frankly speaking, Apple's `dyldinfo`'s `-opcodes` option is a bit disappointing for this information because it only displays the opcodes it interprets; it doesn't display the realized virtual addresses that it will bind symbols to. That's why [dsdump](https://github.com/DerekSelander/dsdump)'s `-O` option is better suited to showcase this:
 
 Use `dsdump`'s `-O` option to display the opcodes:
 
@@ -1251,12 +1265,11 @@ lolgrep:/tmp$ dsdump -O ex7 | head -5
 0x001C BIND_OPCODE_DO_BIND (0x1000010D0, _OBJC_CLASS_$_NSArray)
 ```
 
-Let's break each instruction down:
-
-
 Here you can see the resolved `0x1000010D0` address be bound to by the `NSArray` class.
 
-You can even verify at runtime via `dyld`'s debugging environment variables (see `man dyld`).
+>**Note:** [Jonathan Levin](https://twitter.com/Morpheus______) has a [great writeup](http://www.newosxbook.com/articles/DYLD.html) of what each of these opcodes do.
+
+Verify at runtime the `0x1000010D0` (or equivalent) address is being bound via `dyld`'s debugging environment variables (see `man dyld`).
 
 Add the **`DYLD_PRINT_BINDINGS=1`** env var to the ex7 executable and observe the output.
 
@@ -1264,7 +1277,7 @@ Add the **`DYLD_PRINT_BINDINGS=1`** env var to the ex7 executable and observe th
 lolgrep:/tmp$ DYLD_PRINT_BINDINGS=1 ex7
 ```
 
-This will produce output similar to the following:
+This produced the following on my machine:
 
 ```bash
 dyld: bind: ex7:0x1000010D0 = CoreFoundation:_OBJC_CLASS_$_NSArray, *0x1000010D0 = 0x7FFF895E11C0
@@ -1278,18 +1291,154 @@ Again, observe the `NSArray` class being bound to address `0x1000010D0` (or equi
 
 *Understanding the binding opcodes is incredibly important to infer what symbol is being used from another image since these addresses are `nil`'d out while on disk. It's only at load time will these addresses get bound to an actual address so dyld opcode knowledge is a must for building a class-dump tool.*  
 
-Once you obtain a symbol name from the binding opcodes, you can consult the 
-
 
 <a name="swift"></a>
 ## Swift
 
-Finally! You got to Swift! Unlike all the previous concepts, exploring Swift types is evolving at a rapid pace. So much so that I must say that 
+Finally! You got to Swift! Unlike all the previous concepts, exploring Swift types is evolving at a rapid pace. So much so that I must say that this information will likely get stale in less than a year. 
+
+**This information only pertains to Swift 5.x**
+
+## 5.1 Swift Types
+
+Unlike Objective-C where classes are only fair game, Swift can introspect any type--an enum, struct, class, protocol, etc!
+
+To do this, several different Mach-O sections are utilized. By far the most important one is the **`__TEXT.__swift5_types`**. The `__swift5_types` contains an array of "**relative pointers**" to all the Swift types found in the image. Think of it sort of like the `__DATA__CONST.__objc_classlist` section where it's an array of pointers to Objective-C classes. The difference is that this section stores all Swift *types* and it only uses 4 bytes (by default, instead of 8 bytes via a pointer).
+
+Relative pointers are a 4 byte signed integer that takes it's value and adds it to the address.
+
+In pseudo-c-ish-code...
+
+```c
+#include <mach-o/getsect.h>
+
+unsigned long sz = 0;
+int32_t *data = getsectdata("__TEXT", "__swift5_types", &sz);
+for (int i = 0; i < (sz / sizeof(int32_t)); i++) {
+  uintptr_t nominalTypeDesc = (uintptr_t)data[i] + (uintptr_t)&data[i];
+}
+```
+
+The relative pointers idea is a really nifty trick by the Swift developers. Not only does each relative pointer only use half the amount of bytes, but dyld doesn't need to rebase any of the pointers when loaded into memory since it will always be a hardcoded offset to whatever address the image is loaded in. 
+
+
+These relative pointers will point to something called a **nominal type descriptor**, which is just a fancy way of saying the layout of a type (similar to the `objc_class` struct you saw earlier). These type descriptors come in varying sizes based upon the type they represent. For example, here's the structural layout for a [nominal type descriptor for a Swift class](https://github.com/apple/swift/blob/67ff818215841c52ab5c65c3066a36a711427bed/include/swift/ABI/Metadata.h#L3784-L4088). A nominal type descriptor for, say, a Swift enum will have a different layout.
+
+If you clicked on the above link, that's a little hard on the eyes, right? Figuring out the offsets for C++ classes can be a pain the ass due to inheritance. Fortunately, [Scott Knight](https://twitter.com/sdotknight) provides an *excellent* [article](https://knight.sc/reverse%20engineering/2019/07/17/swift-metadata.html) with simplified C struct offsets. If you're interested in the Swift layouts, I'd strongly suggest you read Scott's work, since Scott does a much better job explaining all the Swift struct layouts. So instead of focusing on all the different structs like Scott, I'll do a deep dive into one struct layout: the layout for Swift classes.
+
+Copying and pasting directly from Scott's work, here's a simplified nominal type descriptor for a Swift class:
+
+```c
+struct NominalClassDescriptor {
+    uint32_t Flags // All nominal type descriptors begin with Flags, used to determine nominal type descriptor
+    int32_t  Parent // The reference to the parent type descriptor 
+    int32_t  Name // The name of the type descriptor
+    int32_t  AccessFunction // 
+    int32_t  FieldDescriptor            
+    int32_t  SuperclassType // Superclass type            
+    uint32_t MetadataNegativeSizeInWords 
+    uint32_t MetadataPositiveSizeInWords 
+    uint32_t NumImmediateMembers // Number of additional members stored after this class (aka NumImmediateMembers * sizeof(void*) payload)        
+    uint32_t NumFields // Number of properties stored in this class                  
+}
+```
+
+You will explore this `NominalClassDescriptor` struct in a Swift program. Create **ex8.swift** with the following code:
+
+```swift
+class SomeClass {
+  func doStuff() { }
+}
+let a = SomeClass()
+print("\(a)")
+```
+
+Compile with debugging info:
+
+```bash
+lolgrep:/tmp$ swiftc -g ex8.swift
+```
+
+Debug the ex8 executable by setting a breakpoint on **`main`**
+
+```bash
+lldb ex8 -s <(echo -e "br set -n main -s ex8\nrun")
+```
+
+While paused in `main`, query for the `__swift5_types` Mach-O section:
+
+
+```bash
+(lldb) platform shell otool -l ex8 | grep types -A3
+  sectname __swift5_types
+   segname __TEXT
+      addr 0x0000000100000f90
+      size 0x0000000000000004
+```
+
+From the output, the address of interest is found at **`0x0000000100000f90`** (on my machine), whose size is only 4 bytes (AKA there's only one Swift type). Dereference this address to a 32 bit signed integer.
+
+```bash
+(lldb) x/wd 0x0000000100000f90
+0x100000f90: -92
+```
+
+The address `0x100000f90` has the value `-92`. Add these two values together to get the nominal type descriptor address for the `SomeClass` type:
+
+```bash
+(lldb) image lookup -a `0x0000000100000f90 + -92`
+      Address: ex8[0x0000000100000f34] (ex8.__TEXT.__const + 28)
+      Summary: ex8`nominal type descriptor for ex8.SomeClass
+```
+
+The backticks is an LLDB trick to evaluate an expression before being parsed to the surrounding command. The resolved address is **0x0000000100000f34** (for me).
+
+Cross referencing the`NominalClassDescriptor` layout from above, dereference 3 relative pointers to get the `Name` field.
+
+```bash
+(lldb) x/3wd 0x0000000100000f34
+0x100000f34: -2147483568
+0x100000f38: -28
+0x100000f3c: -20
+```
+
+The `Name` string is at offset -20 from address 0x100000f3c. Use LLDB to evaluate this address: 
+
+```bash
+(lldb) x/s `0x100000f3c + -20`
+0x100000f28: "SomeClass"
+```
+
+BOOM! And that's Swift reflection in a nutshell!
+
+## Swift Methods in a Class
+
+Immediately following the `NominalClassDescriptor`, there exists a varying amount of data (given by the `NumFields` field). This is a list of methods available to the Swift class.
+
+
+ 
+There's many, many more components to this, such as being able to programmatically find methods, but I'll leave that to interested reader to explore on their own time (or you can just look at [dsdump's source](https://github.com/DerekSelander/dsdump). 
+
+## Swift Calling Convention
+
+Swift's calling convention differs a bit from other languages on Apple platforms. 
+
+[Mike Ash](https://twitter.com/mikeash?lang=en)'s [writeup](https://www.mikeash.com/pyblog/objc_msgsends-new-prototype.html)
+
+## strip'ing Swift Methods?
+
+Even though `strip`'ing methods in Objective-C removed the symbol table information, Objective-C's methods, properties, ivars all could still be obtained by looking in other Mach-O sections. So does the same thing apply to Swift types? 
+
+Well... sorta...
+
+
+
+
 
 <a name="arm64e"></a>
 ## ARM64e Disk Pointers
 
-TODO
+TODO, I am burnt out writing and I am sure you are from reading, I'll get to this eventually :] 
 
 ## EL FIN
 
