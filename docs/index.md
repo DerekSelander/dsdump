@@ -1058,6 +1058,8 @@ Oh no! There's no 2 in that `0x00007fff811c6c50` value! All your Swift classes o
 
 I anticipate this will change in a couple years, but for now, it's always fun to bring Swift developers down to my level 😈
 
+> **Note:** This is the exact same trick I use for a custom LLDB script named [dclass](https://github.com/DerekSelander/LLDB/blob/master/lldb_commands/dclass.py#L269-L272) to print only Swift or Objective-C classes loaded into the process.
+
 ---
 <a name="bits_value_revisited"></a>
 ## 3.4 The bits value revisited (class_ro_t vs class_rw_t)
@@ -1188,12 +1190,12 @@ Cross referencing the `class_ro_t` struct with the dumped memory:
 
 ```c
 struct class_ro_t {
-    uint32_t flags; // 0x00000080
-    uint32_t instanceStart; // 0x00000010
-    uint32_t instanceSize; // 0x00000010
-    uint32_t reserved; // 0x00000000
+    uint32_t flags;             // 0x00000080
+    uint32_t instanceStart;     // 0x00000010
+    uint32_t instanceSize;      // 0x00000010
+    uint32_t reserved;          // 0x00000000
     const uint8_t * ivarLayout; // 0x0000000000000000
-    const char * name; // 0x0000000100000f00
+    const char * name;          // 0x0000000100000f00
 ...
 ```
 
@@ -1215,25 +1217,23 @@ There's many more components to reading the `class_ro_t` struct, but that can be
 ## 3.6 Other Mach-O ObjC Sections
 ---
 
-There's many other relevant Mach-O sections that pertain to Objective-C. Here's a list of some of them:
+There's many other relevant Mach-O sections that pertain to Objective-C. Here's a list of *some* of them to explore on your own time:
 
-* **`__TEXT.__objc_methname`** - Method names for locally implemented methods
-* **`__TEXT.__objc_classname`** - Names for locally implemented classes
-* **`__TEXT.__objc_methtype`** - Types for locally implemented method types
-* **`__DATA.__objc_classlist`** - An array of pointers to ObjC classes
-* **`__DATA.__objc_nlclslist`** - An array of pointers to classes who implement `+load`
-* **`__DATA.__objc_catlist`** - List of ObjC categories
-* **`__DATA.__objc_protolist`** - List of ObjC protocols
-* **`__DATA.__objc_imageinfo`** - Version info, not really useful
-* **`__DATA.__objc_const`** - Constant data, i.e. `class_ro_t` data
-* **`__DATA.__objc_selrefs`** - External references to selectors
-* **`__DATA.__objc_protorefs`** - External references to protocols 
-* **`__DATA.__objc_classrefs`** - External references to other classes
-* **`__DATA.__objc_superrefs`** - External references to super classes
-* **`__DATA.__objc_ivar`** - Offsets to ObjC properties
-* **`__DATA.__objc_data`** - Misc storage, notably ObjC classes
-
-Explore them on your own time.
+* `__TEXT.__objc_methname` - Method names for locally implemented methods
+* `__TEXT.__objc_classname` - Names for locally implemented classes
+* `__TEXT.__objc_methtype` - Types for locally implemented method types
+* `__DATA.__objc_classlist` - An array of pointers to ObjC classes
+* `__DATA.__objc_nlclslist` - An array of pointers to classes who implement `+load`
+* `__DATA.__objc_catlist` - List of ObjC categories
+* `__DATA.__objc_protolist` - List of ObjC protocols
+* `__DATA.__objc_imageinfo` - Version info, not really useful
+* `__DATA.__objc_const` - Constant data, i.e. `class_ro_t` data
+* `__DATA.__objc_selrefs` - External references to selectors
+* `__DATA.__objc_protorefs` - External references to protocols 
+* `__DATA.__objc_classrefs` - External references to other classes
+* `__DATA.__objc_superrefs` - External references to super classes
+* `__DATA.__objc_ivar` - Offsets to ObjC properties
+* `__DATA.__objc_data` - Misc ObjC storage, notably ObjC classes
 
 ---
 <a name="dyld_opcodes_and_binding"></a>
@@ -1325,7 +1325,7 @@ Again, observe the `NSArray` class being bound to address `0x1000010D0` (or equi
 
 Finally! You got to Swift! Unlike all the previous concepts, exploring Swift types is evolving at a rapid pace. So much so that I must say that this information will likely get stale in less than a year. 
 
-**This information only pertains to Swift 5.x**
+*This information only pertains to Swift 5.x, it will likely be obsolete when Swift 6.x roles around*
 
 ---
 <a name="swift_types"></a>
@@ -1334,7 +1334,7 @@ Finally! You got to Swift! Unlike all the previous concepts, exploring Swift typ
 
 Unlike Objective-C where classes are only fair game, Swift can introspect any type--an enum, struct, class, protocol, etc!
 
-To do this, several different Mach-O sections are utilized. By far the most important one is the **`__TEXT.__swift5_types`**. The `__swift5_types` contains an array of "**relative pointers**" to all the Swift types found in the image. Think of it sort of like the `__DATA__CONST.__objc_classlist` section where it's an array of pointers to Objective-C classes. The difference is that this section stores all Swift *types* and it only uses 4 bytes (by default, instead of 8 bytes via a pointer).
+To do this, several different Mach-O sections are utilized. By far the most important one is the **`__TEXT.__swift5_types`**. The `__swift5_types` contains an array of "**relative pointers**" to all the Swift types found in the image. Think of the `__TEXT.__swift5_types` section to be sort of like the `__DATA__CONST.__objc_classlist` section where it's an array of pointers to Objective-C classes. The difference is that this section stores all Swift *types* and it only uses 4 bytes (by default, instead of 8 bytes via a pointer).
 
 Relative pointers are a 4 byte signed integer that takes it's value and adds it to the address.
 
@@ -1357,7 +1357,7 @@ These relative pointers will point to something called a **nominal type descript
 
 If you clicked on the above link, that's a little hard on the eyes, right? Figuring out the offsets for C++ classes can be a pain the ass due to inheritance. Fortunately, [Scott Knight](https://twitter.com/sdotknight) provides an *excellent* [article](https://knight.sc/reverse%20engineering/2019/07/17/swift-metadata.html) with simplified C struct offsets. If you're interested in the Swift layouts, I'd strongly suggest you read Scott's work, since Scott does a much better job explaining all the Swift struct layouts. So instead of focusing on all the different structs like Scott, I'll do a deep dive into one struct layout: the layout for Swift classes.
 
-Here's the simplified layout for a class in Swift 5 
+Here's the simplified layout for a Swift class in Swift 5 
 
 ```c
 struct NominalClassDescriptor {
@@ -1434,7 +1434,7 @@ Cross referencing the`NominalClassDescriptor` layout from above, dereference 3 r
 0x100000f58: -20
 ```
 
-The `Name` string is at offset -20 from address 0x100000f3c. Use LLDB to evaluate this address: 
+The `Name` string is at offset -20 from address 0x100000f58. Use LLDB to evaluate this address: 
 
 ```bash
 (lldb) x/s `0x100000f58 + -20`
@@ -1443,7 +1443,7 @@ The `Name` string is at offset -20 from address 0x100000f3c. Use LLDB to evaluat
 
 BOOM! And that's Swift reflection in a nutshell!
 
-## Swift Methods in a Class
+## 5.2 Swift Methods in a Class
 
 The `NominalClassDescriptor` has 11 `int32_t` members, totalling 44 bytes. Immediately following the `NominalClassDescriptor`, there exists a varying amount of data. I won't get into the nitty gritty of this (check out the **TrailingObjects.h** header if you want to learn more), but the prologue of the `NominalClassDescriptor` will look like the following:
 
@@ -1454,7 +1454,7 @@ The `NominalClassDescriptor` has 11 `int32_t` members, totalling 44 bytes. Immed
   MethodDescriptor[VTableSize]; // Variable size of MethodDescriptor
 ```
 
-The `VTableSize` will indicate an array of **`MethodDescriptor`** objects immediately following. The layout of the `MethodDescriptor` looks like this: 
+The `VTableSize` will indicate an array of **`MethodDescriptor`** objects immediately following the `VTableSize`. The layout of the `MethodDescriptor` struct looks like this: 
 
 ```c
 struct TargetMethodDescriptor {
@@ -1488,7 +1488,7 @@ private:
 
 > **Note:** If you're building a Swift introspection tool, the `MethodDescriptorFlags` are absolute gold. The `Impl` will give you a virtual address, which you can cross reference to the symbol table to (hopefully) get the name of symbol. Unfortunately, if the symbol table is stripped, you can't resolve the name. Fortunately, you can still get a decent idea of the stripped symbol's function by consulting the `Flags` field. For example, if the `Flag` tells you the method is a **Getter**, then you can look at the assembly of the function to find the **direct field offset** value. Once you know that value, you can cross reference that to the property offset to realize that method is the getter of the Swift property!
 
-Build out ex9.swift with the following code:
+You will programmatically explore the Swift methods implemented in a Swift class. Build out **ex9.swift** with the following code:
 
 ```swift
 class AClass {
@@ -1512,7 +1512,7 @@ Query the location of the `NominalClassDescriptor` via LLDB:
         Summary: ex9`nominal type descriptor for ex9.AClass
 ```
 
-The `image lookup -rs` command will do a regex search for the symbol "type descriptor" that's constrained to anything in the ex9 image. This is equivalent to what you resolving the relative pointers from the `__TEXT.__swift5_types` array earlier. 
+The `image lookup -rs` command will do a regex search for the symbol "type descriptor" that's constrained to anything in the ex9 image. This is equivalent to you manually resolving the location of the nominal type descriptor via the relative pointers from `__TEXT.__swift5_types` array in the earlier example. 
 
 For me, the `NominalClassDescriptor` for `AClass` is at **0x0000000100000f18**. Remember, this class has a size of 0x2c (44) bytes. Resolve this offset via LLDB to grab the `VTableOffset` and `VTableSize` which immediately follow it.
 
@@ -1521,7 +1521,7 @@ For me, the `NominalClassDescriptor` for `AClass` is at **0x0000000100000f18**. 
 0x100000f44: 0x0000000b 0x00000002
 ```
 
-The `VTableOffset` has a value of 0xb, the `VTableSize` has a size of 2.  Th2t means immediately following this address, there'll be 2 `MethodDescriptors` (each with 2 int32_t fields).
+The `VTableOffset` has a value of 0xb, the `VTableSize` has a size of 2.  That means immediately following this address, there'll be 2 `MethodDescriptors` (each with 2 int32_t fields).
 
 In LLDB, dump the additional 2 `MethodDescriptors`:
 
@@ -1555,53 +1555,145 @@ Again, both `nm` and the Swift metadata tells us the `aFunc()` will be found at 
 
 
 
+## 5.3 Swift Calling Convention
 
+The calling convention differs a bit in Swift in both ARM and x86 families on Apple platforms. If you're totally new to this stuff, I'd recommend reading [this article]https://www.raywenderlich.com/615-assembly-register-calling-convention-tutorial), which explains the C and Objective-C x86_64 calling conventions first. 
+
+Using the `-[NSString writeToFile:atomically:]` as an example: 
+
+```objc
+[@"test" writeToFile:@"/tmp/some_file.txt" atomically:NO]
+```
+
+This will get translated to always fun `objc_msgSend` family with the following registers:
+
+```bash
+         @"test" "writeToFile:atomically:" @"/tmp/some_file.txt" NO 
+ARM64    X0      X1                        X2                    X3
+X86_64   RDI     RSI                       RDX                   RCX
+```
+
+If you're a deer in the headlights reading this, please read the above link first.
+
+Swift changes the `self` around to `R13` on x86_64 and `X20` on ARM64. Since there's no need for an Objective-C `Selector`, the `RSI`/`X1` registers can be used for arguments. 
+
+*This means that all arguments for Swift can start at the "first" register (`RDI`/`X0`) and the `self` argument will be at `R13`/`X20`. This has the additional benefit that these registers can survive across calling frames, i.e. they won't get lost after returning from a frame*
+
+> **Note:** Again for you Swift introspection people: the `MethodDescriptorFlags` is great again because it will tell you that a particular (`strip`'d) function needs a Swift calling convention, where you'll need to change around your parsing engine from `RDI`/`X0` to `R13`/`X20`
+
+## 5.4 Introspecting strip'd Swift->ObjC Classes
+
+Let's bring this all together with actual ARM64 compiled code for an iOS `UIViewController` Swift subclass.
+
+Write **ex10.swift** with the following Swift code:
 
 ```swift
 import UIKit
 class ViewController : UIViewController {
   var anInt: Int = 0;
+  override func viewDidLoad() { 
+    super.viewDidLoad(); 
+  }
 
-  override func viewDidLoad() {  super.viewDidLoad(); }
   func swiftFunc() { }
 }
 ```
 
-Compile with the iOS Simulator SDK:
+Compile ex10.swift for an ARM64 CPU. Since this is iOS, you'll need to use the appropriate target and SDK:
 
 ```bash
-lolgrep:/tmp$ swiftc ex9.swift -sdk `xcrun --show-sdk-path  -sdk iphonesimulator` -target x86_64-apple-ios99.99.99.99
+lolgrep:/tmp$ swiftc ex10.swift -sdk `xcrun --show-sdk-path  -sdk iphoneos` -target arm64-apple-ios99.99.99.99
 ```
 
-
-For this example, you'll use the **dsdump** tool to instrospect 
- 
-There's many, many more components to this, but I'll leave that to interested reader to explore on their own time (or you can just look at [dsdump's source](https://github.com/DerekSelander/dsdump). 
-
-## Swift Calling Convention
+Strip the ex10 image:
 
 ```bash
-lolgrep:/tmp$ swiftc ex10.swift -sdk `xcrun --show-sdk-path  -sdk iphoneos` -target arm64e-apple-ios99.99.99.99
+lolgrep:/tmp$ strip ex10
 ```
 
-Swift's calling convention differs a bit from other languages on Apple platforms. 
+Use dsdump to dump the Swift code:
+
+```bash
+lolgrep:/tmp$ dsdump  --swift ex10 --verbose=4 --defined --color
+```
+
+You'll get output that looks similar to this:
+
+```c
+ class ex10.ViewController : UIViewController /System/Library/Frameworks/UIKit.framework/UIKit {
+
+  // Properties
+  var anInt : Int
+
+  // ObjC -> Swift bridged methods
+  0x1000075cc  @objc ViewController.viewDidLoad <stripped>
+  0x100007980  @objc ViewController.initWithNibName:bundle: <stripped>
+  0x100007c18  @objc ViewController.initWithCoder: <stripped>
+
+  // Swift methods
+  0x1000072fc  func <stripped> // getter 
+  0x100007390  func <stripped> // setter 
+  0x100007450  func <stripped> // modifyCoroutine 
+  0x100007614  func <stripped> // method 
+ }
+```
+
+This part gets interesting for reverse engineering: Swift *does not include overriden Objective-C methods in it's metadata*.
+
+Let me say that again: The following code **does not get picked up by the Swift metadata**:
+
+```swift
+override func viewDidLoad() { 
+  super.viewDidLoad(); 
+}
+```
+
+So how does Objective-C know how to call Swift code with a completely different calling convention? The compiler will build a "bridging method" in Objective-C land called a [thunk](https://en.wikipedia.org/wiki/Thunk). That's where this `@objc ViewController.viewDidLoad` method comes into play. It will rearrange all the registers around and make sure everything is properly retained so no Objective-C references go out of scope when the Swift code is executing. In addition, that's where this "hidden" Swift method is located!
+
+Dump the Objective-C thunk method at address **0x1000075cc**, use a perl regex to stop at the return of this method:
+
+```bash
+otool -tV ex10 | perl -lne 'print if /1000075cc/ .. /ret\z/'
+```
+
+This will dump the ARM64 assembly for the "Objective-C viewDidLoad" thunk method. This is the output from my machine:
+
+```asm
+  00000001000075cc  sub sp, sp, #0x40
+  00000001000075d0  stp x20, x19, [sp, #0x20]
+  00000001000075d4  stp x29, x30, [sp, #0x30]
+  00000001000075d8  add x29, sp, #0x30
+  00000001000075dc  mov x2, x0
+* 00000001000075e0  str x0, [sp, #0x18] # store "self" into [sp + 0x18]
+  00000001000075e4  mov x0, x2
+  00000001000075e8  str x1, [sp, #0x10]
+  00000001000075ec  bl  0x100007d38 ; symbol stub for: _objc_retain
+* 00000001000075f0  ldr x20, [sp, #0x18] # load "self" into register x20  
+  00000001000075f4  str x0, [sp, #0x8]
+* 00000001000075f8  bl  0x1000074cc      <- "Hidden" Swift viewDidLoad method
+  00000001000075fc  ldr x0, [sp, #0x18]
+  0000000100007600  bl  0x100007d2c ; symbol stub for: _objc_release
+  0000000100007604  ldp x29, x30, [sp, #0x30]
+  0000000100007608  ldp x20, x19, [sp, #0x20]
+  000000010000760c  add sp, sp, #0x40
+  0000000100007610  ret
+```
+
+I've added asterisks to the interesting ARM64 assembly instructions. X0 (`self`) will get `retain`'d, X0 will transfer `self` to X20 and then call the Swift side of the `viewDidLoad` at address **0x1000074cc**. Again, **this method is not visible to the Swift metadata**.
+
+For those of you who are introspection tool builders, hopefully you'll see a window to improve your toolset:
+* Even though Swift method names can be stripped out, you can infer the names of a lot of these methods using the `MethodDescriptorFlags` flags for methods.
+* You can use the Objective-C runtime's bridging thunk methods to find "hidden" bridged Swift methods 
+* If you know a stripped symbol is Swift code using the above methods, you can infer there will be a different calling convention in play and can better use this knowledge for your diassembly engine.
+
+I can't wait to see what y'all can do with this in the future 🍻
 
 [Mike Ash](https://twitter.com/mikeash?lang=en)'s [writeup](https://www.mikeash.com/pyblog/objc_msgsends-new-prototype.html)
-
-## strip'ing Swift Methods?
-
-Even though `strip`'ing methods in Objective-C removed the symbol table information, Objective-C's methods, properties, ivars all could still be obtained by looking in other Mach-O sections. So does the same thing apply to Swift types? 
-
-Well... sorta...
-
-
-
-
 
 <a name="arm64e"></a>
 ## ARM64e Disk Pointers
 
-TODO, I am burnt out writing and I am sure you are from reading, I'll get to this eventually :] 
+TODO, I'll get to this eventually :] 
 
 ## EL FIN
 
