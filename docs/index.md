@@ -23,9 +23,10 @@ This article *attempts* to explain the complete process of programmatically insp
     * [3.1 Objective-C Class List](#objc_class_list)
     * [3.2 Objc4](#objc4)
     * [3.3 How to Disappoint Swift Developers](#how_to_disappoint_swift_developers)
-    * [3.4 The bits value revisited (class_ro_t vs class_rw_t)](#how_to_disappoint_swift_developers)
+    * [3.4 The bits value revisited (class_ro_t vs class_rw_t)](#bits_value_revisited)
     * [3.5 The class_ro_t struct](#the_class_ro_t_struct)
 * [IV. DYLD Opcodes and Binding](#dyld_opcodes_and_binding)
+    * [4.1 Finding Opcodes](#finding_opcodes)
 * [V. Swift](#swift)
     * Swift Types Layout
     * [5.2 Swift Types Layout]()
@@ -36,7 +37,7 @@ This writeup takes its sweet time explaining things, but there's a lot of concep
 
 If you know most of this stuff, I'd recommend just jumping to the appropriate section that you need to learn.
 
-All you script/plugin writers for Ghidra, Frida, Hopper, IDA, jtool, & friends should *carefully* read the Swift parts because I have recommendations for y'all to take your tools to the next level when resymbolicating stripped Swift symbols. 
+At the time of writing this [Ghidra](https://www.nsa.gov/resources/everyone/ghidra/), [Frida](https://frida.re), [Hopper](https://www.hopperapp.com), [IDA](https://www.hex-rays.com/products/ida/), [jtool](http://www.newosxbook.com/tools/jtool.html), & friends all could provide better Swift introspection support. If you work on any of the mentioned tools, I'd recommend you follow the Swift parts.
 
 <p align="center">
 <img src="https://media.giphy.com/media/8YmZ14DOpivXMuckSI/giphy.gif" alt="And here we go">
@@ -431,7 +432,7 @@ Ohhhh but it gets a bit more confusing than that. In addition to the virtual loa
 
 Since an image can have a different address everytime it loads, this means that referencing virtual addresses needs to be able to reference addresses not based on an absolute virtual address value, but via a relative load address from the current memory address. This is known as a Position Indenpendent Executable or **PIE**.  
 
-By default, every `MH_EXECUTE` you compile is position independent. You can confirm this with the following experiment:
+By default, every `MH_EXECUTE` you compile is position independent (I'm using `clang-1100.0.33.8` for this writeup). You can confirm this with the following experiment:
 
 Create the following C file, **ex2.c**:
 
@@ -514,8 +515,8 @@ You'll see a `#define  MH_PIE 0x200000`, which tells the loading framework (**dy
 <a name="the_symbol_table"></a>
 ## II. Symbol Table
 ---
-
-The symbol table plays an immensily important role of declaring what symbols it implements as well as what symbols it relies upon for that image to correctly function. All code/variables that survive out of the scope of code are candidates to be put into the symbol table for an image. 
+    
+The symbol table plays an immensily important role of declaring what symbols an image implements as well as what symbols it relies upon for that image to correctly function. All code/variables that survive out of the scope of code are candidates to be put into the symbol table for an image. 
 
 For example (no need to code this particular example out):
 
@@ -659,7 +660,7 @@ lolgrep:/tmp$ nm -xp ex3
 
 The `-x` will display the raw data of the `nlist_64` struct (be aware that the `-x` output flips the first `n_strx` and `n_value` around in output since the `n_value` is considered to be the most important). Next up, the `-p` option will display the symbols in numerical order (instead of symbol table name order). 
 
-The `nm` command will also grab the name of the symbol which can be derived from the offset of the `n_strx` into the blob of characters given by the `stroff` in the Mach-O `LC_SYMTAB` [obtained earlier, which had the `stroff`  value **12652**](#lc_symtab) and whose size is given by the `strsize` value. 
+The `nm` command will also grab the name of the symbol which can be derived from the offset of the `n_strx` into the blob of characters given by the `stroff` in the Mach-O `LC_SYMTAB` [obtained earlier](#lc_symtab), which had the `stroff`  value **12652**. 
 
 Going after the first symbol, the **__dyld_private** symbol has a `n_strx` offset of **0x00000076** (noticed I added a 0x to the beginning of the value to ensure it's interpreted as hex) into the blob of characters pointed at by the `stroff` value. Use `xxd` to verify this:
 
@@ -841,6 +842,7 @@ Then run the `strip` command and check out the differences. What is the differen
 Public symbols in shared libraries won't be stripped out because there could be consumers in other images that rely on those symbols, so they need to keep their names intact.
 
 ---
+<a name="objective_c"></a>
 ## III. Objective-C
 ---
 
@@ -849,6 +851,7 @@ Objective-C still plays quite a relevant role—even in Swift. A pure Swift clas
 In addition, Swift methods *can* be stripped out of the symbol table, but Objective-C methods can still be resolved via other ways (as you'll see shortly). If a Swift class overrides an Objective-C method (i.e. `viewDidLoad`), there'll be a compiler generated Objective-C bridging method (called a [thunk](https://en.wikipedia.org/wiki/Thunk)) which retains and rearranges assembly registers to the Swift calling convention. The thunk method is visible on the Objective-C side, while the actual Swift method can be stripped out. You'll see at the end of this writeup that you can infer the stripped Swift method by using this Objective-C class knowledge and the Swift reflection type knowledge introduced later.
 
 ---
+<a name="objc_class_list"></a>
 ## 3.1 Objective-C Class List
 ---
 
@@ -924,6 +927,7 @@ It's the dereferenced values, `0x0000000100002148` and the `0x0000000100002198` 
 > **Note:** As of around clang version `clang-1100.0.33.8` (in Xcode 11), the default configuration for compiling the Objective-C `__objc_class_list` Mach-O section was moved from the `__DATA` Mach-O segment to the `__DATA_CONST` Mach-O segment. This change is discussed in the DYLD opcodes part of the writeup, but just be aware that if you have an older version of clang, you'll see `__objc_class_list` in the `__DATA` Mach-O segment.
 
 ---
+<a name="objc4"></a>
 ## 3.2 Objc4
 ---
 
@@ -934,7 +938,6 @@ The most recent opensource Objective-C class layout (at the time of writing this
 > **Note:** You can determine the version of your Objective-C runtime via a `otool -l /usr/lib/libobjc.A.dylib | grep SOURCE -A2 | tail -1`. This value will (hopefully) have a corresponding source code version on Apple's [https://opensource.apple.com/source/objc4/](https://opensource.apple.com/source/objc4/). Sometimes your version will be ahead of Apple's opensource listings since they take their sweet time publishing it. For this writeup, my Objective-C runtime version (779.1) is ahead of Apple's opensource listing (756.2)
 
 In this header file, there is a C struct is called **`objc_class`**. All instances of an Objective-C class will have a pointer to this `objc_class` struct at offset 0. Below is a *simplified* layout of the `objc_class` struct.
-
 
 ```objc
 struct objc_class {
@@ -961,6 +964,7 @@ struct objc_class {
 If you want to resolve the pointer from the `bits` value, you'd have to bitwise AND it with **0x00007ffffffffff8UL**. This is defined as the **`FAST_DATA_MASK`** in the objc-runtime-new.h header.
 
 ---
+<a name="how_to_disappoint_swift_developers"></a>
 ## 3.3 How to Disappoint Swift Developers
 ---
 
@@ -1055,6 +1059,7 @@ Oh no! There's no 2 in that `0x00007fff811c6c50` value! All your Swift classes o
 I anticipate this will change in a couple years, but for now, it's always fun to bring Swift developers down to my level 😈
 
 ---
+<a name="bits_value_revisited"></a>
 ## 3.4 The bits value revisited (class_ro_t vs class_rw_t)
 
 
@@ -1078,7 +1083,6 @@ Rerun the program with the `run` command.
 ```
 
 The program should have reset itself to the start of the `main` function. Since ASLR is disabled, the virtual addresses will remain unchanged from run to run. Dump the address for the `APureSwiftClass` (mine was 0x0000000100002138) **without** initializing the class (i.e. no `po`'ing).
-
 
 ```bash
 (lldb) x/5gx 0x0000000100002138
@@ -1107,7 +1111,7 @@ Rerun the earlier command and inspect the `objc_class` struct's `bits` value:
 
 The `bits` param has now changed to the `class_rw_t* | FAST_IS_SWIFT_STABLE`
 
-> *If you're a building out an Objective-C runtime introspection tool, and you're testing the tool on itself, make sure you know the correct struct that resides in the `bits` value*. I burned *a lot* of hours working with the wrong struct by accidentially initializing Objective-C classes by `po`'ing them in LLDB 🤦‍♂️
+> *If you're building out an Objective-C runtime introspection tool, and you're testing the tool on itself, make sure you know the correct struct that resides in the `bits` value*. I burned *a lot* of hours working with the wrong struct by accidentially initializing Objective-C classes by `po`'ing them in LLDB 🤦‍♂️
 
 Fortunately, the `class_ro_t` and the `class_rw_t` struct both have `int32_t flags` value right at the beginning. The `flags` member can tell you if the class is initialized via the value is (1 << 31, AKA 0x80000000).
 
@@ -1121,6 +1125,7 @@ In the above example, if I didn't know if a class was initialized at runtime, I'
 The 0x8 in the most significant bit means the class has already been initialized, meaning the `bits` value is a `class_rw_t*`.
 
 ---
+<a name="the_class_ro_t_struct"></a>
 ## 3.5 The class_ro_t struct
 ---
 
@@ -1152,7 +1157,7 @@ Using this knowledge, find the `const char* name` of this Swift class. While sti
 There is a running process, kill it and restart?: [Y/n] Y
 ```
 
-Execution should stop at the `main` breakpoint you made earlier. This time, query the (same) address you obtained through Mach-O/NSClassFromString, but this time use LLDB's symbol lookup functionality:
+Execution should stop at the `main` breakpoint you made earlier. This time, query the (same) address you obtained through Mach-O/`NSClassFromString`, but this time use LLDB's symbol lookup functionality:
 
 ```bash
 (lldb) image lookup -s "type metadata for ex6.APureSwiftClass"
@@ -1206,13 +1211,34 @@ That's how one can programmatically traverse every Objective-C class in an image
 There's many more components to reading the `class_ro_t` struct, but that can be reviewed on your own time.
 
 ---
+<a name="dyld_opcodes_and_binding"></a>
 ## 3.6 Other Mach-O ObjC Sections
 ---
 
+There's many other relevant Mach-O sections that pertain to Objective-C. Here's a list of some of them:
 
+* **`__TEXT.__objc_methname`** - Method names for locally implemented methods
+* **`__TEXT.__objc_classname`** - Names for locally implemented classes
+* **`__TEXT.__objc_methtype`** - Types for locally implemented method types
+* **`__DATA.__objc_classlist`** - An array of pointers to ObjC classes
+* **`__DATA.__objc_nlclslist`** - An array of pointers to classes who implement `+load`
+* **`__DATA.__objc_catlist`** - List of ObjC categories
+* **`__DATA.__objc_protolist`** - List of ObjC protocols
+* **`__DATA.__objc_imageinfo`** - Version info, not really useful
+* **`__DATA.__objc_const`** - Constant data, i.e. `class_ro_t` data
+* **`__DATA.__objc_selrefs`** - External references to selectors
+* **`__DATA.__objc_protorefs`** - External references to protocols 
+* **`__DATA.__objc_classrefs`** - External references to other classes
+* **`__DATA.__objc_superrefs`** - External references to super classes
+* **`__DATA.__objc_ivar`** - Offsets to ObjC properties
+* **`__DATA.__objc_data`** - Misc storage, notably ObjC classes
 
+Explore them on your own time.
+
+---
 <a name="dyld_opcodes_and_binding"></a>
 ## IV. DYLD Opcodes and Binding
+---
 
 Although this concept might be dry to many, it's essential knowledge for understanding how Swift types and Objective-C classes interact with each other with different images. How can a class's superclass be referenced in a different image? 
 
@@ -1220,6 +1246,7 @@ This is the job for **dyld opcodes**. In the Mach-O **LC_DYLD_INFO_ONLY** load c
 
 
 ---
+<a name="finding_opcodes"></a>
 ## 4.1 Finding Opcodes 
 ---
 
@@ -1291,15 +1318,19 @@ Again, observe the `NSArray` class being bound to address `0x1000010D0` (or equi
 
 *Understanding the binding opcodes is incredibly important to infer what symbol is being used from another image since these addresses are `nil`'d out while on disk. It's only at load time will these addresses get bound to an actual address so dyld opcode knowledge is a must for building a class-dump tool.*  
 
-
+---
 <a name="swift"></a>
 ## Swift
+---
 
 Finally! You got to Swift! Unlike all the previous concepts, exploring Swift types is evolving at a rapid pace. So much so that I must say that this information will likely get stale in less than a year. 
 
 **This information only pertains to Swift 5.x**
 
+---
+<a name="swift_types"></a>
 ## 5.1 Swift Types
+---
 
 Unlike Objective-C where classes are only fair game, Swift can introspect any type--an enum, struct, class, protocol, etc!
 
@@ -1326,31 +1357,32 @@ These relative pointers will point to something called a **nominal type descript
 
 If you clicked on the above link, that's a little hard on the eyes, right? Figuring out the offsets for C++ classes can be a pain the ass due to inheritance. Fortunately, [Scott Knight](https://twitter.com/sdotknight) provides an *excellent* [article](https://knight.sc/reverse%20engineering/2019/07/17/swift-metadata.html) with simplified C struct offsets. If you're interested in the Swift layouts, I'd strongly suggest you read Scott's work, since Scott does a much better job explaining all the Swift struct layouts. So instead of focusing on all the different structs like Scott, I'll do a deep dive into one struct layout: the layout for Swift classes.
 
-Copying and pasting directly from Scott's work, here's a simplified nominal type descriptor for a Swift class:
+Here's the simplified layout for a class in Swift 5 
 
 ```c
 struct NominalClassDescriptor {
+// Inherited From TargetContextDescriptor
     uint32_t Flags // All nominal type descriptors begin with Flags, used to determine nominal type descriptor
     int32_t  Parent // The reference to the parent type descriptor 
+
+// Inherited From TargetTypeContextDescriptor
     int32_t  Name // The name of the type descriptor
-    int32_t  AccessFunction // 
-    int32_t  FieldDescriptor            
-    int32_t  SuperclassType // Superclass type            
+    int32_t  AccessFunctionPtr // A pointer to the metadata access function for this type.
+    int32_t  Fields // A pointer to the field descriptor for type, if any            
+
+// Implemented in NominalClassDescriptor
+    int32_t  SuperclassType // The type of the superclass, expressed as a mangled type name         
     uint32_t MetadataNegativeSizeInWords 
     uint32_t MetadataPositiveSizeInWords 
     uint32_t NumImmediateMembers // Number of additional members stored after this class (aka NumImmediateMembers * sizeof(void*) payload)        
-    uint32_t NumFields // Number of properties stored in this class                  
-}
+    uint32_t NumFields // Number of properties stored in this class   
+    uint32_t FieldOffsetVectorOffset; // The offset of the field offset vector for this struct's stored properties in its metadata
 ```
 
-You will explore this `NominalClassDescriptor` struct in a Swift program. Create **ex8.swift** with the following code:
+You'll explore this `NominalClassDescriptor` struct in a Swift program. Create **ex8.swift** with the following code:
 
 ```swift
-class SomeClass {
-  func doStuff() { }
-}
-let a = SomeClass()
-print("\(a)")
+class SomeClass {}
 ```
 
 Compile with debugging info:
@@ -1362,7 +1394,7 @@ lolgrep:/tmp$ swiftc -g ex8.swift
 Debug the ex8 executable by setting a breakpoint on **`main`**
 
 ```bash
-lldb ex8 -s <(echo -e "br set -n main -s ex8\nrun")
+lolgrep:/tmp$ lldb ex8 -s <(echo -e "br set -n main -s ex8\nrun")
 ```
 
 While paused in `main`, query for the `__swift5_types` Mach-O section:
@@ -1372,54 +1404,185 @@ While paused in `main`, query for the `__swift5_types` Mach-O section:
 (lldb) platform shell otool -l ex8 | grep types -A3
   sectname __swift5_types
    segname __TEXT
-      addr 0x0000000100000f90
+      addr 0x0000000100000fa4
       size 0x0000000000000004
 ```
 
-From the output, the address of interest is found at **`0x0000000100000f90`** (on my machine), whose size is only 4 bytes (AKA there's only one Swift type). Dereference this address to a 32 bit signed integer.
+From the output, the address of interest is found at **`0x0000000100000fa4`** (on my machine), whose size is only 4 bytes (AKA there's only one Swift type). Dereference this address to a 32 bit signed integer.
 
 ```bash
-(lldb) x/wd 0x0000000100000f90
-0x100000f90: -92
+(lldb) x/wd 0x0000000100000fa4
+0x100000fa4: -84
 ```
 
-The address `0x100000f90` has the value `-92`. Add these two values together to get the nominal type descriptor address for the `SomeClass` type:
+The address `0x100000fa4` has the value `-84`. Add these two values together to get the nominal type descriptor address for the `SomeClass` type:
 
 ```bash
-(lldb) image lookup -a `0x0000000100000f90 + -92`
-      Address: ex8[0x0000000100000f34] (ex8.__TEXT.__const + 28)
+(lldb) image lookup -a `0x0000000100000fa4 + -84`
+      Address: ex8[0x0000000100000f50] (ex8.__TEXT.__const + 28)
       Summary: ex8`nominal type descriptor for ex8.SomeClass
 ```
 
-The backticks is an LLDB trick to evaluate an expression before being parsed to the surrounding command. The resolved address is **0x0000000100000f34** (for me).
+The backticks is an LLDB trick to evaluate an expression before being parsed to the surrounding command. The resolved address is **0x0000000100000f50** (for me).
 
 Cross referencing the`NominalClassDescriptor` layout from above, dereference 3 relative pointers to get the `Name` field.
 
 ```bash
-(lldb) x/3wd 0x0000000100000f34
-0x100000f34: -2147483568
-0x100000f38: -28
-0x100000f3c: -20
+(lldb) x/3wd 0x0000000100000f50
+0x100000f50: -2147483568
+0x100000f54: -28
+0x100000f58: -20
 ```
 
 The `Name` string is at offset -20 from address 0x100000f3c. Use LLDB to evaluate this address: 
 
 ```bash
-(lldb) x/s `0x100000f3c + -20`
-0x100000f28: "SomeClass"
+(lldb) x/s `0x100000f58 + -20`
+0x100000f44: "SomeClass"
 ```
 
 BOOM! And that's Swift reflection in a nutshell!
 
 ## Swift Methods in a Class
 
-Immediately following the `NominalClassDescriptor`, there exists a varying amount of data (given by the `NumFields` field). This is a list of methods available to the Swift class.
+The `NominalClassDescriptor` has 11 `int32_t` members, totalling 44 bytes. Immediately following the `NominalClassDescriptor`, there exists a varying amount of data. I won't get into the nitty gritty of this (check out the **TrailingObjects.h** header if you want to learn more), but the prologue of the `NominalClassDescriptor` will look like the following:
+
+```c
+  // End of NominalClassDescriptor here...
+  uint32_t VTableOffset; // The offset to the vtable from the metadata
+  uint32_t VTableSize; // The count of methods
+  MethodDescriptor[VTableSize]; // Variable size of MethodDescriptor
+```
+
+The `VTableSize` will indicate an array of **`MethodDescriptor`** objects immediately following. The layout of the `MethodDescriptor` looks like this: 
+
+```c
+struct TargetMethodDescriptor {
+  MethodDescriptorFlags Flags; //int32_t Flags describing the Impl
+  int32_t Impl; // The relative pointer method implementation
+}
+```
+
+The `MethodDescriptorFlags` looks like the following:
+
+```c++
+class MethodDescriptorFlags {
+public:
+  typedef uint32_t int_type;
+  enum class Kind {
+    Method,
+    Init,
+    Getter,
+    Setter,
+    ModifyCoroutine,
+    ReadCoroutine,
+  };
+
+private:
+  enum : int_type {
+    KindMask = 0x0F,                // 16 kinds should be enough for anybody
+    IsInstanceMask = 0x10,
+    IsDynamicMask = 0x20,
+  };
+```
+
+> **Note:** If you're building a Swift introspection tool, the `MethodDescriptorFlags` are absolute gold. The `Impl` will give you a virtual address, which you can cross reference to the symbol table to (hopefully) get the name of symbol. Unfortunately, if the symbol table is stripped, you can't resolve the name. Fortunately, you can still get a decent idea of the stripped symbol's function by consulting the `Flags` field. For example, if the `Flag` tells you the method is a **Getter**, then you can look at the assembly of the function to find the **direct field offset** value. Once you know that value, you can cross reference that to the property offset to realize that method is the getter of the Swift property!
+
+Build out ex9.swift with the following code:
+
+```swift
+class AClass {
+  let aNumber = 4
+  func aFunc() {}
+}
+```
+
+Build with the debugging enabled, run, then pause on `main`:
+
+```bash
+lolgrep:/tmp$ swiftc -g ex9.swift && lldb ex9 -s <(echo -e "br set -n main -s ex9\nrun")
+```
+
+Query the location of the `NominalClassDescriptor` via LLDB:
+
+```bash
+(lldb) image lookup -rs type\ descriptor ex9
+1 symbols match the regular expression 'type descriptor' in /tmp/ex9:
+        Address: ex9[0x0000000100000f18] (ex9.__TEXT.__const + 32)
+        Summary: ex9`nominal type descriptor for ex9.AClass
+```
+
+The `image lookup -rs` command will do a regex search for the symbol "type descriptor" that's constrained to anything in the ex9 image. This is equivalent to what you resolving the relative pointers from the `__TEXT.__swift5_types` array earlier. 
+
+For me, the `NominalClassDescriptor` for `AClass` is at **0x0000000100000f18**. Remember, this class has a size of 0x2c (44) bytes. Resolve this offset via LLDB to grab the `VTableOffset` and `VTableSize` which immediately follow it.
+
+```bash
+(lldb) x/2wx `0x0000000100000f18 + 44`
+0x100000f44: 0x0000000b 0x00000002
+```
+
+The `VTableOffset` has a value of 0xb, the `VTableSize` has a size of 2.  Th2t means immediately following this address, there'll be 2 `MethodDescriptors` (each with 2 int32_t fields).
+
+In LLDB, dump the additional 2 `MethodDescriptors`:
+
+```bash
+(lldb) x/6wd `0x0000000100000f18 + 44`
+0x100000f44: 11
+0x100000f48: 2
+0x100000f4c: 16
+0x100000f50: -464
+0x100000f54: 1
+0x100000f58: -440
+```
+
+Address 0x100000f4c holds the `MethodDescriptorFlags` with a value of 16 (or 0x10). Consulting the above `MethodDescriptorFlags` struct, one can determine this method is an **instance method** for the `AClass`. Prove this by resolving the `Impl` on the next address in LLDB:
+
+```bash
+(lldb) image lookup -a `0x100000f50 + -464`
+      Address: ex9[0x0000000100000d80] (ex9.__TEXT.__text + 48)
+      Summary: ex9`ex9.AClass.aFunc() -> () at ex9.swift:3
+```
+
+Excellent! You were able to resolve this method via Swift metadata to get the address 0x0000000100000d80 for `aFunc`! Verify this is truly the case via a good ol' `nm`:
+
+```bash
+(lldb) platform shell nm ex9 | grep aFunc | xcrun swift-demangle
+0000000100000d80 t ex9.AClass.aFunc() -> ()
+0000000100000f4c s method descriptor for ex9.AClass.aFunc() -> ()
+```
+
+Again, both `nm` and the Swift metadata tells us the `aFunc()` will be found at address 0x00000100000d80
 
 
+
+
+
+```swift
+import UIKit
+class ViewController : UIViewController {
+  var anInt: Int = 0;
+
+  override func viewDidLoad() {  super.viewDidLoad(); }
+  func swiftFunc() { }
+}
+```
+
+Compile with the iOS Simulator SDK:
+
+```bash
+lolgrep:/tmp$ swiftc ex9.swift -sdk `xcrun --show-sdk-path  -sdk iphonesimulator` -target x86_64-apple-ios99.99.99.99
+```
+
+
+For this example, you'll use the **dsdump** tool to instrospect 
  
-There's many, many more components to this, such as being able to programmatically find methods, but I'll leave that to interested reader to explore on their own time (or you can just look at [dsdump's source](https://github.com/DerekSelander/dsdump). 
+There's many, many more components to this, but I'll leave that to interested reader to explore on their own time (or you can just look at [dsdump's source](https://github.com/DerekSelander/dsdump). 
 
 ## Swift Calling Convention
+
+```bash
+lolgrep:/tmp$ swiftc ex10.swift -sdk `xcrun --show-sdk-path  -sdk iphoneos` -target arm64e-apple-ios99.99.99.99
+```
 
 Swift's calling convention differs a bit from other languages on Apple platforms. 
 
