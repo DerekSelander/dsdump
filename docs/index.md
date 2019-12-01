@@ -25,6 +25,7 @@ This article *attempts* to explain the complete process of programmatically insp
     * [3.3 How to Disappoint Swift Developers](#how_to_disappoint_swift_developers)
     * [3.4 The bits value revisited (class_ro_t vs class_rw_t)](#bits_value_revisited)
     * [3.5 The class_ro_t struct](#the_class_ro_t_struct)
+    * [3.6 Other Mach-O ObjC Sections](#other_macho_objc_sections)
 * [IV. DYLD Opcodes and Binding](#dyld_opcodes_and_binding)
     * [4.1 Finding Opcodes](#finding_opcodes)
 * [V. Swift](#swift)
@@ -1215,7 +1216,7 @@ That's how one can programmatically traverse every Objective-C class in an image
 There's many more components to reading the `class_ro_t` struct, but that can be reviewed on your own time.
 
 ---
-<a name="dyld_opcodes_and_binding"></a>
+<a name="other_macho_objc_sections"></a>
 ## 3.6 Other Mach-O ObjC Sections
 ---
 
