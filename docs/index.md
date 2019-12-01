@@ -227,7 +227,7 @@ The output will display the Mach-O segments contained in `grep`. This will look 
 
 There's a Mach-O segment called **`__PAGEZERO`** (given by the **`segname`** member), which when loaded into memory, has no memory permissions (see `maxprot`, and `initprot`). That means you can't read, write, nor execute anything that resides in this memory segment.  Hitting this memory is what happens when you fack up a pointer in C or dereference an implicitly unwrapped optional in Swift... *it's a dead zone in memory that's designed to catch implicitly unwrapped (`!`)/`nil`/`NULL`/`nullptr` dereference bugs in your code by killing the process*.
 
-Below the `__PAGEZERO` segment, there's the `__TEXT` segment. This segment has readable and executable permissions determined from the **`initprot`** value of **0x00000005**. How can one translate the value 5 to mean readable and writable? 
+Below the `__PAGEZERO` segment, there's the `__TEXT` segment. This segment has readable and executable permissions determined from the **`initprot`** value of **0x00000005**. How can one translate the value 5 to mean readable and executable? 
 
 Think of this 5 value in bits...
 
