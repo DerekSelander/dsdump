@@ -30,7 +30,7 @@ This article *attempts* to explain the complete process of programmatically insp
     * [4.1 Finding Opcodes](#finding_opcodes)
 * [V. Swift](#swift)
     * [5.1 Swift Types](#swift_types)
-    * [5.2 Swift Types Layout](#swift_types_layout)
+    * [5.2 Swift Methods in a Class](#swift_methods_in_a_class)
     * [5.3 Swift Calling Convention](#swift_calling_convention)
     * [5.4 Introspecting strip'd Swift/ObjC Classes](#introspecting_strip_swift_objc_classes)
 * [VI. ARM64e](#arm64e)
@@ -1447,6 +1447,7 @@ The `Name` string is at offset -20 from address 0x100000f58. Use LLDB to evaluat
 BOOM! And that's Swift reflection in a nutshell!
 
 ---
+<a name="swift_methods_in_a_class"></a>
 ## 5.2 Swift Methods in a Class
 ---
 
