@@ -28,8 +28,10 @@ This article *attempts* to explain the complete process of programmatically insp
 * [IV. DYLD Opcodes and Binding](#dyld_opcodes_and_binding)
     * [4.1 Finding Opcodes](#finding_opcodes)
 * [V. Swift](#swift)
-    * Swift Types Layout
-    * [5.2 Swift Types Layout]()
+    * [5.1 Swift Types](#swift_types)
+    * [5.2 Swift Types Layout](#swift_types_layout)
+    * [5.3 Swift Calling Convention](#swift_calling_convention)
+    * [5.4 Introspecting strip'd Swift/ObjC Classes](#introspecting_strip_swift_objc_classes)
 * [VI. ARM64e](#arm64e)
 
 
@@ -1443,7 +1445,9 @@ The `Name` string is at offset -20 from address 0x100000f58. Use LLDB to evaluat
 
 BOOM! And that's Swift reflection in a nutshell!
 
+---
 ## 5.2 Swift Methods in a Class
+---
 
 The `NominalClassDescriptor` has 11 `int32_t` members, totalling 44 bytes. Immediately following the `NominalClassDescriptor`, there exists a varying amount of data. I won't get into the nitty gritty of this (check out the **TrailingObjects.h** header if you want to learn more), but the prologue of the `NominalClassDescriptor` will look like the following:
 
@@ -1554,12 +1558,14 @@ Excellent! You were able to resolve this method via Swift metadata to get the ad
 Again, both `nm` and the Swift metadata tells us the `aFunc()` will be found at address 0x00000100000d80
 
 
-
+---
+<a name="swift_calling_convention"></a>
 ## 5.3 Swift Calling Convention
+---
 
-The calling convention differs a bit in Swift in both ARM and x86 families on Apple platforms. If you're totally new to this stuff, I'd recommend reading [this article]https://www.raywenderlich.com/615-assembly-register-calling-convention-tutorial), which explains the C and Objective-C x86_64 calling conventions first. 
+The calling convention differs a bit in Swift in both ARM and x86 families on Apple platforms. If you're totally new to this stuff, I'd recommend reading [Mike Ash](https://twitter.com/mikeash?lang=en)'s [writeup](https://www.mikeash.com/pyblog/objc_msgsends-new-prototype.html) or [this article]https://www.raywenderlich.com/615-assembly-register-calling-convention-tutorial), which explains the C and Objective-C x86_64 calling conventions first. 
 
-Using the `-[NSString writeToFile:atomically:]` as an example: 
+Using the `-[NSString writeToFile:atomically:]` method as an example: 
 
 ```objc
 [@"test" writeToFile:@"/tmp/some_file.txt" atomically:NO]
@@ -1573,7 +1579,7 @@ ARM64    X0      X1                        X2                    X3
 X86_64   RDI     RSI                       RDX                   RCX
 ```
 
-If you're a deer in the headlights reading this, please read the above link first.
+If you're a deer in the headlights reading this, please read the above link(s) first.
 
 Swift changes the `self` around to `R13` on x86_64 and `X20` on ARM64. Since there's no need for an Objective-C `Selector`, the `RSI`/`X1` registers can be used for arguments. 
 
@@ -1581,7 +1587,10 @@ Swift changes the `self` around to `R13` on x86_64 and `X20` on ARM64. Since the
 
 > **Note:** Again for you Swift introspection people: the `MethodDescriptorFlags` is great again because it will tell you that a particular (`strip`'d) function needs a Swift calling convention, where you'll need to change around your parsing engine from `RDI`/`X0` to `R13`/`X20`
 
-## 5.4 Introspecting strip'd Swift->ObjC Classes
+---
+<a name="introspecting_strip_swift_objc_classes"></a>
+## 5.4 Introspecting strip'd Swift/ObjC Classes
+---
 
 Let's bring this all together with actual ARM64 compiled code for an iOS `UIViewController` Swift subclass.
 
@@ -1590,11 +1599,11 @@ Write **ex10.swift** with the following Swift code:
 ```swift
 import UIKit
 class ViewController : UIViewController {
-  var anInt: Int = 0;
-  override func viewDidLoad() { 
-    super.viewDidLoad(); 
+  var meh: Int = 4
+  override func viewDidLoad() {
+    super.viewDidLoad()
+    print("yayyyyy")
   }
-
   func swiftFunc() { }
 }
 ```
@@ -1605,13 +1614,35 @@ Compile ex10.swift for an ARM64 CPU. Since this is iOS, you'll need to use the a
 lolgrep:/tmp$ swiftc ex10.swift -sdk `xcrun --show-sdk-path  -sdk iphoneos` -target arm64-apple-ios99.99.99.99
 ```
 
-Strip the ex10 image:
+Use [dsdump](https://github.com/DerekSelander/dsdump) to dump the Swift code:
+
+```bash
+lolgrep:/tmp$ dsdump  --swift ex10 --verbose=4 --defined --color
+ class ex10.ViewController : UIViewController /System/Library/Frameworks/UIKit.framework/UIKit {
+
+  // Properties
+  var meh : Int
+
+  // ObjC -> Swift bridged methods
+  0x10000756c  @objc ViewController.viewDidLoad()
+  0x100007924  @objc ViewController.init(nibName:bundle:)
+  0x100007bc0  @objc ViewController.init(coder:)
+
+  // Swift methods
+  0x100007198  func ViewController.meh.getter // getter
+  0x10000722c  func ViewController.meh.setter // setter
+  0x1000072ec  func ViewController.meh.modify // modifyCoroutine
+  0x1000075b4  func ViewController.swiftFunc() // method
+ }
+ ```
+
+Now, strip the ex10 image:
 
 ```bash
 lolgrep:/tmp$ strip ex10
 ```
 
-Use dsdump to dump the Swift code:
+Rerun the previous dsdump command:
 
 ```bash
 lolgrep:/tmp$ dsdump  --swift ex10 --verbose=4 --defined --color
@@ -1623,63 +1654,64 @@ You'll get output that looks similar to this:
  class ex10.ViewController : UIViewController /System/Library/Frameworks/UIKit.framework/UIKit {
 
   // Properties
-  var anInt : Int
+  var meh : Int
 
   // ObjC -> Swift bridged methods
-  0x1000075cc  @objc ViewController.viewDidLoad <stripped>
-  0x100007980  @objc ViewController.initWithNibName:bundle: <stripped>
-  0x100007c18  @objc ViewController.initWithCoder: <stripped>
+  0x10000756c  @objc ViewController.viewDidLoad <stripped>
+  0x100007924  @objc ViewController.initWithNibName:bundle: <stripped>
+  0x100007bc0  @objc ViewController.initWithCoder: <stripped>
 
   // Swift methods
-  0x1000072fc  func <stripped> // getter 
-  0x100007390  func <stripped> // setter 
-  0x100007450  func <stripped> // modifyCoroutine 
-  0x100007614  func <stripped> // method 
+  0x100007198  func <stripped> // getter
+  0x10000722c  func <stripped> // setter
+  0x1000072ec  func <stripped> // modifyCoroutine
+  0x1000075b4  func <stripped> // method
  }
 ```
 
 This part gets interesting for reverse engineering: Swift *does not include overriden Objective-C methods in it's metadata*.
 
-Let me say that again: The following code **does not get picked up by the Swift metadata**:
+Let me say that again: The following Swift bridged code **does not get picked up by the Swift metadata**:
 
 ```swift
-override func viewDidLoad() { 
-  super.viewDidLoad(); 
+override func viewDidLoad() {
+  super.viewDidLoad()
+  print("yayyyyy")
 }
 ```
 
 So how does Objective-C know how to call Swift code with a completely different calling convention? The compiler will build a "bridging method" in Objective-C land called a [thunk](https://en.wikipedia.org/wiki/Thunk). That's where this `@objc ViewController.viewDidLoad` method comes into play. It will rearrange all the registers around and make sure everything is properly retained so no Objective-C references go out of scope when the Swift code is executing. In addition, that's where this "hidden" Swift method is located!
 
-Dump the Objective-C thunk method at address **0x1000075cc**, use a perl regex to stop at the return of this method:
+Dump the Objective-C thunk method at address **0x10000756c**, use a perl regex to stop at the return of this method:
 
 ```bash
-otool -tV ex10 | perl -lne 'print if /1000075cc/ .. /ret\z/'
+otool -tV ex10 | perl -lne 'print if /10000756c/ .. /ret\z/'
 ```
 
 This will dump the ARM64 assembly for the "Objective-C viewDidLoad" thunk method. This is the output from my machine:
 
 ```asm
-  00000001000075cc  sub sp, sp, #0x40
-  00000001000075d0  stp x20, x19, [sp, #0x20]
-  00000001000075d4  stp x29, x30, [sp, #0x30]
-  00000001000075d8  add x29, sp, #0x30
-  00000001000075dc  mov x2, x0
-* 00000001000075e0  str x0, [sp, #0x18] # store "self" into [sp + 0x18]
-  00000001000075e4  mov x0, x2
-  00000001000075e8  str x1, [sp, #0x10]
-  00000001000075ec  bl  0x100007d38 ; symbol stub for: _objc_retain
-* 00000001000075f0  ldr x20, [sp, #0x18] # load "self" into register x20  
-  00000001000075f4  str x0, [sp, #0x8]
-* 00000001000075f8  bl  0x1000074cc      <- "Hidden" Swift viewDidLoad method
-  00000001000075fc  ldr x0, [sp, #0x18]
-  0000000100007600  bl  0x100007d2c ; symbol stub for: _objc_release
-  0000000100007604  ldp x29, x30, [sp, #0x30]
-  0000000100007608  ldp x20, x19, [sp, #0x20]
-  000000010000760c  add sp, sp, #0x40
-  0000000100007610  ret
+  000000010000756c  sub sp, sp, #0x40
+  0000000100007570  stp x20, x19, [sp, #0x20]
+  0000000100007574  stp x29, x30, [sp, #0x30]
+  0000000100007578  add x29, sp, #0x30
+  000000010000757c  mov x2, x0
+* 0000000100007580  str x0, [sp, #0x18]
+  0000000100007584  mov x0, x2
+  0000000100007588  str x1, [sp, #0x10]
+  000000010000758c  bl  0x100007d04 ; symbol stub for: _objc_retain
+* 0000000100007590  ldr x20, [sp, #0x18]
+  0000000100007594  str x0, [sp, #0x8]
+* 0000000100007598  bl  0x100007368
+  000000010000759c  ldr x0, [sp, #0x18]
+  00000001000075a0  bl  0x100007cf8 ; symbol stub for: _objc_release
+  00000001000075a4  ldp x29, x30, [sp, #0x30]
+  00000001000075a8  ldp x20, x19, [sp, #0x20]
+  00000001000075ac  add sp, sp, #0x40
+  00000001000075b0  ret
 ```
 
-I've added asterisks to the interesting ARM64 assembly instructions. X0 (`self`) will get `retain`'d, X0 will transfer `self` to X20 and then call the Swift side of the `viewDidLoad` at address **0x1000074cc**. Again, **this method is not visible to the Swift metadata**.
+I've added asterisks to the interesting ARM64 assembly instructions. X0 (`self`) will get `retain`'d, X0 will transfer `self` to X20 and then call the Swift side of the `viewDidLoad` at address **0x100007368**. Again, **this method is not visible to the Swift metadata**.
 
 For those of you who are introspection tool builders, hopefully you'll see a window to improve your toolset:
 * Even though Swift method names can be stripped out, you can infer the names of a lot of these methods using the `MethodDescriptorFlags` flags for methods.
@@ -1687,8 +1719,6 @@ For those of you who are introspection tool builders, hopefully you'll see a win
 * If you know a stripped symbol is Swift code using the above methods, you can infer there will be a different calling convention in play and can better use this knowledge for your diassembly engine.
 
 I can't wait to see what y'all can do with this in the future 🍻
-
-[Mike Ash](https://twitter.com/mikeash?lang=en)'s [writeup](https://www.mikeash.com/pyblog/objc_msgsends-new-prototype.html)
 
 <a name="arm64e"></a>
 ## ARM64e Disk Pointers
