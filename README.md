@@ -160,7 +160,7 @@ Alternatively, you can skip all of this by simply grabbing the compiled `dsdump`
 
 Compiled SHA1
 ```
-SHA1: 26d184e09ed1a10336d374ca8bb525204f75be67
+SHA1: 0d50ab4004179713d2cc385c237078123d09aad5
 ```
 
 ### Credits

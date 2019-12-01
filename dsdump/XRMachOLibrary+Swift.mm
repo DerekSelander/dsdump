@@ -496,7 +496,6 @@ void test(uintptr_t address) {
 
 
 - (void)dumpSwiftMethods:(ClassDescriptor*)classDescriptor {
-    
     auto methodDescriptors = classDescriptor->getMethodDescriptors();
     if (xref_options.verbose >= VERBOSE_4 && methodDescriptors.size()) {
         printf("\n%s\t// Swift methods%s\n", dcolor(DSCOLOR_GRAY), color_end());
@@ -561,16 +560,12 @@ void test(uintptr_t address) {
     auto swiftClassDisk = got->second->disk();
     auto rodata = swiftClassDisk->rodata()->disk();
     auto rodataDisk = rodata->disk();
-    if (rodataDisk->ivarList == nullptr) {
-        return;
-    }
     
-    auto methodList = rodataDisk->baseMethodList;
-    if (methodList == nullptr) {
-        return;
-    }
-    
+    auto methodList = rodataDisk->baseMethodList;    
     auto methodListDisk = methodList->disk();
+    if (methodListDisk == nullptr) {
+        return;
+    }
     auto methodsPtr = &methodListDisk->first_method;
     printf("\n");
     
@@ -594,18 +589,13 @@ void test(uintptr_t address) {
         
         // No symbol table info to grab? Fuck it, regenerate via ObjC info instead
         if (!resolvedName) {
-//            auto m = module->Name.get();
-//            const char *moduleName = m != nullptr ? m : "";
-          
             snprintf(name, PATH_MAX, "@objc %s.%s", descriptorDisk->Name.get(), method.name->disk());
             resolvedName = name;
-                printf("\t%s%p%s  %s%s%s %s<stripped>%s\n", dcolor(DSCOLOR_GRAY), imp, color_end(), dcolor(DSCOLOR_BOLD), resolvedName, color_end(), dcolor(DSCOLOR_RED), color_end());
+            printf("\t%s%p%s  %s%s%s %s<stripped>%s\n", dcolor(DSCOLOR_GRAY), imp, color_end(), dcolor(DSCOLOR_BOLD), resolvedName, color_end(), dcolor(DSCOLOR_RED), color_end());
         } else {
             printf("\t%s%p%s  %s%s%s\n", dcolor(DSCOLOR_GRAY), imp, color_end(), dcolor(DSCOLOR_BOLD), resolvedName, color_end());
         }
     }
-//    return methodsPtr->disk();
-    
 }
 
 
