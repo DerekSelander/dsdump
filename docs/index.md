@@ -2,8 +2,6 @@
 
 # Building a class-dump in <del>2019</del> 2020
 
-## This is being actively worked on, this message will disappear when I am happy with the writeup
-
 Building out a "class-dump"-like introspection tool for Apple platforms has changed considerably since the original [class-dump](http://stevenygard.com/projects/class-dump/) came out. Learning these new (and old) technologies can be quite intimidating due to the steep learning curve and somewhat hard to find documentation.
 
 This article *attempts* to explain the complete process of programmatically inspecting a [Mach-O](https://en.wikipedia.org/wiki/Mach-O) (Apple) binary to display the compiled Swift types and Objective-C classes by discussing the following:
@@ -40,7 +38,8 @@ This writeup takes its sweet time explaining things, but there's a lot of concep
 
 If you know most of this stuff, I'd recommend just jumping to the appropriate section that you need to learn.
 
-At the time of writing this [Ghidra](https://www.nsa.gov/resources/everyone/ghidra/), [Frida](https://frida.re), [Hopper](https://www.hopperapp.com), [IDA](https://www.hex-rays.com/products/ida/), [jtool](http://www.newosxbook.com/tools/jtool.html), & friends all could provide better Swift introspection support. If you work on any of the mentioned tools, I'd recommend you follow the Swift parts.
+For all you "heavyweights" out there ([Ghidra](https://www.nsa.gov/resources/everyone/ghidra/), [Hopper](https://www.hopperapp.com), [IDA](https://www.hex-rays.com/products/ida/), [jtool](http://www.newosxbook.com/tools/jtool.html), & friends), I recommend you check out the Swift part as I have some suggestions on how to provide better Swift support for your tool.
+
 
 <p align="center">
 <img src="https://media.giphy.com/media/8YmZ14DOpivXMuckSI/giphy.gif" alt="And here we go">
@@ -76,7 +75,7 @@ In the file `<mach-o/loader.h>`, there exists a C struct called **`mach_header_6
 
 > **Note:** When referring to C System headers on your OS X machine, you can usually resolve the header location to the following Terminal command: `echo $(xcrun --show-sdk-path)/usr/include`. This resolves to the base directory search path for C system headers. The resolved filepath of loader.h can be viewed via: `cat $(xcrun --show-sdk-path)/usr/include/mach-o/loader.h | less -R`
 
-Looking at the `mach_header_64` struct, it contains the following:
+The `mach_header_64` struct contains the following:
 
 ```c
 struct mach_header_64 {
@@ -91,7 +90,7 @@ struct mach_header_64 {
 };
 ```
 
-Cross reference this with any *compiled* executable. I'll pick **grep**, feel free to pick anything else:
+Cross reference the above `mach_header_64` with any *compiled* executable. I'll pick **grep**, feel free to pick anything else:
 
 ```bash
 lolgrep:~$ xxd -g 4 -e $(which grep) | head -2
@@ -285,9 +284,9 @@ Section
 ...
 ```
 
-From the above output, the first section inside the `__TEXT` segment is a section (confusingly) called `__text`. It's this section where compiled code resides (unless someone is doing something sneaky).
+From the above output, the first section inside the `__TEXT` segment is a section (confusingly) called **`__text`**. It's this section where compiled code resides (unless someone is doing something sneaky).
 
->**Note:** You'll often see both the segment and section grouped together via a period to specify the exact Mach-O location. For example, using the above paragraph, I could also say all compiled code resides in the `__TEXT.__text` section. Most tools out there use this methodology.
+>**Note:** You'll often see both the Mach-O segment and section grouped together via a period to specify the exact Mach-O location. For example, using the above paragraph, I could also say all compiled code resides in the `__TEXT.__text` section. Most tools out there use this methodology.
 
 There are many, many interesting Mach-O sections. One could write a novel on just this topic. Again, check out the Mach-O links above to learn more about the different types of Mach-O sections. 
 
@@ -323,7 +322,7 @@ Compile ex.c:
 lolgrep:/tmp$ clang ex.c -o ex
 ```
 
-...then query the `*GlobalInt` integer symbols using the `nm` tool (which displays symbol table information, more on that later)
+Query the `*GlobalInt` integer symbols using the **`nm`** tool (which displays symbol table information, more on that later)
 
 ```bash
 lolgrep:/tmp$ nm -m ex | grep GlobalInt
@@ -688,7 +687,7 @@ Looking at the `nlist_64` value for the `someData` and `someFunction` symbols gi
 <pre>
 nlist_64 fields: n_value          n_type n_sect  n_desc n_strx   
 raw data:        0000000100002018 0f     0a      0000   0000001c _someData
-                 0000000100000f20 0f     01      0000   00000026 _someFunctin
+                 0000000100000f20 0f     01      0000   00000026 _someFunction
 </pre>
 
 * The `n_value` will give the virtual address *if the symbol is implemented locally*.
@@ -816,7 +815,7 @@ In a `MH_EXECUTE` type image, any C/Objective-C/Swift function don't need to be 
 
 > **Note:** Just because there's no symbol in the symbol table for some code doesn't mean that you can't infer that a function is there. The **`LC_FUNCTION_STARTS`** load command will export a list of all the function/method locations (*only code, NOT data*) that are implemented by an image. This information is formatted in **[ULEB](https://en.wikipedia.org/wiki/ULEB)**. This is useful for debuggers and crash analytics.
 
-What if the above code was compiled as a shared library? What would happen to the symbol table? Compile ex4.c, but now add the `-shared` option:
+What if the above code was compiled as a shared library? What would happen to the symbol table? Compile ex4.c, but now add the **`-shared`** option:
 
 ```bash
 lolgrep:/tmp$ clang -shared ex4.c -o ex4.shared
@@ -927,14 +926,16 @@ It's the dereferenced values, `0x0000000100002148` and the `0x0000000100002198` 
 (Class) $3 = AnotherClass
 ```
 
-> **Note:** As of around clang version `clang-1100.0.33.8` (in Xcode 11), the default configuration for compiling the Objective-C `__objc_class_list` Mach-O section was moved from the `__DATA` Mach-O segment to the `__DATA_CONST` Mach-O segment. This change is discussed in the DYLD opcodes part of the writeup, but just be aware that if you have an older version of clang, you'll see `__objc_class_list` in the `__DATA` Mach-O segment.
+> **Note:** As of around clang version `clang-1100.0.33.8` (in Xcode 11), the default configuration for compiling the Objective-C `__objc_class_list` Mach-O section was moved from the `__DATA` Mach-O segment to the `__DATA_CONST` Mach-O segment. This "new" Mach-O segment disables write access to areas that only needs to be written upon image loading (via dyld opcodes) and nothing more. Be aware that if you have an older version of clang, you'll see `__objc_class_list` in the `__DATA` Mach-O segment.
 
 ---
 <a name="objc4"></a>
 ## 3.2 Objc4
 ---
 
-It's quite insightful to look at the source code to build Objective-C.
+You learned where the Objective-C classes are located in memory and on disk, now it's time to look at the layout of an Objective-C class. There's *much* more info than the `<objc/runtime.h>` header most developers know about.
+
+This Objective-C class layout can be found on Apple's [opensource site](https://opensource.apple.com). 
 
 The most recent opensource Objective-C class layout (at the time of writing this) can be found in a header named **[objc4/objc4-756.2/objc-runtime.new.h](https://opensource.apple.com/source/objc4/objc4-756.2/runtime/objc-runtime-new.h.auto.html)**
 
@@ -1265,8 +1266,9 @@ Build out the following Objective-C file called **ex7.m**:
 
 int main () { return 0; }
 ```
+In the above code, `SubArray` inherits from `NSArray`, which isn't implemented in your code, but referenced via the `Foundation` module. You'll see dyld binds `NSArray` to `superclass` field of the `SubArray` class.
 
-Compile ex7.m, make sure to include the `-fno-pie` option: 
+Compile **ex7.m**, make sure to include the `-fno-pie` option: 
 
 ```bash
 lolgrep:/tmp$ clang -fmodules ex7.m  -o ex7 -fno-pie
@@ -1360,7 +1362,7 @@ These relative pointers will point to something called a **nominal type descript
 
 If you clicked on the above link, that's a little hard on the eyes, right? Figuring out the offsets for C++ classes can be a pain the ass due to inheritance. Fortunately, [Scott Knight](https://twitter.com/sdotknight) provides an *excellent* [article](https://knight.sc/reverse%20engineering/2019/07/17/swift-metadata.html) with simplified C struct offsets. If you're interested in the Swift layouts, I'd strongly suggest you read Scott's work, since Scott does a much better job explaining all the Swift struct layouts. So instead of focusing on all the different structs like Scott, I'll do a deep dive into one struct layout: the layout for Swift classes.
 
-Here's the simplified layout for a Swift class in Swift 5 
+Here's the simplified layout for a Swift class in Swift 5:
 
 ```c
 struct NominalClassDescriptor {
@@ -1375,8 +1377,8 @@ struct NominalClassDescriptor {
 
 // Implemented in NominalClassDescriptor
     int32_t  SuperclassType // The type of the superclass, expressed as a mangled type name         
-    uint32_t MetadataNegativeSizeInWords 
-    uint32_t MetadataPositiveSizeInWords 
+    uint32_t MetadataNegativeSizeInWords // Ignore for this writeup
+    uint32_t MetadataPositiveSizeInWords // Ignore for this writeup
     uint32_t NumImmediateMembers // Number of additional members stored after this class (aka NumImmediateMembers * sizeof(void*) payload)        
     uint32_t NumFields // Number of properties stored in this class   
     uint32_t FieldOffsetVectorOffset; // The offset of the field offset vector for this struct's stored properties in its metadata
@@ -1451,7 +1453,7 @@ BOOM! And that's Swift reflection in a nutshell!
 ## 5.2 Swift Methods in a Class
 ---
 
-The `NominalClassDescriptor` has 11 `int32_t` members, totalling 44 bytes. Immediately following the `NominalClassDescriptor`, there exists a varying amount of data. I won't get into the nitty gritty of this (check out the **TrailingObjects.h** header if you want to learn more), but the prologue of the `NominalClassDescriptor` will look like the following:
+The `NominalClassDescriptor` has 11 `int32_t` members, totalling 44 bytes. Immediately following the `NominalClassDescriptor`, there exists a varying amount of data. I won't get into the nitty gritty of this (check out the [TrailingObjects.h](https://github.com/apple/swift/blob/master/include/swift/ABI/TrailingObjects.h) header if you want to learn more), but the prologue of the `NominalClassDescriptor` will look like the following (provided the class has implemented some methods):
 
 ```c
   // End of NominalClassDescriptor here...
@@ -1492,7 +1494,7 @@ private:
   };
 ```
 
-> **Note:** If you're building a Swift introspection tool, the `MethodDescriptorFlags` are absolute gold. The `Impl` will give you a virtual address, which you can cross reference to the symbol table to (hopefully) get the name of symbol. Unfortunately, if the symbol table is stripped, you can't resolve the name. Fortunately, you can still get a decent idea of the stripped symbol's function by consulting the `Flags` field. For example, if the `Flag` tells you the method is a **Getter**, then you can look at the assembly of the function to find the **direct field offset** value. Once you know that value, you can cross reference that to the property offset to realize that method is the getter of the Swift property!
+> **Note:** If you're building a Swift introspection tool, the `MethodDescriptorFlags` are absolute gold. The `Impl` will give you a virtual address, which you can cross reference to the symbol table to (hopefully) get the name of symbol. As you learned earlier, if the symbol table is stripped, you can't resolve the name. Fortunately, you can still get a decent idea of the stripped symbol's function by consulting the `Flags` field. For example, if the `Flag` tells you the method is a **Getter**, then you can look at the assembly of the function to find the **direct field offset** value. Once you know that value, you can cross reference the corresponding property (and it's offset) to realize that method is the getter of that Swift property!
 
 You will programmatically explore the Swift methods implemented in a Swift class. Build out **ex9.swift** with the following code:
 
@@ -1520,7 +1522,7 @@ Query the location of the `NominalClassDescriptor` via LLDB:
 
 The `image lookup -rs` command will do a regex search for the symbol "type descriptor" that's constrained to anything in the ex9 image. This is equivalent to you manually resolving the location of the nominal type descriptor via the relative pointers from `__TEXT.__swift5_types` array in the earlier example. 
 
-For me, the `NominalClassDescriptor` for `AClass` is at **0x0000000100000f18**. Remember, this class has a size of 0x2c (44) bytes. Resolve this offset via LLDB to grab the `VTableOffset` and `VTableSize` which immediately follow it.
+For me, the `NominalClassDescriptor` for `AClass` is at **0x0000000100000f18**. Remember, the `NominalClassDescriptor` has a size of 0x2c (44) bytes. Resolve this offset via LLDB to grab the `VTableOffset` and `VTableSize` immediately following it.
 
 ```bash
 (lldb) x/2wx `0x0000000100000f18 + 44`
@@ -1557,7 +1559,7 @@ Excellent! You were able to resolve this method via Swift metadata to get the ad
 0000000100000f4c s method descriptor for ex9.AClass.aFunc() -> ()
 ```
 
-Again, both `nm` and the Swift metadata tells us the `aFunc()` will be found at address 0x00000100000d80
+Again, both `nm` and the Swift metadata tells us the `ex9.AClass.aFunc()` will be found at address 0x00000100000d80
 
 
 ---
@@ -1565,7 +1567,9 @@ Again, both `nm` and the Swift metadata tells us the `aFunc()` will be found at 
 ## 5.3 Swift Calling Convention
 ---
 
-The calling convention differs a bit in Swift in both ARM and x86 families on Apple platforms. If you're totally new to this stuff, I'd recommend reading [Mike Ash](https://twitter.com/mikeash?lang=en)'s [writeup](https://www.mikeash.com/pyblog/objc_msgsends-new-prototype.html) or [this article]https://www.raywenderlich.com/615-assembly-register-calling-convention-tutorial), which explains the C and Objective-C x86_64 calling conventions first. 
+The calling convention differs a bit in Swift in both ARM and x86 families on Apple platforms. If you're totally new to this stuff, I'd recommend reading [Mike Ash](https://twitter.com/mikeash?lang=en)'s [writeup](https://www.mikeash.com/pyblog/objc_msgsends-new-prototype.html) or [this article](https://www.raywenderlich.com/615-assembly-register-calling-convention-tutorial), which explains the C and Objective-C x86_64 calling conventions first. 
+
+Before we can talk about Swift, let's briefly recap the calling convention of Objective-C for x86_64 and ARM64:
 
 Using the `-[NSString writeToFile:atomically:]` method as an example: 
 
@@ -1582,6 +1586,8 @@ X86_64   RDI     RSI                       RDX                   RCX
 ```
 
 If you're a deer in the headlights reading this, please read the above link(s) first.
+
+Now onto Swift:
 
 Swift changes the `self` around to `R13` on x86_64 and `X20` on ARM64. Since there's no need for an Objective-C `Selector`, the `RSI`/`X1` registers can be used for arguments. 
 
@@ -1713,11 +1719,11 @@ This will dump the ARM64 assembly for the "Objective-C viewDidLoad" thunk method
   00000001000075b0  ret
 ```
 
-I've added asterisks to the interesting ARM64 assembly instructions. X0 (`self`) will get `retain`'d, X0 will transfer `self` to X20 and then call the Swift side of the `viewDidLoad` at address **0x100007368**. Again, **this method is not visible to the Swift metadata**.
+I've added asterisks to the interesting ARM64 assembly instructions. `X0` (`self`) will get `retain`'d, `X0` will transfer `self` to `X20` and then call the Swift side of the `viewDidLoad` at address **0x100007368**. Again, **this method is not visible to the Swift metadata**.
 
 For those of you who are introspection tool builders, hopefully you'll see a window to improve your toolset:
 * Even though Swift method names can be stripped out, you can infer the names of a lot of these methods using the `MethodDescriptorFlags` flags for methods.
-* You can use the Objective-C runtime's bridging thunk methods to find "hidden" bridged Swift methods 
+* You can use the Objective-C runtime's bridging thunk methods to find the "hidden" bridged Swift methods 
 * If you know a stripped symbol is Swift code using the above methods, you can infer there will be a different calling convention in play and can better use this knowledge for your diassembly engine.
 
 I can't wait to see what y'all can do with this in the future 🍻
