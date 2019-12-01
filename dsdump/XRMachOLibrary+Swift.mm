@@ -86,7 +86,7 @@ static unordered_map<TargetClassDescriptor<InProcess>*, swift_class*> swiftDescr
 
 const char *getProtocolRequirementName(ProtocolRequirementFlags::Kind kind);
 
-const char * resolveExternalTypeDescriptorIfNeeded(const char *base);
+const char * resolveExternalTypeDescriptorIfNeeded(const char *base, bool &resolved);
 
 /********************************************************************************
 // Debugging symbols
@@ -562,10 +562,10 @@ void test(uintptr_t address) {
     auto rodataDisk = rodata->disk();
     
     auto methodList = rodataDisk->baseMethodList;    
-    auto methodListDisk = methodList->disk();
-    if (methodListDisk == nullptr) {
+    if (methodList == nullptr) {
         return;
     }
+    auto methodListDisk = methodList->disk();
     auto methodsPtr = &methodListDisk->first_method;
     printf("\n");
     
@@ -654,10 +654,14 @@ void test(uintptr_t address) {
         auto &pt = fieldRecords[i];
         declarationNameType = kind == ContextDescriptorKind::Enum ? "case" : pt.Flags.isVar() ? "var" : "let";
         auto mangledNameBase = makeSymbolicMangledNameStringRef(pt.MangledTypeName.get());
-        StringRef mangledName = resolveExternalTypeDescriptorIfNeeded(mangledNameBase.data());
+        
+        // If resolved, don't need to demangle
+        // https://github.com/DerekSelander/dsdump/issues/3
+        bool resolved = false;
+        StringRef mangledName = resolveExternalTypeDescriptorIfNeeded(mangledNameBase.data(), resolved);
         auto fieldName = pt.FieldName.get();
         std::string str;
-        const char* resolvedSymbolicReference = dshelpers::simple_type(mangledName, str);
+        const char* resolvedSymbolicReference = resolved ? mangledName.data() : dshelpers::simple_type(mangledName, str);
 
         printf("\t%s%s %s %s %s%s", dcolor(DSCOLOR_GREEN),
                                            declarationNameType,
@@ -751,7 +755,7 @@ const char *getProtocolRequirementName(ProtocolRequirementFlags::Kind kind) {
 }
 
 /// https://twitter.com/LOLgrep/status/1150820937773621248
-const char * resolveExternalTypeDescriptorIfNeeded(const char *base) {
+const char * resolveExternalTypeDescriptorIfNeeded(const char *base, bool &resolved) {
   if (!base)
     return {};
     ContextDescriptor * contextDescriptor = nullptr;
@@ -770,6 +774,7 @@ const char * resolveExternalTypeDescriptorIfNeeded(const char *base) {
     }
     
     if (contextDescriptor) {
+        resolved = true;
         switch (contextDescriptor->getKind()) {
             case ContextDescriptorKind::Enum:
                 return reinterpret_cast<EnumDescriptor *>(contextDescriptor)->Name.get();
@@ -781,6 +786,7 @@ const char * resolveExternalTypeDescriptorIfNeeded(const char *base) {
             case ContextDescriptorKind::Struct:
                 return reinterpret_cast<StructDescriptor *>(contextDescriptor)->Name.get();
             default:
+                resolved = false;
                 break;
         }
     }
