@@ -590,7 +590,7 @@ You'll see undefined external symbols preceeded by a uppercase 'U'. It's `dyld`'
 ## 2.2 Symbol Table Implementation
 ---
 
-You got the high up, now it's jump into the weeds to see the symbol table data structures in action. 
+You got the high up, now let's jump into the weeds to see the symbol table data structures in action. 
 
 The location of the symbol table is given by the **`LC_SYMTAB`** Mach-O load command. The symbol table is merely just an array of a C struct called **`nlist_64`** (we're discussing 64-bit executables only here). This struct can be found in `<mach-o/nlist.h>` and has the following format:
 
@@ -897,7 +897,7 @@ With PIE disabled via LLDB, use this knowledge to run `otool` inside of the LLDB
       size 0x0000000000000010
 ```
 
-> **Note:** It's worth noting that LLDB does have the functionality to dump Mach-O sectrions (via **(lldb) image dump section [ImageName]**), although I am not very happy with the output of that command.
+> **Note:** It's worth noting that LLDB does have the functionality to dump Mach-O sections (via **(lldb) image dump section [ImageName]**), although I am not very happy with the output of that command.
 
 For my instance, the `__objc_classlist` starts at `0x0000000100001000` which has a size of 0x10 bytes (the size of 2 pointers). Confirm that this address (`0x0000000100001000`) is the `__DATA_CONST.__objc_classlist` Mach-O section loaded at runtime:
 
