@@ -97,7 +97,7 @@ VERBOSITY
            1. 0 + Parent classes
            2. 1 + Protocols
            3. 2 + Swift type dump
-           4. 3 + Extednded type jump, ObjC bridge methods
+           4. 3 + Extended type dump, ObjC bridge methods
            5. 4 + Commenting in methods
 
      --objc:
@@ -137,20 +137,22 @@ Darwin                         October 20, 2019                         Darwin
 Compiling this will be a bit of a pain in the butt on your end. You'll need to clone the Swift language in the same directory. Swift can't be a submodule to this repo since some of their git cloning scripts won't work :| 
 
 ```bash
-# cd to the same directory as the dsdump repo
-cd dsdump/.. 
+# cd into the dsdump repo
+cd dsdump/
 
 # make a directory called swift-source, yes, name it exactly that
 mkdir swift-source
 
-# clone 
-git clone git@github.com:apple/swift.git
+cd swift-source/
+
+# clone the Swift repository into swift-source
+git clone https://github.com/apple/swift.git
 
 # checkout 
 git checkout 75670c17272a993ed798cee7e31c20590e94118b
 
-# Use the swift update helper script to grab everything else 
-./swift/utils/update-checkout --clone-with-ssh
+# Use the Swift update helper script to grab everything else 
+./swift/utils/update-checkout --clone
 ```
 Comment out any remaining problematic code after a build, remove methods in `Metadata.h` as needed (i.e. problematic ARC bridging code on line 700)
 

@@ -797,5 +797,5 @@ const char * resolveExternalTypeDescriptorIfNeeded(const char *base, bool &resol
         }
     }
     
-    return base ;
+    return base;
 }

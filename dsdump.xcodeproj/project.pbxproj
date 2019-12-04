@@ -385,6 +385,7 @@
 				3FD99904233E90FE0072F4A0 /* Frameworks */,
 			);
 			sourceTree = "<group>";
+			usesTabs = 0;
 		};
 		A66A9CBC22316CF3006602AB /* Products */ = {
 			isa = PBXGroup;
@@ -859,8 +860,8 @@
 				);
 				GCC_PREPROCESSOR_DEFINITIONS_NOT_USED_IN_PRECOMPS = "";
 				HEADER_SEARCH_PATHS = (
-					"\"$(SRCROOT)/../swift-source/swift/include\"",
-					"\"$(SRCROOT)/../swift-source/llvm/include/\"",
+					"\"$(SRCROOT)/swift-source/swift/include\"",
+					"\"$(SRCROOT)/swift-source/llvm/include/\"",
 					"\"$(SRCROOT)/fix_swift\"",
 				);
 				LD_NO_PIE = YES;
@@ -891,8 +892,8 @@
 				DEVELOPMENT_TEAM = H4U46V6494;
 				GCC_PREPROCESSOR_DEFINITIONS_NOT_USED_IN_PRECOMPS = "";
 				HEADER_SEARCH_PATHS = (
-					"\"$(SRCROOT)/../swift-source/swift/include\"",
-					"\"$(SRCROOT)/../swift-source/llvm/include/\"",
+					"\"$(SRCROOT)/swift-source/swift/include\"",
+					"\"$(SRCROOT)/swift-source/llvm/include/\"",
 					"\"$(SRCROOT)/fix_swift\"",
 				);
 				LD_NO_PIE = YES;

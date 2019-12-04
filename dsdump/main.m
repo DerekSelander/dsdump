@@ -47,7 +47,7 @@ int main(int argc, const char * argv[], const char*envp[]) {
     }
     char resolved_path[PATH_MAX];
     if (!realpath(_path, resolved_path)) {
-        printf("Couldn't resolved \"%s\"\n", _path);
+        printf("Couldn't resolve \"%s\"\n", _path);
         exit(1);
     }
     NSString *path = [NSString stringWithUTF8String:resolved_path];

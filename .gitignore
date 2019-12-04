@@ -8,3 +8,5 @@ Breakpoints_v2.xcbkptlist
 /.DS_Store
 /dsdump/.DS_Store
 .DS_Store
+xcuserdata
+swift-source
