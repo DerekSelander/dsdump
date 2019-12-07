@@ -232,7 +232,7 @@ Below the `__PAGEZERO` segment, there's the `__TEXT` segment. This segment has r
 Think of this 5 value in bits...
 
 ```none
-exeuctable writeable readable
+executable writeable readable
 1          0         1
 ```
 
