@@ -813,7 +813,7 @@ yay
 
 In a `MH_EXECUTE` type image, any C/Objective-C/Swift function don't need to be externally available so that information can be removed from the symbol table. Why is that? A `MH_EXECUTE` type of file should be ran by itself, it shouldn't be loaded into another address space!
 
-> **Note:** Just because there's no symbol in the symbol table for some code doesn't mean that you can't infer that a function is there. The **`LC_FUNCTION_STARTS`** load command will export a list of all the function/method locations (*only code, NOT data*) that are implemented by an image. This information is formatted in **[ULEB](https://en.wikipedia.org/wiki/ULEB)**. This is useful for debuggers and crash analytics.
+> **Note:** Just because there's no symbol in the symbol table for some code doesn't mean that you can't infer that a function is there. The **`LC_FUNCTION_STARTS`** load command will export a list of all the function/method locations (*only code, NOT data*) that are implemented by an image. This information is formatted in **[ULEB](https://en.wikipedia.org/wiki/LEB128#Unsigned_LEB128)**. This is useful for debuggers and crash analytics.
 
 What if the above code was compiled as a shared library? What would happen to the symbol table? Compile ex4.c, but now add the **`-shared`** option:
 
