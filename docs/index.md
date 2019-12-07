@@ -358,7 +358,7 @@ The `size` member indicates the size of the `__DATA.__data` section (which is 8 
 Verify this with `xxd` again by dumping the raw bytes at offset **4096** (or equivalent for your compilation):
 
 ```bash
-lolgrep:/tmp$ xxd -g 4 -e -s 4096 -c 8 ex
+lolgrep:/tmp$ xxd -g 4 -e -s 4096 -l 8 ex
 00001000: 00000008 00000007                    ........
 ```
 
@@ -366,7 +366,7 @@ Breaking the options down:
 * `-g 4`   : group into 4 bytes
 * `-e`     : little endian mode
 * `-s 4096`: Start at offset 4096, given by the `offset` member
-* `-c 8`   : Stop after displaying 8 bytes (each int was 4 bytes)
+* `-l 8`   : Stop after displaying 8 bytes (each int was 4 bytes)
 
 At offset 4096 (or 0x1000 in hex) the value of 8 followed by the value of 7, matches the assigned values for `SomeGlobalInt` and `SecondGlobalInt` in the source code.
 
