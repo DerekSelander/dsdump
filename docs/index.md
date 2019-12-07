@@ -867,7 +867,13 @@ Build up an executable with Objective-C code and name it **ex5.m**:
 @interface AClass : NSObject
 @end
 
+@implementation AClass
+@end
+
 @interface AnotherClass : AClass
+@end
+
+@implementation AnotherClass
 @end
 
 int main() { return 0; }
