@@ -301,7 +301,7 @@ static void ensureSafeAddressForMMap(size_t memory_size) {
                         [self.sectionCommandsArray addObject:@(sec_ptr)];
                         payload::sections.push_back(&sections[j]);
                         
-                        if (strcmp(section.segname, "__DATA") == 0 && strcmp(section.sectname, "__la_symbol_ptr") == 0) {
+                        if (strcmp(section.segname, SEG_DATA) == 0 && strcmp(section.sectname, "__la_symbol_ptr") == 0) {
                             self.lazy_ptr_section = &sections[j]; //calloc(1, sizeof(struct section_64));
                         }
                     }
