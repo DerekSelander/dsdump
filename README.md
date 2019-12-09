@@ -13,55 +13,55 @@ Works great on Objective-C classes
 ```
 dsdump(1)                 BSD General Commands Manual                dsdump(1)
 
-NNAAMMEE
-     ddssdduummpp -- An improved nm + objc/swift class-dump
+NAME
+     dsdump -- An improved nm + objc/swift class-dump
 
-SSYYNNOOPPSSIISS
-     ddssdduummpp [option...] _<_m_a_c_h_-_o_-_f_i_l_e_>
+SYNOPSIS
+     dsdump [option...] <mach-o-file>
 
-DDEESSCCRRIIPPTTIIOONN
+DESCRIPTION
      Provides an "nm-improved" experience when working with Mach-O executa-
      bles. dsdump has 3 "primary" modes: Symbol table (--sym), Objective-C
      (--objc), and Swift (--swift, -s). Omitting all of these options will
      default to the sym mode.
 
-OOPPTTIIOONNSS
-     --cc,, ----ccoolloorr
+OPTIONS
+     -c, --color
              Adds color to output
 
-     --OO,, ----ooppccss
+     -O, --opcs
              Dump the DYLD opcodes used to bind external symbols at load time
 
-     --ff,, ----ffiilltteerr _F_i_l_t_e_r_W_o_r_d
+     -f, --filter FilterWord
              Specify classes to filter by (case insensitive, can be used mul-
              tiple times)
 
-     --aa,, ----aarrcchh _a_r_c_h_i_t_e_c_t_u_r_e
+     -a, --arch architecture
              Specify the arichtecture if file is FAT. Understands x86_64h,
              x86_64, arm64, arm64e
 
-     --uu,, ----uunnddeeffiinneedd
+     -u, --undefined
              Only display undefined (externally referenced) symbols or classes
 
-     --UU,, ----ddeeffiinneedd
+     -U, --defined
              Only display defined (internally implemented) symbols or classes
 
-     --vv,, ----vveerrbboossee
+     -v, --verbose
              Specifies the verbosity level. The -v option can be used multiple
              times, while the long argument sets the exact level 0-5. Kind of
              like codesign(1)'s verbosity that everyone complains about...
 
-     ----oobbjjcc  Dump the Objective-C classes
+     --objc  Dump the Objective-C classes
 
-     ----sswwiifftt
+     --swift
              Dump the Swift type descriptors (classes, structs, enums)
 
-     --ss      Sets mode to Swift mode and verbosity to level 4
+     -s      Sets mode to Swift mode and verbosity to level 4
 
-     --hh,, ----hheellpp
+     -h, --help
              Print out this beautiful, helpful document
 
-EEXXAAMMPPLLEESS
+EXAMPLES
      List ObjC internal/external classes referenced/implemented by vmmap:
            dsdump --objc $(which vmmap)
 
@@ -78,7 +78,7 @@ EEXXAAMMPPLLEESS
            dsdump --swift
            /Applications/Utilities/Console.app/Contents/MacOS/Console -cvvvv
 
-VVEERRBBOOSSIITTYY
+VERBOSITY
      dsdump can output a range of verbosity between the 3 different modes
      (--sym, --swift, --objc). The verbosity level can be set by the long form
      (--verbose=3) or by specifying a count via short form (-vvv). The break-
@@ -108,16 +108,16 @@ VVEERRBBOOSSIITTYY
            4. 3 + Print properties
            5. 4 + Print ivars & offsets
 
-EENNVVIIRROONNMMEENNTT
+ENVIRONMENT
      DSCOLOR Enables color. Alternatively, use -c
 
-     ARCH _<_a_r_c_h_> Specify the architecture if inspecting a FAT executable,
+     ARCH <arch> Specify the architecture if inspecting a FAT executable,
      Alternatively use --arch
 
-SSEEEE AALLSSOO
+SEE ALSO
      nm(1), objdump(1), vmmap(1)
 
-BBUUGGSS
+BUGS
      There's a situation where occassionally dsdump will think the parent
      class is a RO_ROOT where it will in fact won't be. I'll print this out
      for now so I can hunt it down
@@ -125,8 +125,8 @@ BBUUGGSS
      ARM64e still needs some luv, especially on the Swift side, especially
      with Protocols... and not crashing
 
-AAUUTTHHOORRSS
-     Derek Selander _@_L_O_L_g_r_e_p
+AUTHORS
+     Derek Selander @LOLgrep
 
 Darwin                         December 8, 2019                         Darwin
 ```
