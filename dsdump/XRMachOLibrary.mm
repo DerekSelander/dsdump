@@ -280,7 +280,7 @@ static void ensureSafeAddressForMMap(size_t memory_size) {
                     char seg_name[17] = {};
                     memcpy(seg_name, cmd->segname, 16);
                     NSString *segmentKey = [NSString stringWithUTF8String:seg_name];
-                    if (cmd->flags & SG_PROTECTED_VERSION_1) {
+                    if (cmd->flags & SG_PROTECTED_VERSION_1 && !xref_options.symbol_mode) {
                         // FIXME, implement protected executables
                         // https://github.com/DerekSelander/dsdump/issues/6
                         printf("%s is protected, come again at a later beta\n", cmd->segname);
