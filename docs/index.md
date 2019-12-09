@@ -232,7 +232,7 @@ Below the `__PAGEZERO` segment, there's the `__TEXT` segment. This segment has r
 Think of this 5 value in bits...
 
 ```none
-exeuctable writeable readable
+executable writeable readable
 1          0         1
 ```
 
@@ -358,7 +358,7 @@ The `size` member indicates the size of the `__DATA.__data` section (which is 8 
 Verify this with `xxd` again by dumping the raw bytes at offset **4096** (or equivalent for your compilation):
 
 ```bash
-lolgrep:/tmp$ xxd -g 4 -e -s 4096 -c 8 ex
+lolgrep:/tmp$ xxd -g 4 -e -s 4096 -l 8 ex
 00001000: 00000008 00000007                    ........
 ```
 
@@ -366,7 +366,7 @@ Breaking the options down:
 * `-g 4`   : group into 4 bytes
 * `-e`     : little endian mode
 * `-s 4096`: Start at offset 4096, given by the `offset` member
-* `-c 8`   : Stop after displaying 8 bytes (each int was 4 bytes)
+* `-l 8`   : Stop after displaying 8 bytes (each int was 4 bytes)
 
 At offset 4096 (or 0x1000 in hex) the value of 8 followed by the value of 7, matches the assigned values for `SomeGlobalInt` and `SecondGlobalInt` in the source code.
 
@@ -813,7 +813,7 @@ yay
 
 In a `MH_EXECUTE` type image, any C/Objective-C/Swift function don't need to be externally available so that information can be removed from the symbol table. Why is that? A `MH_EXECUTE` type of file should be ran by itself, it shouldn't be loaded into another address space!
 
-> **Note:** Just because there's no symbol in the symbol table for some code doesn't mean that you can't infer that a function is there. The **`LC_FUNCTION_STARTS`** load command will export a list of all the function/method locations (*only code, NOT data*) that are implemented by an image. This information is formatted in **[ULEB](https://en.wikipedia.org/wiki/ULEB)**. This is useful for debuggers and crash analytics.
+> **Note:** Just because there's no symbol in the symbol table for some code doesn't mean that you can't infer that a function is there. The **`LC_FUNCTION_STARTS`** load command will export a list of all the function/method locations (*only code, NOT data*) that are implemented by an image. This information is formatted in **[ULEB](https://en.wikipedia.org/wiki/LEB128#Unsigned_LEB128)**. This is useful for debuggers and crash analytics.
 
 What if the above code was compiled as a shared library? What would happen to the symbol table? Compile ex4.c, but now add the **`-shared`** option:
 
@@ -867,7 +867,13 @@ Build up an executable with Objective-C code and name it **ex5.m**:
 @interface AClass : NSObject
 @end
 
+@implementation AClass
+@end
+
 @interface AnotherClass : AClass
+@end
+
+@implementation AnotherClass
 @end
 
 int main() { return 0; }
