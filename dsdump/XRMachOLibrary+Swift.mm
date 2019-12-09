@@ -762,8 +762,14 @@ const char * resolveExternalTypeDescriptorIfNeeded(const char *base, bool &resol
     auto end = base;
     while (*end != '\0') {
         if (*end >= '\x01' && *end <= '\x17') {
-            end++;
-            contextDescriptor = (ContextDescriptor *)(*(int32_t *)(end) + (uintptr_t)end);
+            switch (*end++) {
+                case '\x01':
+                    contextDescriptor = (ContextDescriptor *)(*(int32_t *)(end) + (uintptr_t)end);
+                    break;
+                case '\x02':
+                    contextDescriptor = payload::DiskWrapper<ContextDescriptor>::Cast(*(uintptr_t *)(*(int32_t *)end + (uintptr_t)end))->disk();
+                    break;
+            }
             break;
 
         } else if (*end >= '\x18' && *end <= '\x1F') {
@@ -791,5 +797,5 @@ const char * resolveExternalTypeDescriptorIfNeeded(const char *base, bool &resol
         }
     }
     
-    return base ;
+    return base;
 }
