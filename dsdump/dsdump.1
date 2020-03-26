@@ -14,6 +14,8 @@ Provides an "nm-improved" experience when working with Mach-O executables. dsdum
 .Bl -tag -width indent
 .It Fl c, -color
 Adds color to output
+.It Fl l, -library
+Instead of dumping symbols, search all procs for library
 .It Fl O, -opcs
 Dump the DYLD opcodes used to bind external symbols at load time
 .It Fl f, -filter Ar FilterWord
@@ -38,6 +40,9 @@ Print out this beautiful, helpful document
 .Sh EXAMPLES
 List ObjC internal/external classes referenced/implemented by vmmap:
 .Dl dsdump --objc $(which vmmap)
+.Pp
+List all alive processes that have the MobileDevice loaded
+.Dl sudo dsdump  -l /S*/L*/P*/MobileDevice.framework/MobileDevice
 .Pp
 List the Objective-C external classes called by vmmap:
 .Dl dsdump --objc $(which vmmap) -u
