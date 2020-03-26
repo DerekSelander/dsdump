@@ -12,14 +12,13 @@
 #import <libproc.h>
 #import <mach/mach_vm.h>
 #import <libgen.h>
-#import "dyld_process_info_internal.h"
-
+#import <mach-o/dyld_images.h>
+#import <mach/mach.h>
 
 extern "C" {
 
-    
 #import "miscellaneous.h"
-BOOL FindLibraryInTask(pid_t task, const char *search_string, uint64_t *loadAddr, kern_return_t* err);
+BOOL FindLibraryInTask(pid_t task, pid_t pid, const char *search_string, uint64_t *loadAddr, kern_return_t* err);
     
 void DumpProcessesContainingLibrary(const char *lib_name) {
     int pidcount = proc_listallpids(NULL, 0);
@@ -34,7 +33,7 @@ void DumpProcessesContainingLibrary(const char *lib_name) {
         
         
         uint64 loadAddr = 0;
-        if (!FindLibraryInTask(pid_task, lib_name, &loadAddr, NULL)) { continue; }
+        if (!FindLibraryInTask(pid_task, pid, lib_name, &loadAddr, NULL)) { continue; }
         
         char buffer[PATH_MAX];
         proc_regionfilename(all_pids[i], 0, buffer, PATH_MAX);
@@ -53,14 +52,13 @@ void DumpProcessesContainingLibrary(const char *lib_name) {
         
         
         printf("%s%d%s", dcolor(DSCOLOR_CYAN), all_pids[i], color_end());
-        printf(" %s%s%s", dcolor(DSCOLOR_YELLOW), [p UTF8String], color_end());
-
+        printf(" %s%s%s", dcolor(DSCOLOR_GREEN), [p UTF8String], color_end());
         putchar('\n');
     }
 }
 
 
-BOOL FindLibraryInTask(pid_t task, const char *search_string, uint64_t *loadAddr, kern_return_t* err) {
+BOOL FindLibraryInTask(pid_t task, pid_t pid, const char *search_string, uint64_t *loadAddr, kern_return_t* err) {
     
     kern_return_t kr = KERN_SUCCESS;
     if (loadAddr) { *loadAddr = 0; }
@@ -78,12 +76,12 @@ BOOL FindLibraryInTask(pid_t task, const char *search_string, uint64_t *loadAddr
         return NO;
     }
     
-    if (task_dyld_info.all_image_info_size > sizeof(dyld_all_image_infos_64)) {
+    if (task_dyld_info.all_image_info_size > sizeof(struct dyld_all_image_infos)) {
         if (err) *err = -1;
         return NO;
     }
     
-    dyld_all_image_infos_64 all_image_infos;
+    struct dyld_all_image_infos all_image_infos;
     mach_vm_size_t readSize = task_dyld_info.all_image_info_size;
     if ((kr = mach_vm_read_overwrite(task, task_dyld_info.all_image_info_addr, task_dyld_info.all_image_info_size, (vm_address_t)&all_image_infos, &readSize) ) != KERN_SUCCESS) {
         if (err) *err = kr;
@@ -94,19 +92,24 @@ BOOL FindLibraryInTask(pid_t task, const char *search_string, uint64_t *loadAddr
     if (all_image_infos.version < 0xf) { return NO; }
     
     uint32_t imageCount = all_image_infos.infoArrayCount;
-    size_t imageArraySize = imageCount * sizeof(dyld_image_info_64);
-    dyld_image_info_64 *imageArray64 = (dyld_image_info_64 *)malloc(imageArraySize);
-    if ((kr = mach_vm_read_overwrite(task, all_image_infos.infoArray, imageArraySize, (vm_address_t)imageArray64, &readSize)) != KERN_SUCCESS ) {
+    size_t imageArraySize = imageCount * sizeof(dyld_image_info);
+    dyld_image_info *imageArray64 = (dyld_image_info *)malloc(imageArraySize);
+    if ((kr = ::mach_vm_read_overwrite(task, (mach_vm_address_t)all_image_infos.infoArray, imageArraySize, (vm_address_t)imageArray64, &readSize)) != KERN_SUCCESS ) {
         if (err) *err = kr;
         return NO;
     }
     
     for (int i = 0; i < imageCount; i++) {
         char path[PATH_MAX];
-        kr = mach_vm_read_overwrite(task, imageArray64[i].imageFilePath, PATH_MAX, (vm_address_t)path, &readSize);
+        // Just restart, there can be a bad addresses
+        if (::mach_vm_read_overwrite(task, (mach_vm_address_t)imageArray64[i].imageFilePath, PATH_MAX, (vm_address_t)path, &readSize)) {
+            continue;
+        }
         if (strstr(path, search_string)) {
             if (err) *err = kr;
-            if (loadAddr) *loadAddr = imageArray64[i].imageLoadAddress;
+            if (loadAddr) {
+                *loadAddr = (uint64_t)imageArray64[i].imageLoadAddress;
+            }
             return YES;
         }
     }
