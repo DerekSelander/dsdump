@@ -152,7 +152,7 @@ git clone https://github.com/apple/swift.git
 git checkout 75670c17272a993ed798cee7e31c20590e94118b
 
 # Use the Swift update helper script to grab everything else 
-./swift/utils/update-checkout --clone
+ ./swift/utils/update-checkout --clone-with-ssh   --tag swift-5.1.4-RELEASE
 ```
 Comment out any remaining problematic code after a build, remove methods in `Metadata.h` as needed (i.e. problematic ARC bridging code on line 700)
 
