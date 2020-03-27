@@ -319,12 +319,13 @@ static void ensureSafeAddressForMMap(size_t memory_size) {
             // Could only have gotten here if --arch is not specified
             dprintf(STDERR_FILENO, "%sMultiple arches found: %s%s\n", dcolor(DSCOLOR_RED), [self printAllArchitectures].UTF8String, color_end());
             dprintf(STDERR_FILENO, "%sUse --arches (-A) (or ARCH env var) to specify arch, defaulting to: %s%s\n",  dcolor(DSCOLOR_RED), [self defaultArchitectureName].UTF8String, color_end());
+            exit(1);
             
-            payload::offset = [self offsetForDefaultArchitecture];
-            payload::data = &payload::data[payload::offset];
-            magic = *payload::GetData<uint32_t>(0);
-            goto LOL;
-            assert(0);
+//            payload::offset = [self offsetForDefaultArchitecture];
+//            payload::data = &payload::data[payload::offset];
+//            magic = *payload::GetData<uint32_t>(0);
+//            goto LOL;
+//            assert(0);
             
         } else if (magic == FAT_MAGIC_64 || magic == FAT_CIGAM_64) {
             printf("FAT MAGIC 64 headers not implemented... tell Derek what module is using this\n");

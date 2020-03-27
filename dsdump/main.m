@@ -64,7 +64,7 @@ int main(int argc, const char * argv[], const char*envp[]) {
             dprintf(STDERR_FILENO, "Needs root privledges for this operation\n");
             exit(1);
         }
-        DumpProcessesContainingLibrary(basename(resolved_path));
+        DumpProcessesContainingLibrary(basename(resolved_path), image.uuid_cmd->uuid);
     }
         
     // Go through the options and pick a default if nothing is set

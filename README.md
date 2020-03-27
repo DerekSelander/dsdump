@@ -23,11 +23,14 @@ DESCRIPTION
      Provides an "nm-improved" experience when working with Mach-O executa-
      bles. dsdump has 3 "primary" modes: Symbol table (--sym), Objective-C
      (--objc), and Swift (--swift, -s). Omitting all of these options will
-     default to the sym mode.
+     default to the Swift mode.
 
 OPTIONS
      -c, --color
              Adds color to output
+
+     -l, --library
+             Instead of dumping symbols, search all procs for library
 
      -O, --opcs
              Dump the DYLD opcodes used to bind external symbols at load time
@@ -64,6 +67,9 @@ OPTIONS
 EXAMPLES
      List ObjC internal/external classes referenced/implemented by vmmap:
            dsdump --objc $(which vmmap)
+
+     List all alive processes that have the MobileDevice loaded
+           sudo dsdump -l /S*/L*/P*/MobileDevice.framework/MobileDevice
 
      List the Objective-C external classes called by vmmap:
            dsdump --objc $(which vmmap) -u
@@ -128,7 +134,7 @@ BUGS
 AUTHORS
      Derek Selander @LOLgrep
 
-Darwin                         December 8, 2019                         Darwin
+Darwin                          March 26, 2020                          Darwin
 ```
 <!--man_stop--->
 
@@ -162,7 +168,7 @@ Alternatively, you can skip all of this by simply grabbing the compiled `dsdump`
 
 Compiled SHA1
 ```
-SHA1: 0084dfbe9ef0971b316304365b5a582bd9b65763
+SHA1: b117ca45f52716fe15bc434360e47034ca763441
 ```
 
 ### Credits

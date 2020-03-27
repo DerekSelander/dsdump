@@ -17,6 +17,6 @@
 //} LibraryTaskError;
 
 //  BOOL FindLibraryInTask(pid_t task, char *search_string, LibraryTaskError* err) ;
-void DumpProcessesContainingLibrary(const char *lib_name);
+void DumpProcessesContainingLibrary(const char *lib_name, uuid_t uuid);
 
 #endif /* TaskPath_hpp */
