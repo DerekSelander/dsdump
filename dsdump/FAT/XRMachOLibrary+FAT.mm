@@ -56,7 +56,7 @@
     struct fat_header *fat  = payload::GetData<struct fat_header>(0); //(void*)payload::data;
     if (magic == MH_CIGAM_64 || magic == MH_MAGIC_64) {
         
-        auto mach_header = payload::GetData<struct mach_header_64>(sizeof(struct fat_header));
+        auto mach_header = payload::GetData<struct mach_header_64>(0);
         cpu_subtype_t cpu_subytpe =  mach_header->cpusubtype;
         cpu_subytpe = FIX_ENDIAN(cpu_subytpe);
         
@@ -64,6 +64,9 @@
         cputype = FIX_ENDIAN(cputype);
         
         if ([[self nameForCPU:cputype subtype:cpu_subytpe] isEqualToString:architecture]) {
+            if (size) {
+                *size = payload::size;
+            }
             return 0;
         } else {
             if (size) {

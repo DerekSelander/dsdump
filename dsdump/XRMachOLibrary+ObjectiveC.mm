@@ -175,6 +175,7 @@ static NSDictionary <NSString*, NSNumber*> *blacklistedSelectors = nil;
             classSection = payload::sectionsDict["__DATA_CONST.__objc_classlist"];
         }
         if (classSection == nullptr) {
+            printf("no Objective-C classes\n");
             return;
         }
         
