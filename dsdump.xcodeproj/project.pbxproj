@@ -669,7 +669,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "# Type a script or drag a script file from your workspace to insert its path.\ncd ${SRCROOT}/compiled/\n# Remove previous version\nrm -rf ${SRCROOT}/compiled/dsdump_*\n\n# Add the zip\nzip -r dsdump_${DSDUMP_VERSION}.zip ${SRCROOT}/compiled/dsdump \n\n# Remove the pre-zipped dsdump\nrm -rf ${SRCROOT}/compiled/dsdump\n";
+			shellScript = "# Type a script or drag a script file from your workspace to insert its path.\ncd ${SRCROOT}/compiled/\n# Remove previous version\nrm -rf ${SRCROOT}/compiled/dsdump.*zip\n\n# Add the zip\nzip -r dsdump_${DSDUMP_VERSION}.zip dsdump \n\n# Remove the pre-zipped dsdump\nrm -rf ${SRCROOT}/compiled/dsdump\n";
 		};
 		3F50D78B231577C30017A20A /* Generate SHA256 */ = {
 			isa = PBXShellScriptBuildPhase;

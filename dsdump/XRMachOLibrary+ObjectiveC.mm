@@ -114,7 +114,8 @@ NSDictionary <NSString*, NSNumber*> *blacklistedSelectors = nil;
     // Defined symbols, will go after the __DATA.__objc_classlist pointers
     if (xref_options.defined || !(xref_options.undefined || xref_options.defined)) {
         
-        dumpObjectiveCProtocols();
+        // Wait till ready...dumpObjectiveCProtocols
+        // dumpObjectiveCProtocols();
         
         struct section_64* classSection = payload::sectionsDict["__DATA.__objc_classlist"];
         if (classSection == nullptr) { // iOS 13 ARM64E has some changes...
