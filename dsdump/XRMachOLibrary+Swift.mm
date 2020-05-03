@@ -15,18 +15,19 @@
 #endif // OBJC_RUNTIME
 
 #import <dlfcn.h>
-#import "XRMachOLibrary+Swift.h"
-#import "XRSymbolEntry.h"
-#import "objc_.h"
-#import "XRMachOLibrary+ObjectiveC.h"
-#import "string.h"
 #import <unordered_map>
 #import <iostream>
 #import <vector>
 #import <type_traits>
+#import <mach-o/getsect.h>
+
+#import "string.h"
+#import "XRMachOLibrary+Swift.h"
+#import "XRSymbolEntry.h"
+#import "objc_.h"
+#import "XRMachOLibrary+ObjectiveC.h"
 #import "XRMachOLibraryCplusHelpers.h"
 #import "XRMachOLibrary+Disassemble.h"
-#import <mach-o/getsect.h>
 
 /////////////////////////////////////////////////////////
 // muwahahahahahaha going to hell for this...

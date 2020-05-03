@@ -9,13 +9,17 @@
 .Op option...
 .Ar <mach-o-file>
 .Sh DESCRIPTION
-Provides an "nm-improved" experience when working with Mach-O executables. dsdump has 3 "primary" modes: Symbol table (--sym), Objective-C (--objc), and Swift (--swift, -s). Omitting all of these options will default to the Swift mode.
+Provides an "nm-improved" experience when working with Mach-O executables. dsdump has 6 "primary" modes: Symbol table (--sym), Objective-C (--objc), Swift (--swift, -s), File Offset => Virtual Address (--offset, -F), Virtual Address => File Offset (--virtual, -A), Library reference (--library, -l). Omitting all of these options will default to the symbol table mode.
 .Sh OPTIONS
 .Bl -tag -width indent
 .It Fl c, -color
 Adds color to output
 .It Fl l, -library
 Instead of dumping symbols, search all procs for library
+.It Fl A, -virtual Ar VirtualAddress(hex)
+Converts to the virtual address to the file offset
+.It Fl F, -offset Ar FileOffset(hex)
+Converts to the file offset to the virtual address
 .It Fl O, -opcs
 Dump the DYLD opcodes used to bind external symbols at load time
 .It Fl f, -filter Ar FilterWord

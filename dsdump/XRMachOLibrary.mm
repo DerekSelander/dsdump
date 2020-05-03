@@ -7,7 +7,17 @@
 //
 
 
+/////////////////////////////////////////////////////////
+// muwahahahahahaha going to hell for this...
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Weverything"
+
 #import "swift/Demangling/Demangler.h"
+
+#pragma clang diagnostic pop
+// </muwahahahahahaha going to hell for this...>
+/////////////////////////////////////////////////////////
+
 #import "XRMachOLibrary.h"
 #import "miscellaneous.h"
 #import "XRMachOLibrary.h"
@@ -361,6 +371,11 @@ static void ensureSafeAddressForMMap(size_t memory_size) {
         exit(0);
     }
     
+    if (xref_options.file_offset) {
+        [self handleFileOffset];
+        exit(0);
+    }
+    
     return self;
 }
 
@@ -546,6 +561,28 @@ static void ensureSafeAddressForMMap(size_t memory_size) {
     for (int i = 0; i < xref_options.virtual_address_count; i++) {
         auto addr = &diskAddr[i];
         printf("  %s0x%016lx%s:   %s0x%016lx%s %s0x%016lx%s\n", dcolor(DSCOLOR_CYAN), xref_options.virtual_address + (i * PTR_SIZE), color_end(), dcolor(DSCOLOR_YELLOW), *addr, color_end(), dcolor(DSCOLOR_RED), ARM64E_POINTER(*reinterpret_cast<uintptr_t*>(addr)), color_end());
+    }
+}
+
+/// Display file offset
+- (void)handleFileOffset {
+
+    auto addrs = payload::LoadToDiskTranslator<uintptr_t>::Cast(&payload::data[xref_options.file_offset])->loadAddress();
+    bool success = false;
+    for (NSNumber *sectionAddress in self.sectionCommandsArray) {
+        if ([sectionAddress isEqualTo:[NSNull null]]) {
+            continue;
+        }
+        struct section_64 *sect = (struct section_64*)sectionAddress.pointerValue;
+        if (sect->addr <= addrs && addrs < (sect->addr + sect->size)) {
+            printf("Offset: %s0x%lx (%lu)%s => %s%p%s, found in %s%p - %p%s, %s%s.%s%s\n", dcolor(DSCOLOR_CYAN), xref_options.file_offset, xref_options.file_offset, color_end(), dcolor(DSCOLOR_GREEN), (void*)addrs, color_end(), dcolor(DSCOLOR_YELLOW), (void*)sect->addr, (void*)(sect->addr + sect->size), color_end(), dcolor(DSCOLOR_MAGENTA), sect->segname, sect->sectname, color_end());
+            success = true;
+            break;
+        }
+    }
+    if (!success) {
+        printf("Couldn't find address 0x%lx (%lu)!\n", xref_options.file_offset, xref_options.file_offset);
+        exit(1);
     }
 }
 

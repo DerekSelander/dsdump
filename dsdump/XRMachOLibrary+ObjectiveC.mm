@@ -13,6 +13,9 @@
 #import "objc_.h"
 #import "XRMachOLibrary+Swift.h"
 #import "XRSymbolEntry.h"
+#import "Properties.h"
+#import "Protocols.h"
+#import "Methods.h"
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Weverything"
@@ -34,7 +37,8 @@
 /// Swift uses offset references for ivars when referencing methods
 static NSMutableDictionary *__ivarsDictionary = nil;
 /// Certain things -debugDescription that every class has, no need to display them
-static NSDictionary <NSString*, NSNumber*> *blacklistedSelectors = nil;
+NSDictionary <NSString*, NSNumber*> *blacklistedSelectors = nil;
+
 
 @implementation XRMachOLibrary (ObjectiveC)
 
@@ -53,69 +57,9 @@ static NSDictionary <NSString*, NSNumber*> *blacklistedSelectors = nil;
         return;
     }
     
-    auto methodList = rodata->disk()->baseMethodList;
-    if (methodList == nullptr) {
-        return;
-    }
-    
     uint8_t isMeta = rodata->disk()->flags & RO_META ? 1 : 0 ;
-    auto count = methodList->disk()->count;
-    auto methods = &methodList->disk()->first_method;
-    if (xref_options.verbose > VERBOSE_2) {
-        printf("\t// %s methods\n", isMeta ? "class" : "instance");
-    }
-    
-    for (int i = 0; i < count; i++) {
-        auto method = methods[i];
-        auto methodAddress = method.imp->strip_PAC();
-        auto methodName = method.name->disk();
-        if (blacklistedSelectors[[NSString stringWithUTF8String:methodName]]) {
-            continue;
-        }
-        printf("\t%s0x%011lx%s %s%c[%s %s]%s\n", dcolor(DSCOLOR_GRAY), (unsigned long)methodAddress, color_end(), dcolor(DSCOLOR_BOLD), "-+"[isMeta], name, methodName, color_end());
-    }
-    
-    if (xref_options.verbose > VERBOSE_2) {
-        putchar('\n');
-    }
-}
-
-/********************************************************************************
- // Properties
- ********************************************************************************/
-- (void)dumpObjCPropertiesWithResolvedAddress:(swift_class*)cls {
-  if (xref_options.verbose < VERBOSE_4) {
-      return;
-  }
-    
-    auto clsDisk = cls->disk();
-    auto rodata = clsDisk->rodata();
-    if (rodata == nullptr) {
-        return;
-    }
-    
-    auto propertiesList = rodata->disk()->baseProperties;
-    if (propertiesList == nullptr) {
-        return;
-    }
-    
-    auto propertiesListDisk = propertiesList->disk();
-    auto count = propertiesListDisk->count;
-    auto properties = &propertiesListDisk->first_property;
-    if (properties == nullptr) {
-        return;
-    }
-    
-    for (int i = 0; i < count; i++) {
-        auto property = properties[i];
-        auto propertyName = property.name->disk();
-        auto propertyAttributes = property.attributes->disk();
-        printf("\t%s@property %s%s %s%s%s\n", dcolor(DSCOLOR_GREEN), propertyAttributes, color_end(), dcolor(DSCOLOR_BOLD), propertyName, color_end());
-    }
-    
-    if (count) {
-        putchar('\n');
-    }
+    auto methodList = rodata->disk()->baseMethodList;
+    dumpObjectiveCMethods(methodList, name, isMeta);
 }
 
 /********************************************************************************
@@ -169,6 +113,8 @@ static NSDictionary <NSString*, NSNumber*> *blacklistedSelectors = nil;
 - (void)dumpObjectiveCClasses {
     // Defined symbols, will go after the __DATA.__objc_classlist pointers
     if (xref_options.defined || !(xref_options.undefined || xref_options.defined)) {
+        
+        dumpObjectiveCProtocols();
         
         struct section_64* classSection = payload::sectionsDict["__DATA.__objc_classlist"];
         if (classSection == nullptr) { // iOS 13 ARM64E has some changes...
@@ -260,7 +206,7 @@ static NSDictionary <NSString*, NSNumber*> *blacklistedSelectors = nil;
             ///////////////////////
             // Dump protocols... //
             ///////////////////////
-            if (![self printObjectiveCProtocols:cls]) {
+            if (!listProtocolsForObjectiveCClass(cls)) {
                 putchar('\n');
             }
             
@@ -271,7 +217,7 @@ static NSDictionary <NSString*, NSNumber*> *blacklistedSelectors = nil;
                 [self dumpObjCInstanceVariablesWithResolvedAddress:cls];
                 
                 // Dump properties...
-                [self dumpObjCPropertiesWithResolvedAddress:cls];
+                dumpObjCPropertiesWithResolvedAddress(cls);
                 
                 // Dumps class methods first...
                 auto metaCls = cls->disk()->isa();
@@ -329,7 +275,6 @@ static NSDictionary <NSString*, NSNumber*> *blacklistedSelectors = nil;
             continue;
         }
         auto categoryDisk = category->disk();
-
         const char * clsName = categoryDisk->cls->validAddress() ? categoryDisk->cls->GetName() : NULL;
         
         
@@ -381,47 +326,12 @@ static NSDictionary <NSString*, NSNumber*> *blacklistedSelectors = nil;
     }
 }
 
+@end
+
 /********************************************************************************
  // Protocols
  ********************************************************************************/
--(BOOL)printObjectiveCProtocols:(swift_class*)cls {
-    if (xref_options.verbose <= VERBOSE_1) {
-        return NO;
-    }
-    
-    auto rodata = cls->disk()->rodata();
-    if (rodata == nullptr) {
-        return NO;
-    }
-    
-    auto protocolList = rodata->disk()->baseProtocols;
-    if (protocolList == nullptr) {
-        return NO;
-    }
-    
-    auto count = protocolList->disk()->count;
-    if (count == 0) {
-        return NO;
-    }
-    
-    auto protocols = &protocolList->disk()->first_protocol;
-    printf("%s <", dcolor(DSCOLOR_YELLOW));
-    
-    for (int i = 0; i < count; i++) {
-        auto prot = protocols[i];
-        auto mangledName = prot->disk()->mangledName->disk();
-        printf("%s", mangledName ? mangledName : "<unknown>");
-        if (i != count - 1) {
-            putchar(',');
-            putchar(' ');
-        }
-    }
-    printf(">\n%s", color_end());
 
-    return YES;
-}
-
-@end
 
 
 

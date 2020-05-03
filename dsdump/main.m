@@ -24,7 +24,6 @@
 Declarations
 *******************************************************************************/
 
-
 static NSArray <NSString *>* exc_rpaths = nil;
 //static int analyzeFD = -1;
 static void handle_args(int argc, const char * argv[]);
@@ -72,8 +71,6 @@ int main(int argc, const char * argv[], const char*envp[]) {
         [image dumpSymbols];
     }
     
-
-    
     return 0;
 }
 
@@ -83,6 +80,8 @@ static void handle_args(int argc, const char * argv[]) {
         int option_index = 0;
         static struct option long_options[] = {
             {"arch",       required_argument, 0,  0},
+            {"offset",     required_argument, 0,  0},
+            {"virtual",    required_argument, 0,  0},
             {"verbose",    optional_argument, &xref_options.verbose, 1},
             {"library",    no_argument, &xref_options.library, 1},
             {"regex",      no_argument, &xref_options.use_regex, 1},
@@ -100,7 +99,7 @@ static void handle_args(int argc, const char * argv[]) {
             {0,         0,                 0,  0 }
         };
         
-        int c = getopt_long(argc, (char * const *)argv, "f:a:A:uUOxscvlZh",
+        int c = getopt_long(argc, (char * const *)argv, "F:f:a:A:uUOxscvlZho",
                         long_options, &option_index);
         if (c == -1) {
             break;
@@ -109,7 +108,7 @@ static void handle_args(int argc, const char * argv[]) {
         switch (c) {
             // Case for long getopts, that can't use ints
             case 0:
-                if (strcmp(long_options[option_index].name, "file_offset") == 0) {
+                if (strcmp(long_options[option_index].name, "offset") == 0) {
                     xref_options.file_offset = strtol(optarg, 0, 0);
                 } else if (strcmp(long_options[option_index].name, "verbose") == 0) {
                     xref_options.verbose = (int)strtol(optarg, 0, 0);
@@ -120,6 +119,8 @@ static void handle_args(int argc, const char * argv[]) {
                     exit(0);
                 } else if (strcmp(long_options[option_index].name, "filter") == 0) {
                     AddFilter(optarg);
+                } else if (strcmp(long_options[option_index].name, "virtual") == 0) {
+                    xref_options.virtual_address = strtol(optarg, 0, 0);
                 }
                 break;
             case 'v':
@@ -128,6 +129,10 @@ static void handle_args(int argc, const char * argv[]) {
             case 's':
                 xref_options.verbose = VERBOSE_4;
                 xref_options.swift_mode = 1;
+                break;
+            case 'o':
+                xref_options.verbose = VERBOSE_4;
+                xref_options.objectiveC_mode = 1;
                 break;
             case 'Z':
                 xref_options.analyze = 1;
@@ -150,6 +155,19 @@ static void handle_args(int argc, const char * argv[]) {
             case 'f':
                 AddFilter(optarg);
                 break;
+            case 'F': {
+                char *end;
+                long address = strtoul(optarg, &end, 10);
+                if (!address) {
+                    address = strtoul(optarg, &end, 16);
+                }
+                if (!address) {
+                    printf("Couldn't parse address, use hex\n");
+                    exit(1);
+                }
+                xref_options.file_offset = address;
+                break;
+            }
             case 'O':
                 xref_options.opcodes = 1;
                 break;
@@ -157,15 +175,14 @@ static void handle_args(int argc, const char * argv[]) {
                 print_manpage();
                 exit(0);
                 break;
-                
             case 'A': {
                 char *end;
-                long address = strtoul(optarg, &end, 16);
+                long address = strtoul(optarg, &end, 10);
                 if (!address) {
-                    address = strtoul(optarg, &end, 10);
+                    address = strtoul(optarg, &end, 16);
                 }
                 if (!address) {
-                    printf("-a needs a virtual address");
+                    printf("-A needs a virtual address");
                     exit(1);
                 }
                 xref_options.virtual_address = address;
@@ -196,7 +213,7 @@ static void handle_args(int argc, const char * argv[]) {
         xref_options.arch = getenv("ARCH");
     }
     
-    if (!(xref_options.symbol_mode || xref_options.swift_mode || xref_options.objectiveC_mode || xref_options.virtual_address || xref_options.library || xref_options.opcodes)) {
+    if (!(xref_options.symbol_mode || xref_options.swift_mode || xref_options.objectiveC_mode || xref_options.virtual_address || xref_options.library || xref_options.opcodes || xref_options.file_offset)) {
         xref_options.symbol_mode = 1;
     }
 }

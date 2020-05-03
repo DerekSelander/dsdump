@@ -38,8 +38,12 @@
 
 /* Begin PBXBuildFile section */
 		3F009ADA22AF695400EA38D3 /* payload.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3F009AD822AF695400EA38D3 /* payload.cpp */; };
+		3F0C91E5245A82910038E3AD /* Methods.mm in Sources */ = {isa = PBXBuildFile; fileRef = 3F0C91E3245A82910038E3AD /* Methods.mm */; };
+		3F0C91F8245A94930038E3AD /* objc-layout.mm in Sources */ = {isa = PBXBuildFile; fileRef = 3F0C91F7245A94930038E3AD /* objc-layout.mm */; };
 		3F23C2FE2343DE4500483D1E /* libswiftDemangling.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 3F23C2FD2343DE4500483D1E /* libswiftDemangling.a */; };
 		3F29124A22820A99003C2BD7 /* TaskPath.mm in Sources */ = {isa = PBXBuildFile; fileRef = 3F29124822820A99003C2BD7 /* TaskPath.mm */; };
+		3F2FF02624593C8A004149B1 /* Properties.mm in Sources */ = {isa = PBXBuildFile; fileRef = 3F2FF02424593C8A004149B1 /* Properties.mm */; };
+		3F2FF03A245A7F7C004149B1 /* Protocols.mm in Sources */ = {isa = PBXBuildFile; fileRef = 3F2FF038245A7F7C004149B1 /* Protocols.mm */; };
 		3F40275823010DB5007B3C25 /* XRMachOLibrary+Swift.mm in Sources */ = {isa = PBXBuildFile; fileRef = 3F40275723010DB5007B3C25 /* XRMachOLibrary+Swift.mm */; };
 		3F480806227A322E0078AE76 /* XRMachOLibrary+FAT.mm in Sources */ = {isa = PBXBuildFile; fileRef = 3F480805227A322E0078AE76 /* XRMachOLibrary+FAT.mm */; };
 		3F50D787231577410017A20A /* dsdump in Copy to /usr/local/bin */ = {isa = PBXBuildFile; fileRef = A66A9CBB22316CF3006602AB /* dsdump */; };
@@ -235,6 +239,10 @@
 /* Begin PBXFileReference section */
 		3F009AD822AF695400EA38D3 /* payload.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = payload.cpp; sourceTree = "<group>"; };
 		3F009AD922AF695400EA38D3 /* payload.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = payload.hpp; sourceTree = "<group>"; };
+		3F0C91E3245A82910038E3AD /* Methods.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = Methods.mm; sourceTree = "<group>"; };
+		3F0C91E4245A82910038E3AD /* Methods.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Methods.h; sourceTree = "<group>"; };
+		3F0C91F7245A94930038E3AD /* objc-layout.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = "objc-layout.mm"; sourceTree = "<group>"; };
+		3F0C91FA245BF1A20038E3AD /* objc-layout.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "objc-layout.h"; sourceTree = "<group>"; };
 		3F0EBF3E23334F8F0083FE2B /* TestSwift.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TestSwift.swift; sourceTree = "<group>"; };
 		3F20316422A78BA000014502 /* XRMachOLibraryCplusHelpers.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = XRMachOLibraryCplusHelpers.h; sourceTree = "<group>"; };
 		3F23C2FD2343DE4500483D1E /* libswiftDemangling.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libswiftDemangling.a; sourceTree = "<group>"; };
@@ -242,6 +250,10 @@
 		3F29124822820A99003C2BD7 /* TaskPath.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = TaskPath.mm; sourceTree = "<group>"; };
 		3F29124922820A99003C2BD7 /* TaskPath.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = TaskPath.h; sourceTree = "<group>"; };
 		3F2912782289B476003C2BD7 /* objc_.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = objc_.h; sourceTree = "<group>"; };
+		3F2FF02424593C8A004149B1 /* Properties.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = Properties.mm; sourceTree = "<group>"; };
+		3F2FF02524593C8A004149B1 /* Properties.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Properties.h; sourceTree = "<group>"; };
+		3F2FF038245A7F7C004149B1 /* Protocols.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = Protocols.mm; sourceTree = "<group>"; };
+		3F2FF039245A7F7C004149B1 /* Protocols.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Protocols.h; sourceTree = "<group>"; };
 		3F40275623010DB5007B3C25 /* XRMachOLibrary+Swift.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "XRMachOLibrary+Swift.h"; sourceTree = "<group>"; };
 		3F40275723010DB5007B3C25 /* XRMachOLibrary+Swift.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = "XRMachOLibrary+Swift.mm"; sourceTree = "<group>"; };
 		3F40275B23012C6F007B3C25 /* objc-runtime-new.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "objc-runtime-new.h"; sourceTree = "<group>"; };
@@ -301,6 +313,16 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		3F0C91F9245A94980038E3AD /* Ripped off */ = {
+			isa = PBXGroup;
+			children = (
+				3F0C91F7245A94930038E3AD /* objc-layout.mm */,
+				3F0C91FA245BF1A20038E3AD /* objc-layout.h */,
+				3F2912782289B476003C2BD7 /* objc_.h */,
+			);
+			path = "Ripped off";
+			sourceTree = "<group>";
+		};
 		3F3D70CD229B65F900307FD3 /* Bind Symbols */ = {
 			isa = PBXGroup;
 			children = (
@@ -413,12 +435,18 @@
 				3FD99917233E9D3F0072F4A0 /* XRMachOLibrary+Disassemble.mm */,
 				3F20316422A78BA000014502 /* XRMachOLibraryCplusHelpers.h */,
 				A66A9CCB22316EA5006602AB /* XRMachOLibrary.mm */,
+				3F2FF038245A7F7C004149B1 /* Protocols.mm */,
+				3F2FF039245A7F7C004149B1 /* Protocols.h */,
+				3F0C91E3245A82910038E3AD /* Methods.mm */,
+				3F0C91E4245A82910038E3AD /* Methods.h */,
+				3F2FF02424593C8A004149B1 /* Properties.mm */,
+				3F2FF02524593C8A004149B1 /* Properties.h */,
 				3FF9AE0622777A9500F71FA5 /* XRMachOLibrary+ObjectiveC.h */,
 				3FF9AE0722777A9500F71FA5 /* XRMachOLibrary+ObjectiveC.mm */,
 				3F40275B23012C6F007B3C25 /* objc-runtime-new.h */,
 				3F009AD822AF695400EA38D3 /* payload.cpp */,
 				3F009AD922AF695400EA38D3 /* payload.hpp */,
-				3F2912782289B476003C2BD7 /* objc_.h */,
+				3F0C91F9245A94980038E3AD /* Ripped off */,
 				3F98C3B2225F06E900606F97 /* XRMachOLibrary+FileManagement.m */,
 				3F5F41A9226EA3A800D3DCB1 /* XRMachOLibrary+SymbolDumper.h */,
 				3F5F41AA226EA3A800D3DCB1 /* XRMachOLibrary+SymbolDumper.m */,
@@ -670,11 +698,15 @@
 				3FD99918233E9D3F0072F4A0 /* XRMachOLibrary+Disassemble.mm in Sources */,
 				3F40275823010DB5007B3C25 /* XRMachOLibrary+Swift.mm in Sources */,
 				A66A9CCC22316EA5006602AB /* XRMachOLibrary.mm in Sources */,
+				3F0C91F8245A94930038E3AD /* objc-layout.mm in Sources */,
+				3F0C91E5245A82910038E3AD /* Methods.mm in Sources */,
 				A66A9CC922316D7F006602AB /* miscellaneous.mm in Sources */,
 				3FF9AE0822777A9500F71FA5 /* XRMachOLibrary+ObjectiveC.mm in Sources */,
 				3F5F41AB226EA3A800D3DCB1 /* XRMachOLibrary+SymbolDumper.m in Sources */,
 				3FEAB9D8226D0C0E00ED706A /* XRMachOLibrary+Opcode.mm in Sources */,
 				3FE4FD48231B3BC600D4B77C /* manpage.c in Sources */,
+				3F2FF02624593C8A004149B1 /* Properties.mm in Sources */,
+				3F2FF03A245A7F7C004149B1 /* Protocols.mm in Sources */,
 				3FEBCB60227C98D200D3AD07 /* DSXRLibrary+PID_Info.m in Sources */,
 				3F480806227A322E0078AE76 /* XRMachOLibrary+FAT.mm in Sources */,
 				A66A9CBF22316CF3006602AB /* main.m in Sources */,
