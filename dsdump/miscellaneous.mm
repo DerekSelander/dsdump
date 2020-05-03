@@ -15,6 +15,9 @@
 
 extern "C" {
 
+#define XSTR(x) STR(x)
+#define STR(x) #x
+
 BOOL quiet_mode = NO;
 NSMutableSet <NSString*> *pathsSet = nil;
 NSMutableSet <NSString*> *exploredSet = nil;
@@ -31,9 +34,12 @@ __attribute__((constructor)) static void InitializeStuff() {
 /********************************************************************************
  //  Documentation
  ********************************************************************************/
-static const char * dsdump_usage = "dsdump [option..] <mach-o-file>";
 
-static const char* dsdump_version = "Beta 8";
+static const char * dsdump_usage = "dsdump [option..] <mach-o-file>";
+static const char* dsdump_version = XSTR(DD_VERSION);
+
+
+
 void print_manpage() {
     printf("%s\n\n", __manpage_deets ? (const char*)&__manpage_deets : dsdump_usage);
 }

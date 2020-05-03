@@ -669,7 +669,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "# Type a script or drag a script file from your workspace to insert its path.\ncd ${SRCROOT}/compiled/\nzip -r dsdump.zip ${SRCROOT}/compiled/dsdump \nrm -rf ${SRCROOT}/compiled/dsdump\n";
+			shellScript = "# Type a script or drag a script file from your workspace to insert its path.\ncd ${SRCROOT}/compiled/\n# Remove previous version\nrm -rf ${SRCROOT}/compiled/dsdump_*\n\n# Add the zip\nzip -r dsdump_${DSDUMP_VERSION}.zip ${SRCROOT}/compiled/dsdump \n\n# Remove the pre-zipped dsdump\nrm -rf ${SRCROOT}/compiled/dsdump\n";
 		};
 		3F50D78B231577C30017A20A /* Generate SHA256 */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -687,7 +687,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "# Type a script or drag a script file from your workspace to insert its path.\nSHAVAL=$(/usr/bin/shasum -a 256 ${SRCROOT}/compiled/dsdump | awk '{print $1}')\n/usr/bin/sed -i '' \"s/SHA256: .*/SHA256: $SHAVAL/g\" ${SRCROOT}/README.md\n\n/usr/bin/sed -i '' \"s/sha256 \\\".*\\\"/sha256 \\\"$SHAVAL\\\"/g\" ${SRCROOT}/dsdump.rb\n\n/usr/bin/sed -i '' \"s/SHA256: .*/SHA256: $SHAVAL/g\" ${SRCROOT}/README.md\n\n";
+			shellScript = "# Type a script or drag a script file from your workspace to insert its path.\nSHAVAL=$(/usr/bin/shasum -a 256 ${SRCROOT}/compiled/dsdump | awk '{print $1}')\n/usr/bin/sed -i '' \"s/SHA256: .*/SHA256: $SHAVAL/g\" ${SRCROOT}/README.md\n\n/usr/bin/sed -i '' \"s/sha256 \\\".*\\\"/sha256 \\\"$SHAVAL\\\"/g\" ${SRCROOT}/dsdump.rb\n\n/usr/bin/sed -i '' \"s/version \\\".*\\\"/version \\\"$DSDUMP_VERSION\\\"/g\" ${SRCROOT}/dsdump.rb\n";
 			showEnvVarsInLog = 0;
 		};
 		3FE4FD45231AFF7400D4B77C /* ShellScript */ = {
@@ -820,6 +820,7 @@
 				CODE_SIGN_IDENTITY = "Mac Developer";
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
+				DSDUMP_VERSION = 0.0.9;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
@@ -879,6 +880,7 @@
 				CODE_SIGN_IDENTITY = "Mac Developer";
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DSDUMP_VERSION = 0.0.9;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
@@ -908,6 +910,7 @@
 					"DEBUG=1",
 					"$(inherited)",
 					"DEBUG_VERBOSE=1",
+					"DD_VERSION=${DSDUMP_VERSION}",
 				);
 				GCC_PREPROCESSOR_DEFINITIONS_NOT_USED_IN_PRECOMPS = "";
 				HEADER_SEARCH_PATHS = (
@@ -941,6 +944,7 @@
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = H4U46V6494;
+				GCC_PREPROCESSOR_DEFINITIONS = "DD_VERSION=${DSDUMP_VERSION}";
 				GCC_PREPROCESSOR_DEFINITIONS_NOT_USED_IN_PRECOMPS = "";
 				HEADER_SEARCH_PATHS = (
 					"\"$(SRCROOT)/swift-source/swift/include\"",
