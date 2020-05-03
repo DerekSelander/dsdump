@@ -164,11 +164,11 @@ Comment out any remaining problematic code after a build, remove methods in `Met
 
 I've included the `libSwiftDemangling.a` static lib that I built into `dsdump/dsdump`.  If you want to build entirely from Swift source, you'll need to build this yourself. Otherwise you should be good to go to build `dsdump` via Xcode.
 
-Alternatively, you can skip all of this by simply grabbing the compiled `dsdump` version in the **compiled** directory [found here](https://github.com/DerekSelander/dsdump/blob/master/compiled/dsdump). Make sure the SHA1 matches below if you're paranoid. 
+Alternatively, you can skip all of this by simply grabbing the compiled `dsdump` version in the **compiled** directory [found here](https://github.com/DerekSelander/dsdump/blob/master/compiled/dsdump). Make sure the SHA256 matches below if you're paranoid. 
 
-Compiled SHA1
+Compiled SHA256
 ```
-SHA1: ebecbd0d9176cf93ad28a474f73d7d53413f433a
+SHA256: c293418c10b5f501f38f96a6d498c775299d4df49792036dbd5ad00b6f6a0381
 ```
 
 ### Credits

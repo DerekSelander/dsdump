@@ -13,7 +13,8 @@
 			buildPhases = (
 				3F50D786231577260017A20A /* Copy to /usr/local/bin */,
 				3F50D788231577560017A20A /* Copy to compiled directory in repo */,
-				3F50D78B231577C30017A20A /* Generate SHA1 */,
+				3F50D78B231577C30017A20A /* Generate SHA256 */,
+				3F0C91FB245EE4B50038E3AD /* Generate zipped Contents */,
 				3F50D78C231577EE0017A20A /* Copy Man Page */,
 			);
 			dependencies = (
@@ -652,7 +653,7 @@
 /* End PBXReferenceProxy section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		3F50D78B231577C30017A20A /* Generate SHA1 */ = {
+		3F0C91FB245EE4B50038E3AD /* Generate zipped Contents */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -661,14 +662,32 @@
 			);
 			inputPaths = (
 			);
-			name = "Generate SHA1";
+			name = "Generate zipped Contents";
 			outputFileListPaths = (
 			);
 			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "# Type a script or drag a script file from your workspace to insert its path.\nSHAVAL=$(/usr/bin/shasum ${SRCROOT}/compiled/dsdump | awk '{print $1}')\n/usr/bin/sed -i '' \"s/SHA1: .*/SHA1: $SHAVAL/g\" ${SRCROOT}/README.md\n\n";
+			shellScript = "# Type a script or drag a script file from your workspace to insert its path.\nzip -r ${SRCROOT}/compiled/dsdump.zip ${SRCROOT}/compiled/dsdump \nrm -rf ${SRCROOT}/compiled/dsdump\n";
+		};
+		3F50D78B231577C30017A20A /* Generate SHA256 */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Generate SHA256";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# Type a script or drag a script file from your workspace to insert its path.\nSHAVAL=$(/usr/bin/shasum -a 256 ${SRCROOT}/compiled/dsdump | awk '{print $1}')\n/usr/bin/sed -i '' \"s/SHA256: .*/SHA256: $SHAVAL/g\" ${SRCROOT}/README.md\n\n/usr/bin/sed -i '' \"s/sha256 \\\".*\\\"/sha256 \\\"$SHAVAL\\\"/g\" ${SRCROOT}/dsdump.rb\n\n/usr/bin/sed -i '' \"s/SHA256: .*/SHA256: $SHAVAL/g\" ${SRCROOT}/README.md\n\n";
 			showEnvVarsInLog = 0;
 		};
 		3FE4FD45231AFF7400D4B77C /* ShellScript */ = {
