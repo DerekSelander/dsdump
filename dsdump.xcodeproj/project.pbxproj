@@ -669,7 +669,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "# Type a script or drag a script file from your workspace to insert its path.\nzip -r ${SRCROOT}/compiled/dsdump.zip ${SRCROOT}/compiled/dsdump \nrm -rf ${SRCROOT}/compiled/dsdump\n";
+			shellScript = "# Type a script or drag a script file from your workspace to insert its path.\ncd ${SRCROOT}/compiled/\nzip -r dsdump.zip ${SRCROOT}/compiled/dsdump \nrm -rf ${SRCROOT}/compiled/dsdump\n";
 		};
 		3F50D78B231577C30017A20A /* Generate SHA256 */ = {
 			isa = PBXShellScriptBuildPhase;
