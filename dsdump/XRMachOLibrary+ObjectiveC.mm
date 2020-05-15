@@ -115,7 +115,7 @@ NSDictionary <NSString*, NSNumber*> *blacklistedSelectors = nil;
     if (xref_options.defined || !(xref_options.undefined || xref_options.defined)) {
         
         // Wait till ready...dumpObjectiveCProtocols
-        // dumpObjectiveCProtocols();
+         dumpObjectiveCProtocols();
         
         struct section_64* classSection = payload::sectionsDict["__DATA.__objc_classlist"];
         if (classSection == nullptr) { // iOS 13 ARM64E has some changes...
@@ -364,4 +364,3 @@ BOOL demangleSwiftName(const char *name, d_offsets *f) {
     f->mod_off++;
     return YES;
 }
-

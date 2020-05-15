@@ -159,6 +159,96 @@ compress_layout(const uint8_t *bits, size_t bitmap_bits, bool weak)
 #define _C_VECTOR   '!'
 #define _C_CONST    'r'
 
+
+
+const char* translate_method_type_to_string(char *typeString) {
+    auto len = strlen(typeString);
+    if (len == 0) {
+        return "void";
+    }
+    if (len == 1) {
+        char type = typeString[0];
+        switch (type) {
+            case _C_ID:
+                return "id";
+            case _C_CLASS:
+                return "Class";
+            case _C_SEL:
+                return "SEL";
+            case _C_CHR:
+                return "BOOL";
+            case _C_UCHR:
+                return "unsigned char";
+            case _C_SHT:
+                return "short";
+            case _C_USHT:
+                return "unsigned short";
+            case _C_INT:
+                return "int";
+            case _C_UINT:
+                return "unsigned int";
+            case _C_LNG:
+                return "long";
+            case _C_ULNG:
+                return "unsigned long";
+            case _C_LNG_LNG:
+                return "long long";
+            case _C_ULNG_LNG:
+                return "unsigned long";
+            case _C_FLT:
+                return "float";
+            case _C_DBL:
+                return "double";
+            case _C_BFLD:
+                return "bitfield";
+            case _C_BOOL:
+                return "BOOL";
+            case _C_VOID :
+                return "void";
+            case _C_UNDEF: //    '?'
+                return "undefined TODO DEREK";
+            case _C_PTR:   //    '^'
+                return "*";
+            case _C_CHARPTR:  // '*'
+                return "char *";
+            case _C_ATOM: //     '%'
+                return "ATOM TODO DEREK";
+            case _C_ARY_B: //    '['
+                return "array B TODO DEREK";
+            case _C_ARY_E: //    ']'
+                return "array E TODO DEREK";
+            case _C_UNION_B: //  '('
+                return "union B TODO DEREK";
+            case _C_UNION_E: //  ')'
+                return "union E TODO DEREK";
+                
+            case  _C_STRUCT_B: // '{'
+                return "structB TODO DEREK";
+            case _C_STRUCT_E: // '}'
+                return "structE TODO DEREK";
+            case _C_VECTOR: //   '!'
+                return "vector";
+            case _C_CONST:   // 'r'
+                return "const";
+
+            default:
+                printf("\tbug here! -> ");
+                return typeString;
+                break;
+                
+        }
+        
+
+        printf("\tbug here! -> ");
+    }
+    if (len == 2) {
+        if (strcmp(typeString, "Vv") == 0) {
+            return "void";
+        }
+    }
+    return typeString;
+}
+
 // The code below may be useful when interpreting ivar types more precisely.
 
 /**********************************************************************

@@ -168,7 +168,7 @@ Alternatively, you can skip all of this by simply grabbing the compiled `dsdump`
 
 Compiled SHA256
 ```
-SHA256: dbff451c4e097c1aafbebf9db667ed3a2bebdd23ad2b44f9e5724400943d5f01
+SHA256: 27190d5a69e3fbd6be35f511c13e70a5c06e6538cc116393d3fa8082fb0c12f5
 ```
 
 ### Credits

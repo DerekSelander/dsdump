@@ -26,39 +26,47 @@ void dumpObjectiveCProtocols(void) {
         return;
     }
     
-      auto protocolsDisk = payload::LoadToDiskTranslator<uintptr_t*>::Cast(protocolsSection->addr)->disk();
+    auto protocolsDisk = payload::LoadToDiskTranslator<uintptr_t*>::Cast(protocolsSection->addr)->disk();
     for (int i = 0; i < protocolsSection->size / PTR_SIZE; i++) {
         auto protocol = payload::Cast<protocol_t*>(protocolsDisk[i]);
         if (protocol == nullptr) {
             continue;
         }
         auto protocolDisk = protocol->disk();
-        auto name = protocolDisk->mangledName->disk();
-        printf("%s@protocol %s%s", dcolor(DSCOLOR_GREEN), name, color_end());
+        auto name = protocolDisk->mangledName ? protocolDisk->mangledName->disk() : "BUG DEREK";
+        if (!ContainsFilteredWords(name)) {
+            continue;
+        }
+        printf("%s@protocol %s%s%s%s", dcolor(DSCOLOR_YELLOW), color_end(), dcolor(DSCOLOR_MAGENTA), name, color_end());
         if(!printObjectiveCProtocolsFromProtocol(protocolDisk)) {
             putchar('\n');
         }
         
-        auto properties = protocol->instanceProperties;
-        dumpObjCPropertiesWithResolvedAddress(properties);
-        
-        auto classMethods = protocol->classMethods;
-        dumpObjectiveCMethods(classMethods, name, true, true);
-        
-        auto instanceMethods = protocol->instanceMethods;
-        dumpObjectiveCMethods(instanceMethods, name, false, true);
-        
-        auto optionalInstanceMethods = protocol->optionalInstanceMethods;
-        auto optionalClassMethods = protocol->optionalClassMethods;
-        if (optionalClassMethods || optionalInstanceMethods) {
-            printf("@optional\n");
+        if (protocolDisk->instanceProperties) {
+            auto properties = protocolDisk->instanceProperties->disk();
+            dumpObjCPropertiesWithResolvedAddress(properties);
         }
         
-        dumpObjectiveCMethods(optionalClassMethods, name, true, true);
-        dumpObjectiveCMethods(optionalInstanceMethods, name, false, true);
+        if (protocolDisk->classMethods) {
+            auto classMethods = protocolDisk->classMethods->disk();
+            dumpObjectiveCMethods(classMethods, name, true, true, dcolor(DSCOLOR_YELLOW));
+        }
         
+        if (protocolDisk->instanceMethods) {
+            auto instanceMethods = protocolDisk->instanceMethods->disk();
+            dumpObjectiveCMethods(instanceMethods, name, false, true, dcolor(DSCOLOR_YELLOW));
+        }
+            
+        auto optionalInstanceMethods = protocolDisk->optionalInstanceMethods;
+        auto optionalClassMethods = protocolDisk->optionalClassMethods;
+        if (optionalClassMethods || optionalInstanceMethods) {
+            printf("%s@optional%s\n", dcolor(DSCOLOR_YELLOW), color_end());
+        }
         
-  
+        dumpObjectiveCMethods(optionalClassMethods, name, true, true, dcolor(DSCOLOR_YELLOW));
+        dumpObjectiveCMethods(optionalInstanceMethods, name, false, true, dcolor(DSCOLOR_YELLOW));
+        
+        printf("%s@end%s\n\n", dcolor(DSCOLOR_YELLOW), color_end());
     }
 }
 

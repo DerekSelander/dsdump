@@ -55,14 +55,17 @@ void print_usage() {
 static const std::map<DSCOLOR, const char*> colorMap = {
     {DSCOLOR_CYAN,      "\e[36m"},
     {DSCOLOR_GREEN,     "\e[92m"},
+    {DSCOLOR_DARK_GREEN,  "\e[32m"},
     {DSCOLOR_YELLOW,    "\e[33m"},
     {DSCOLOR_YELLOW_LIGHT, "\e[93m"},
     {DSCOLOR_MAGENTA,   "\e[95m"},
     {DSCOLOR_PURPLE,    "\e[35m"},
     {DSCOLOR_RED,       "\e[91m"},
+    {DSCOLOR_STRONG_RED, "\e[31;4m"},
     {DSCOLOR_BLUE,      "\e[34m"},
     {DSCOLOR_GRAY,      "\e[90m"},
     {DSCOLOR_PURPLE_BOLD, "\e[35;1m"},
+    {DSCOLOR_LIGHT_BLUE, "\e[94m"},
     {DSCOLOR_CYAN_LIGHT,"\e[96m"},
     {DSCOLOR_BOLD,      "\e[1m"},
     {DSCOLOR_CYAN_UNDERLINE, "\033[36;1;4m"}

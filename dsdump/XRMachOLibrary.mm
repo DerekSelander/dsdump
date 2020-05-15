@@ -567,19 +567,36 @@ static void ensureSafeAddressForMMap(size_t memory_size) {
 /// Display file offset
 - (void)handleFileOffset {
 
-    auto addrs = payload::LoadToDiskTranslator<uintptr_t>::Cast(&payload::data[xref_options.file_offset])->loadAddress();
+//    auto addrs = payload::LoadToDiskTranslator<uintptr_t>::Cast(&payload::data[xref_options.file_offset])->loadAddress();
+    auto addrs = xref_options.file_offset;
     bool success = false;
     for (NSNumber *sectionAddress in self.sectionCommandsArray) {
         if ([sectionAddress isEqualTo:[NSNull null]]) {
             continue;
         }
+        uintptr_t loadAddr = [self translateOffsetToLoadAddress:addrs];
         struct section_64 *sect = (struct section_64*)sectionAddress.pointerValue;
-        if (sect->addr <= addrs && addrs < (sect->addr + sect->size)) {
-            printf("Offset: %s0x%lx (%lu)%s => %s%p%s, found in %s%p - %p%s, %s%s.%s%s\n", dcolor(DSCOLOR_CYAN), xref_options.file_offset, xref_options.file_offset, color_end(), dcolor(DSCOLOR_GREEN), (void*)addrs, color_end(), dcolor(DSCOLOR_YELLOW), (void*)sect->addr, (void*)(sect->addr + sect->size), color_end(), dcolor(DSCOLOR_MAGENTA), sect->segname, sect->sectname, color_end());
+        if (sect->offset && sect->offset <= addrs && addrs < (sect->offset + sect->size)) {
+            printf("Offset: %s0x%lx (%lu)%s => %s%p%s, found in %s%p - %p%s, %s%s.%s + %llu%s\n", dcolor(DSCOLOR_CYAN), xref_options.file_offset, xref_options.file_offset, color_end(), dcolor(DSCOLOR_GREEN), (void*)[self translateOffsetToLoadAddress:addrs], color_end(), dcolor(DSCOLOR_YELLOW), (void*)sect->addr, (void*)(sect->addr + sect->size), color_end(), dcolor(DSCOLOR_MAGENTA), sect->segname, sect->sectname, loadAddr - sect->addr, color_end());
             success = true;
             break;
         }
     }
+    if (!success) {
+        for (NSNumber *sectionAddress in self.segmentCommandsArray) {
+            if ([sectionAddress isEqualTo:[NSNull null]]) {
+                continue;
+            }
+            struct segment_command_64 *seg = (struct segment_command_64*)sectionAddress.pointerValue;
+            
+            if (seg->fileoff <= addrs && addrs < (seg->fileoff + seg->filesize)) {
+                printf("Offset: %s0x%lx (%lu)%s => %s%p%s, found in %s%p - %p%s, %s%s%s\n", dcolor(DSCOLOR_CYAN), xref_options.file_offset, xref_options.file_offset, color_end(), dcolor(DSCOLOR_GREEN), (void*)[self translateOffsetToLoadAddress:addrs], color_end(), dcolor(DSCOLOR_YELLOW), (void*)seg->vmaddr, (void*)(seg->vmaddr + seg->vmsize), color_end(), dcolor(DSCOLOR_MAGENTA), seg->segname, color_end());
+                success = true;
+                break;
+            }
+        }
+    }
+    
     if (!success) {
         printf("Couldn't find address 0x%lx (%lu)!\n", xref_options.file_offset, xref_options.file_offset);
         exit(1);

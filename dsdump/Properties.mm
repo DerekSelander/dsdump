@@ -6,7 +6,9 @@
 //  Copyright © 2020 Selander. All rights reserved.
 //
 
-#include "Properties.h"
+#import "Properties.h"
+#import "Methods.h"
+#import "objc-layout.h"
 
 static const char * kPropertyType = "T";
 static const char * kPropertyOverridenGetter = "G";
@@ -14,9 +16,12 @@ static const char * kPropertyOverridenSetter = "S";
 static const char * kPropertyIsReadOnly = "R";
 static const char * kPropertyIsNonatomic = "N";
 static const char * kPropertyIsAtomic = "A";
+static const char * kPropertyCopy = "C";
 static const char * kPropertyIsStrong = "&";
 static const char * kPropertyIsWeak = "W";
 static const char * kPropertyIVarName = "V";
+static const char * kPropertyClass = "#";
+static const char * kPropertyNSUInteger = "Q";
 
 char *copyPropertyAttributeValue(const char *attrs, const char *name);
 
@@ -35,22 +40,35 @@ static void printType(const char *type) {
     
     // First check if it looks like an ObjC class i.e. T=@"NSObject"
     if (length > 3 && type[0] == '@' && type[1] == '"' && type[length - 1] == '"') {
-        printf(" %.*s *", (int)(length-3), (type+2));
+        printf(" %s%.*s *%s", dcolor(DSCOLOR_DARK_GREEN), (int)(length-3), (type+2), color_end());
+    } else {
+        printf(" %s%s%s ", dcolor(DSCOLOR_DARK_GREEN), translate_method_type_to_string((char*)type), color_end());
     }
     
-    int pointerCount = 0;
-    for (int i = 0; i < strlen(type); i++) {
-//        if (type[i] == 'i')
-    }
+//                // Check the Type, T, first for a speed lookup...
+////                if (attribute.name && attribute.name[0] == 'T') {
+////
+////                    return;
+////                }
+//    //             if (strcmp(attribute.value, kPropertyClass) == 0) {
+//    //                           printf("Class");
+//    //                       } else if ((attribute.value, kPropertyNSUInteger) == 0) {
+//    //                           printf("NSUInteger");
+//    //                       }  else {
+//    //                           printf("%s", attribute.name);
+//    //                       }
+//
+//
+//    int pointerCount = 0;
+//    for (int i = 0; i < strlen(type); i++) {
+////        if (type[i] == 'i')
+//    }
 }
 
 static void printPropertyAttributeTypes(const char *propertyAttributes) {
-    printf("\t%s@property %s", dcolor(DSCOLOR_GREEN), color_end());
-    if (xref_options.verbose < VERBOSE_4) {
-         return;
-     }
+    printf(" %s@property %s", dcolor(DSCOLOR_GRAY), color_end());
     auto type = copyPropertyAttributeValue(propertyAttributes, kPropertyType);
-    auto ivarName = copyPropertyAttributeValue(propertyAttributes, kPropertyIVarName);
+
     
     unsigned int outCount = 0;
     auto attrs = copyPropertyAttributeList(propertyAttributes, &outCount);
@@ -59,12 +77,13 @@ static void printPropertyAttributeTypes(const char *propertyAttributes) {
     }
 
     // Assuming the T (type) attribute is always around...
-    if (outCount > 1) {
-        printf("(");
+    if (outCount > 1 && xref_options.verbose > VERBOSE_4) {
+        printf("%s(", dcolor(DSCOLOR_GRAY));
         
         // Start at 1, skip the type...
         for (int i = 1; i < outCount; i++) {
             auto attribute = attrs[i];
+            
             if (strcmp(attribute.name, kPropertyIsStrong) == 0) {
                 printf("strong");
             } else if (strcmp(attribute.name, kPropertyIsNonatomic) == 0) {
@@ -79,26 +98,30 @@ static void printPropertyAttributeTypes(const char *propertyAttributes) {
                 printf("setter=%s", attribute.value);
             } else if (strcmp(attribute.name, kPropertyIsAtomic) == 0) {
                 printf("atomic");
+            } else if (strcmp(attribute.name, kPropertyCopy) == 0) {
+                printf("copy");
             }
             if (i != outCount - 1) {
                 printf(", ");
             }
             
         }
-        printf(")");
+        printf(")%s", color_end());
     }
     free(attrs);
     
     printType(type);
     
     
+    auto ivarName = copyPropertyAttributeValue(propertyAttributes, kPropertyIVarName);
+    
 }
-#import "objc-layout.h"
+
 static void printProperty(property_t property) {
     auto propertyName = property.name->disk();
     auto propertyAttributes = property.attributes->disk();
     printPropertyAttributeTypes(propertyAttributes);
-    printf("%s%s%s\n", dcolor(DSCOLOR_BOLD), propertyName, color_end());
+    printf("%s%s%s\n", dcolor(DSCOLOR_GREEN), propertyName, color_end());
 }
 
 void dumpObjCPropertiesWithResolvedAddress(property_list_t* propertiesList) {
@@ -123,7 +146,7 @@ void dumpObjCPropertiesWithResolvedAddress(property_list_t* propertiesList) {
         auto propertyAttributes = property.attributes->disk();
         printProperty(property);
         
-        printf("%s %s\n", propertyAttributes, skip_ivar_type_name((char*)propertyAttributes));
+        //printf("%s %s\n", propertyAttributes, skip_ivar_type_name((char*)propertyAttributes));
 //        scan_ivar_type_for_layout(propertyAttributes, 0, 0, <#unsigned char *bits#>, <#long *next_offset#>)
         /*
         static char *scan_ivar_type_for_layout(char *type, long offset, long bits_size, unsigned char *bits, long *next_offset);
