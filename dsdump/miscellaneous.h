@@ -73,12 +73,13 @@ typedef struct {
     int analyze;
     uintptr_t file_offset;
     uintptr_t virtual_address;
-    int virtual_address_count; 
+    int virtual_address_count;
     int library;
     char * arch;
     int debug;
     int help;
     int opcodes;
+    int demangle_mode;
 } xref_options_t;
 
 extern xref_options_t xref_options;

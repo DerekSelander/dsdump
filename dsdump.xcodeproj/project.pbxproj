@@ -50,7 +50,7 @@
 		3F50D787231577410017A20A /* dsdump in Copy to /usr/local/bin */ = {isa = PBXBuildFile; fileRef = A66A9CBB22316CF3006602AB /* dsdump */; };
 		3F50D789231577620017A20A /* dsdump in Copy to compiled directory in repo */ = {isa = PBXBuildFile; fileRef = A66A9CBB22316CF3006602AB /* dsdump */; };
 		3F50D78E23160E730017A20A /* dsdump.1 in Copy Man Page */ = {isa = PBXBuildFile; fileRef = 3F50D78D23160E630017A20A /* dsdump.1 */; };
-		3F5F41AB226EA3A800D3DCB1 /* XRMachOLibrary+SymbolDumper.m in Sources */ = {isa = PBXBuildFile; fileRef = 3F5F41AA226EA3A800D3DCB1 /* XRMachOLibrary+SymbolDumper.m */; };
+		3F5F41AB226EA3A800D3DCB1 /* XRMachOLibrary+SymbolDumper.mm in Sources */ = {isa = PBXBuildFile; fileRef = 3F5F41AA226EA3A800D3DCB1 /* XRMachOLibrary+SymbolDumper.mm */; };
 		3F5F41B1226EC1FC00D3DCB1 /* XRBindSymbol.m in Sources */ = {isa = PBXBuildFile; fileRef = 3F5F41B0226EC1FC00D3DCB1 /* XRBindSymbol.m */; };
 		3F7C9AB12295BBD50070F2B1 /* XRSymbolEntry.m in Sources */ = {isa = PBXBuildFile; fileRef = 3F7C9AB02295BBD50070F2B1 /* XRSymbolEntry.m */; };
 		3F7CE5F12461236900E2B32D /* objc-typeencoding.mm in Sources */ = {isa = PBXBuildFile; fileRef = 3F7CE5DF2461236900E2B32D /* objc-typeencoding.mm */; };
@@ -263,7 +263,7 @@
 		3F480805227A322E0078AE76 /* XRMachOLibrary+FAT.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = "XRMachOLibrary+FAT.mm"; sourceTree = "<group>"; };
 		3F50D78D23160E630017A20A /* dsdump.1 */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.man; path = dsdump.1; sourceTree = "<group>"; };
 		3F5F41A9226EA3A800D3DCB1 /* XRMachOLibrary+SymbolDumper.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "XRMachOLibrary+SymbolDumper.h"; sourceTree = "<group>"; };
-		3F5F41AA226EA3A800D3DCB1 /* XRMachOLibrary+SymbolDumper.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = "XRMachOLibrary+SymbolDumper.m"; sourceTree = "<group>"; };
+		3F5F41AA226EA3A800D3DCB1 /* XRMachOLibrary+SymbolDumper.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = "XRMachOLibrary+SymbolDumper.mm"; sourceTree = "<group>"; };
 		3F5F41AF226EC1FC00D3DCB1 /* XRBindSymbol.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = XRBindSymbol.h; sourceTree = "<group>"; };
 		3F5F41B0226EC1FC00D3DCB1 /* XRBindSymbol.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = XRBindSymbol.m; sourceTree = "<group>"; };
 		3F7C9AAF2295BBD50070F2B1 /* XRSymbolEntry.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = XRSymbolEntry.h; sourceTree = "<group>"; };
@@ -453,7 +453,7 @@
 				3F0C91F9245A94980038E3AD /* Ripped off */,
 				3F98C3B2225F06E900606F97 /* XRMachOLibrary+FileManagement.m */,
 				3F5F41A9226EA3A800D3DCB1 /* XRMachOLibrary+SymbolDumper.h */,
-				3F5F41AA226EA3A800D3DCB1 /* XRMachOLibrary+SymbolDumper.m */,
+				3F5F41AA226EA3A800D3DCB1 /* XRMachOLibrary+SymbolDumper.mm */,
 				3FEBCB5E227C98D200D3AD07 /* XRMachOLibrary+PID_Info.h */,
 				3F291247228207C7003C2BD7 /* dyld_process_info_internal.h */,
 				3FEBCB5F227C98D200D3AD07 /* DSXRLibrary+PID_Info.m */,
@@ -725,7 +725,7 @@
 				3F7CE5F12461236900E2B32D /* objc-typeencoding.mm in Sources */,
 				A66A9CC922316D7F006602AB /* miscellaneous.mm in Sources */,
 				3FF9AE0822777A9500F71FA5 /* XRMachOLibrary+ObjectiveC.mm in Sources */,
-				3F5F41AB226EA3A800D3DCB1 /* XRMachOLibrary+SymbolDumper.m in Sources */,
+				3F5F41AB226EA3A800D3DCB1 /* XRMachOLibrary+SymbolDumper.mm in Sources */,
 				3FEAB9D8226D0C0E00ED706A /* XRMachOLibrary+Opcode.mm in Sources */,
 				3FE4FD48231B3BC600D4B77C /* manpage.c in Sources */,
 				3F2FF02624593C8A004149B1 /* Properties.mm in Sources */,
