@@ -139,16 +139,16 @@
     static cpu_subtype_t this_cpusubtype;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        size_t len;
+        size_t len = sizeof(cpu_type_t);
         sysctlbyname("hw.cputype", &this_cputype, &len, NULL, 0);
         assert(len == sizeof(uint32_t));
+        len = sizeof(cpu_subtype_t);
         sysctlbyname("hw.cpusubtype", &this_cpusubtype, &len, NULL, 0);
         assert(len == sizeof(uint32_t));
     });
     
     this_cputype |= CPU_ARCH_ABI64;
-    
-//    struct fat_header *fat = (struct fat_header *).data;
+
     struct fat_header *fat = payload::GetData<struct fat_header>(0);
 
     // Let's try the closest to the cpu type first...
