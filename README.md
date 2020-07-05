@@ -28,6 +28,9 @@ DESCRIPTION
 OPTIONS
      -c, --color
              Adds color to output
+    
+     -d, --demangle
+             Demangle Swift and C++ symbols in print symbol mode
 
      -l, --library
              Instead of dumping symbols, search all procs for library
@@ -55,6 +58,8 @@ OPTIONS
              like codesign(1)'s verbosity that everyone complains about...
 
      --objc  Dump the Objective-C classes
+     
+     -o      Sets mode to Objective-C mode and verbosity to level 4
 
      --swift
              Dump the Swift type descriptors (classes, structs, enums)

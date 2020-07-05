@@ -73,6 +73,31 @@ namespace dshelpers {
         return strout_ref.c_str();
     }
     
+    const char *compact_demangle(char *mangled, std::string &strout_ref) {
+    
+    #warning Some Swift methods may fail to be printed if additional demangle options are enabled
+        swift::Demangle::DemangleOptions fallbackOption1, fallbackOption2 = simplifiedOptions;
+        fallbackOption1.ShowFunctionArgumentTypes = true;
+        fallbackOption1.DisplayModuleNames = true;
+        fallbackOption1.DisplayEntityTypes = true;
+        fallbackOption2.ShowFunctionArgumentTypes = true;
+        
+        if (!mangled) { return nullptr; }
+        auto str = StringRef(mangled);
+        // Default compactMode:
+        strout_ref = context.demangleSymbolAsString(str);
+        if (strout_ref.empty()) {
+            strout_ref = context.demangleSymbolAsString(str, fallbackOption1);
+            if (strout_ref.empty()) {
+                strout_ref = context.demangleSymbolAsString(str, fallbackOption2);
+                if (strout_ref.empty()) {
+                    strout_ref = context.demangleSymbolAsString(str, simplifiedOptions);
+                }
+            }
+        }
+        return strout_ref.c_str();
+    }
+    
     const char *simple_type(StringRef type, std::string &strout_ref ) {
         strout_ref = context.demangleTypeAsString(type, simplifiedOptions);
         return strout_ref.c_str();
@@ -454,7 +479,7 @@ static void ensureSafeAddressForMMap(size_t memory_size) {
 }
 
 /********************************************************************************
-// Helper debugging methods 
+// Helper debugging methods
 ********************************************************************************/
 
 - (NSString *)description {
