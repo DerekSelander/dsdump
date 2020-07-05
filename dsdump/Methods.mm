@@ -38,21 +38,22 @@ void dumpObjectiveCMethods(method_list_t* methodList, const char *name, bool isM
         return;
     }
 
-    auto count = methodList->disk()->count;
-    auto methods = &methodList->disk()->first_method;
+    auto methodListDisk =  methodList->disk();
+    auto count = methodListDisk->count;
     if (xref_options.verbose > VERBOSE_2) {
         printf("  %s// %s methods%s\n", dcolor(DSCOLOR_GRAY), isMeta ? "class" : "instance", color_end());
     }
     
     for (int i = 0; i < count; i++) {
-        auto method = methods[i];
-        auto methodName = method.name->disk();
+        auto method = methodListDisk->GetMethod(i, isProtocol); //&methods[i];
+        
+        auto methodName = isProtocol ? method->name->disk() : method->getName()->disk();
         if (blacklistedSelectors[[NSString stringWithUTF8String:methodName]]) {
             continue;
         }
         
-        auto methodAddress = method.imp->strip_PAC();
-        auto types = method.types->disk();
+        uintptr_t methodAddress = isProtocol ? method->imp->strip_PAC() : (uintptr_t)method->getImp()->load();
+        auto types = isProtocol ? method->types->disk() : method->getTypes()->disk();
         auto numArguments = encoding_getNumberOfArguments(types);
         
         char path[1024];

@@ -74,12 +74,24 @@ typedef struct method : public payload::LoadToDiskTranslator<struct method> {
     payload::LoadToDiskTranslator<const char> *types;
     // true for isCodePointer, different value for PAC
     payload::LoadToDiskTranslator<uintptr_t, true>* imp;
+    
+public:
+    /**
+     iOS 14/macOS 11 runtime changes
+     They are now pulling a 'swift' and use relative address offsets for method_t
+     https://developer.apple.com/videos/play/wwdc2020/10163/
+    */
+    payload::LoadToDiskTranslator<const char>* getName();
+    payload::LoadToDiskTranslator<const char>* getTypes();
+    payload::LoadToDiskTranslator<uintptr_t, true>* getImp();
 } method_t;
 
 typedef struct method_list : public payload::LoadToDiskTranslator<struct method_list> {
     uint32_t entsizeAndFlags;
     uint32_t count;
     method_t first_method;
+    
+    method_t*  GetMethod(int i, bool isProtocol);
 } method_list_t;
 
 /*****************************************************************
@@ -324,6 +336,10 @@ typedef struct   {
     
 } swift_descriptor;
 
+#ifndef FAST_IS_SWIFT_LEGACY // TODO Resolve other define 
+    #define FAST_IS_SWIFT_LEGACY 1  // < 5
+    #define FAST_IS_SWIFT_STABLE 2 // 5.X
+#endif // FAST_IS_SWIFT_LEGACY
 
 // Swift class heeeeeeeeeeeeeeeereeeeeeeee
 typedef struct swift_class_t  : public payload::LoadToDiskTranslator<struct swift_class_t, true>  {

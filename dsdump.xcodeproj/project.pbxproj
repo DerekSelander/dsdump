@@ -55,6 +55,7 @@
 		3F7C9AB12295BBD50070F2B1 /* XRSymbolEntry.m in Sources */ = {isa = PBXBuildFile; fileRef = 3F7C9AB02295BBD50070F2B1 /* XRSymbolEntry.m */; };
 		3F7CE5F12461236900E2B32D /* objc-typeencoding.mm in Sources */ = {isa = PBXBuildFile; fileRef = 3F7CE5DF2461236900E2B32D /* objc-typeencoding.mm */; };
 		3F98C3B3225F06E900606F97 /* XRMachOLibrary+FileManagement.m in Sources */ = {isa = PBXBuildFile; fileRef = 3F98C3B2225F06E900606F97 /* XRMachOLibrary+FileManagement.m */; };
+		3FC1734F24B11E3E00C9DD01 /* objc_.mm in Sources */ = {isa = PBXBuildFile; fileRef = 3FC1733C24B11CA400C9DD01 /* objc_.mm */; };
 		3FD99905233E90FE0072F4A0 /* libcapstone.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 3FD998E3233E90B90072F4A0 /* libcapstone.a */; };
 		3FD99918233E9D3F0072F4A0 /* XRMachOLibrary+Disassemble.mm in Sources */ = {isa = PBXBuildFile; fileRef = 3FD99917233E9D3F0072F4A0 /* XRMachOLibrary+Disassemble.mm */; };
 		3FE4FD48231B3BC600D4B77C /* manpage.c in Sources */ = {isa = PBXBuildFile; fileRef = 3FE4FD46231B002400D4B77C /* manpage.c */; };
@@ -270,6 +271,7 @@
 		3F7C9AB02295BBD50070F2B1 /* XRSymbolEntry.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = XRSymbolEntry.m; sourceTree = "<group>"; };
 		3F7CE5DF2461236900E2B32D /* objc-typeencoding.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = "objc-typeencoding.mm"; sourceTree = "<group>"; };
 		3F98C3B2225F06E900606F97 /* XRMachOLibrary+FileManagement.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = "XRMachOLibrary+FileManagement.m"; sourceTree = "<group>"; };
+		3FC1733C24B11CA400C9DD01 /* objc_.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = objc_.mm; sourceTree = "<group>"; };
 		3FD998CE233E90B90072F4A0 /* Capstone.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = Capstone.xcodeproj; path = capstone/xcode/Capstone.xcodeproj; sourceTree = "<group>"; };
 		3FD99907233E9C140072F4A0 /* capstone.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = capstone.h; sourceTree = "<group>"; };
 		3FD99908233E9C140072F4A0 /* mips.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = mips.h; sourceTree = "<group>"; };
@@ -451,6 +453,7 @@
 				3F009AD822AF695400EA38D3 /* payload.cpp */,
 				3F009AD922AF695400EA38D3 /* payload.hpp */,
 				3F0C91F9245A94980038E3AD /* Ripped off */,
+				3FC1733C24B11CA400C9DD01 /* objc_.mm */,
 				3F98C3B2225F06E900606F97 /* XRMachOLibrary+FileManagement.m */,
 				3F5F41A9226EA3A800D3DCB1 /* XRMachOLibrary+SymbolDumper.h */,
 				3F5F41AA226EA3A800D3DCB1 /* XRMachOLibrary+SymbolDumper.mm */,
@@ -672,7 +675,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "# Type a script or drag a script file from your workspace to insert its path.\ncd ${SRCROOT}/compiled/\n\n# Remove previous version\nrm -rf \"${SRCROOT}/compiled/dsdump_.*.zip\"\n\n# Add the zip\nzip -r dsdump_${DSDUMP_VERSION}.zip dsdump \n\n# Remove the pre-zipped dsdump\nrm -rf ${SRCROOT}/compiled/dsdump\n";
+			shellScript = "# Type a script or drag a script file from your workspace to insert its path.\ncd ${SRCROOT}/compiled/\n\n# Remove previous version\nrm -rf \"${SRCROOT}/compiled/dsdump_compiled.zip\"\n\n# Add the zip\nzip -r dsdump_compiled.zip dsdump \n\n# Remove the pre-zipped dsdump\nrm -rf ${SRCROOT}/compiled/dsdump\n";
 		};
 		3F50D78B231577C30017A20A /* Generate SHA256 */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -718,6 +721,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				3FD99918233E9D3F0072F4A0 /* XRMachOLibrary+Disassemble.mm in Sources */,
+				3FC1734F24B11E3E00C9DD01 /* objc_.mm in Sources */,
 				3F40275823010DB5007B3C25 /* XRMachOLibrary+Swift.mm in Sources */,
 				A66A9CCC22316EA5006602AB /* XRMachOLibrary.mm in Sources */,
 				3F0C91F8245A94930038E3AD /* objc-layout.mm in Sources */,
@@ -824,7 +828,7 @@
 				CODE_SIGN_IDENTITY = "Mac Developer";
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
-				DSDUMP_VERSION = 0.0.10;
+				DSDUMP_VERSION = 0.1.0;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
@@ -884,7 +888,7 @@
 				CODE_SIGN_IDENTITY = "Mac Developer";
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				DSDUMP_VERSION = 0.0.10;
+				DSDUMP_VERSION = 0.1.0;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;

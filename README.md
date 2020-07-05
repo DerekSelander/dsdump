@@ -173,7 +173,7 @@ Alternatively, you can skip all of this by simply grabbing the compiled `dsdump`
 
 Compiled SHA256
 ```
-SHA256: 27190d5a69e3fbd6be35f511c13e70a5c06e6538cc116393d3fa8082fb0c12f5
+SHA256: 83eebd025b43b58a486235e1bec70a3239995be409605e3ff19bdae07adff917
 ```
 
 ### Credits

@@ -157,7 +157,6 @@ namespace payload {
         
         
         inline bool validAddress() {
-//            auto loadAddress = reinterpret_cast<uintptr_t>(strip_PAC());
             auto loadAddress = reinterpret_cast<uintptr_t>(ARM64E_POINTER(this));
             for (auto &sec : payload::sections) {
                 if (sec->addr <= loadAddress && loadAddress < sec->addr + sec->size) {
@@ -172,12 +171,6 @@ namespace payload {
             return reinterpret_cast<uintptr_t>(diskAddress->load());
         }
         
-//        ///
-//        T* operator ->() {
-//            auto disk = this->disk();
-//            return  reinterpret_cast<T*>(disk);
-//        }
-        
         // Using blah.atIndex(i) you get ARM64e resolves via the slightly prettier syntax of blah[i]
         inline T Get(int i) {
             return reinterpret_cast<T>(ARM64E_POINTER(this->disk()[i]));
@@ -190,12 +183,10 @@ namespace payload {
     };
     
     inline bool ValidDiskAddress(uintptr_t addr) {
-
-//        auto loadAddress = reinterpret_cast<uintptr_t>(addr);
         if ((uintptr_t)payload::data <= addr && addr <= (uintptr_t)payload::data + payload::size) {
-                return true;
+            return true;
         }
-//        }
+
         return false;
     }
     
@@ -209,15 +200,14 @@ namespace payload {
         }
     };
     
-    
     template <typename T, typename C>
     static payload::LoadToDiskTranslator<T>* CastToDisk(C val) {
         return reinterpret_cast<payload::LoadToDiskTranslator<T>*>(val);
     }
+
     
     template <typename T>
     uintptr_t GetLoadAddress(T t)  {
-//        auto addressOf = t;
         auto diskAddress = reinterpret_cast<payload::LoadToDiskTranslator<uintptr_t>*>(t);
         return reinterpret_cast<uintptr_t>(diskAddress->load());
     }

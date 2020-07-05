@@ -307,16 +307,15 @@ NSDictionary <NSString*, NSNumber*> *blacklistedSelectors = nil;
             }
             auto methodsListDisk = methodsList->disk();
             auto count = methodsListDisk->count;
-            auto methods = &methodsListDisk->first_method;
             auto c = isClassMethod ? '+' : '-';
             
             if (xref_options.verbose > VERBOSE_2) {
                 printf("\t// %s methods\n", isClassMethod ? "class" : "instance");
             }
             for (int j = 0; j < count; j++) {
-                auto method = methods[j];
-                auto methodName = method.name->disk();
-                printf("\t%s0x%011lx%s %s%c[%s(%s) %s]%s\n", dcolor(DSCOLOR_GRAY), (uintptr_t)method.imp->strip_PAC(), color_end(), dcolor(DSCOLOR_BOLD), c, clsName, categoryName, methodName, color_end());
+                auto method = methodsListDisk->GetMethod(j, false);
+                auto methodName = method->getName()->disk();
+                printf("\t%s0x%011lx%s %s%c[%s(%s) %s]%s\n", dcolor(DSCOLOR_GRAY), (uintptr_t)method->getImp()->strip_PAC(), color_end(), dcolor(DSCOLOR_BOLD), c, clsName, categoryName, methodName, color_end());
             }
             putchar('\n');
         };

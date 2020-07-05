@@ -25,7 +25,7 @@
 
 #endif /* Methods_hpp */
 
-
+/// iOS 14 adds a __TEXT.__objc_methlist for int32_t offsets to methods, doesn't apply to protocols
 void dumpObjectiveCMethods(method_list_t* methodList, const char *name, bool isMeta, bool isProtocol = false, const char * overrideColor = NULL);
 
 const char* translate_method_type_to_string(char *typeString);
