@@ -15,6 +15,8 @@ extern "C" {
 #endif
     
 OS_ALWAYS_INLINE
+char* demangleCPP(char* mangledSym);
+
 void print_symbol(XRMachOLibrary *object, struct nlist_64 * _Nonnull sym, uintptr_t * _Nullable override_addr);
     
 #ifdef __cplusplus

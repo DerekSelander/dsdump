@@ -95,11 +95,12 @@ static void handle_args(int argc, const char * argv[]) {
             {"debug",      no_argument, &xref_options.debug, 1},
             {"help",       no_argument, &xref_options.help, 1},
             {"opcodes",    no_argument, &xref_options.opcodes, 1},
+            {"demangle",   no_argument, &xref_options.demangle_mode, 1},
             {"sym",        no_argument, &xref_options.symbol_mode, 1},
             {0,         0,                 0,  0 }
         };
         
-        int c = getopt_long(argc, (char * const *)argv, "F:f:a:A:uUOxscvlZho",
+        int c = getopt_long(argc, (char * const *)argv, "F:f:a:A:uUOxscvlZhod",
                         long_options, &option_index);
         if (c == -1) {
             break;
@@ -170,6 +171,9 @@ static void handle_args(int argc, const char * argv[]) {
             }
             case 'O':
                 xref_options.opcodes = 1;
+                break;
+            case 'd':
+                xref_options.demangle_mode = 1;
                 break;
             case 'h':
                 print_manpage();

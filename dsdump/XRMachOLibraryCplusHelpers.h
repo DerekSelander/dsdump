@@ -37,6 +37,9 @@
      bool canDemangle(StringRef mangled);
      const char *simple_demangle(char *mangled, std::string &strout_ref, swift::Demangle::DemangleOptions options = dshelpers::simplifiedOptions);
      const char *simple_demangle(StringRef mangled, std::string &strout_ref, swift::Demangle::DemangleOptions options = dshelpers::simplifiedOptions);
+
+//   Compact mode: display module names or implicit self types in addition to demangled names
+     const char *compact_demangle(char *mangled, std::string &strout_ref);
      
 //     const char *simple_type(StringRef type);
      const char *simple_type(StringRef type, std::string &strout_ref);

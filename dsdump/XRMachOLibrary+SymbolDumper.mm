@@ -11,7 +11,9 @@
 #import "XRMachOLibrary+ObjectiveC.h"
 #import "XRSymbolEntry.h"
 #import "XRMachOLibrary+Swift.h"
+#import "XRMachOLibraryCplusHelpers.h"
 #import <libgen.h>
+#include <cxxabi.h>
 @implementation XRMachOLibrary (SymbolDumper)
 
 
@@ -128,6 +130,20 @@
 
 
 OS_ALWAYS_INLINE
+char* demangleCPP(char* mangledSym) {
+    int status;
+    char* demangled = abi::__cxa_demangle(mangledSym, nullptr, nullptr, &status);
+    if (demangled) {
+        char* symbol{demangled};
+        free(demangled);
+        if (status == 0) {
+            return symbol;
+        }
+    }
+    return mangledSym;
+}
+
+
 void print_symbol(XRMachOLibrary *object, struct nlist_64 * _Nonnull sym, uintptr_t * _Nullable override_addr) {
     char * chr = &object.str_symbols[sym->n_un.n_strx];
     BOOL isObjC = NO;
@@ -136,6 +152,51 @@ void print_symbol(XRMachOLibrary *object, struct nlist_64 * _Nonnull sym, uintpt
         return;
     }
     output_len += printf("0x%011llx ", override_addr ? *override_addr : sym->n_value);
+    
+    // Default color for symbol names
+    DSCOLOR symbolColor = DSCOLOR_CYAN;
+    
+    // Demangle and colorize symbols by languages/types
+    
+    // I. Demangle mode only (~nm -C option)
+    if (xref_options.demangle_mode && !xref_options.color) {
+        // Swfit symbols - Swift stable global mangling: '$s', Swift 4.2: '$S', Swift 4.0: '_T0'
+        // (Ref: https://github.com/apple/swift/blob/master/docs/ABI/Mangling.rst)
+        if (strnstr(chr, "_$s", 3) || strnstr(chr, "_swift", 6)) {
+            std::string outDemangledstring;
+            dshelpers::compact_demangle(chr, outDemangledstring);
+            chr = &outDemangledstring[0];
+        // C++ symbols
+        } else if (strnstr(chr, "__Z", 3)) {
+            chr = demangleCPP(chr);
+        }
+    // II. Catagolrize symbols and types with colors
+    } else if (xref_options.color) {
+        // Swfit symbols in Red
+        if (strnstr(chr, "_$s", 3) || strnstr(chr, "_swift", 6)) {
+            symbolColor = DSCOLOR_RED;
+            // Demangle Swfit symbols
+            if (xref_options.demangle_mode) {
+                std::string outDemangledstring;
+                dshelpers::compact_demangle(chr, outDemangledstring);
+                chr = &outDemangledstring[0];
+            }
+        // Objective-C symbols in Green
+        } else if (strnstr(chr, "_OBJC", 5) || strnstr(chr, "_objc", 5)) {
+            symbolColor = DSCOLOR_GREEN;
+        // C++ symbols in Magenta
+        } else if (strnstr(chr, "__Z", 3)) {
+            symbolColor = DSCOLOR_MAGENTA;
+            // Demangle C++ symbols
+            if (xref_options.demangle_mode) {
+                chr = demangleCPP(chr);
+            }
+        // Constants in Light Yellow
+        } else if (strnstr(chr, "_k", 3)) {
+            symbolColor = DSCOLOR_YELLOW_LIGHT;
+        }
+    }
+    
     if (xref_options.objectiveC_mode) {
         chr += OBJC_CLASS_LENGTH;
         isObjC = YES;
@@ -165,7 +226,7 @@ void print_symbol(XRMachOLibrary *object, struct nlist_64 * _Nonnull sym, uintpt
     }
     
     // The actual symbol
-    printf("%s%s%s ", dcolor(DSCOLOR_CYAN), chr, color_end());
+    printf("%s%s%s ", dcolor(symbolColor), chr, color_end());
     
     // If local ObjC class, print parent class
     if (isObjC && xref_options.objectiveC_mode && sym->n_value) {
