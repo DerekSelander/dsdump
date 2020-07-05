@@ -161,7 +161,6 @@
     
     // If they don't have the right type, try x86_64
     for (int i = 0; i < FIX_ENDIAN(fat->nfat_arch); i++) {
-//        struct fat_arch *arch = (void*)&self.data[sizeof(struct fat_header) + sizeof(struct fat_arch) * i];
         auto arch = payload::GetData<struct fat_arch>(sizeof(struct fat_header) + sizeof(struct fat_arch) * i);
         if (FIX_ENDIAN(arch->cputype) == CPU_TYPE_X86_64) {
             return [self nameForCPU:FIX_ENDIAN(arch->cputype) subtype:FIX_ENDIAN(arch->cpusubtype)];
