@@ -160,6 +160,7 @@ cd swift-source/
 git clone https://github.com/apple/swift.git
 
 # checkout 
+cd swift
 git checkout 75670c17272a993ed798cee7e31c20590e94118b
 
 # Use the Swift update helper script to grab everything else 
@@ -169,7 +170,7 @@ Comment out any remaining problematic code after a build, remove methods in `Met
 
 I've included the `libSwiftDemangling.a` static lib that I built into `dsdump/dsdump`.  If you want to build entirely from Swift source, you'll need to build this yourself. Otherwise you should be good to go to build `dsdump` via Xcode.
 
-Alternatively, you can skip all of this by simply grabbing the compiled `dsdump` version in the **compiled** directory [found here](https://github.com/DerekSelander/dsdump/blob/master/compiled/dsdump). Make sure the SHA256 matches below if you're paranoid. 
+Alternatively, you can skip all of this by simply grabbing the compiled `dsdump` version in the **compiled** directory [found here](https://github.com/DerekSelander/dsdump/tree/master/compiled). Make sure the SHA256 matches below if you're paranoid. 
 
 Compiled SHA256
 ```
