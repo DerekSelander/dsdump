@@ -432,7 +432,7 @@ These are the virtual addresses that match the virtual addresses given by the `n
 
 Ohhhh but it gets a bit more confusing than that. In addition to the virtual load address, the OS can shift a loaded image's virtual addresses at runtime to a different starting base address to help mitigate attacks. This is called **Address Space Layout Randomization** or simply **ASLR**.  
 
-Since an image can have a different address everytime it loads, this means that referencing virtual addresses needs to be able to reference addresses not based on an absolute virtual address value, but via a relative load address from the current memory address. This is known as a Position Indenpendent Executable or **PIE**.  
+Since an image can have a different address everytime it loads, this means that referencing virtual addresses needs to be able to reference addresses not based on an absolute virtual address value, but via a relative load address from the current memory address. This is known as a Position Independent Executable or **PIE**.  
 
 By default, every `MH_EXECUTE` you compile is position independent (I'm using `clang-1100.0.33.8` for this writeup). You can confirm this with the following experiment:
 
