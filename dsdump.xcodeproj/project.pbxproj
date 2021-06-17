@@ -923,7 +923,7 @@
 				GCC_PREPROCESSOR_DEFINITIONS_NOT_USED_IN_PRECOMPS = "";
 				HEADER_SEARCH_PATHS = (
 					"\"$(SRCROOT)/swift-source/swift/include\"",
-					"\"$(SRCROOT)/swift-source/llvm/include/\"",
+					"\"$(SRCROOT)/swift-source/llvm-project/llvm/include/\"",
 					"\"$(SRCROOT)/fix_swift\"",
 				);
 				LD_NO_PIE = YES;
@@ -956,7 +956,7 @@
 				GCC_PREPROCESSOR_DEFINITIONS_NOT_USED_IN_PRECOMPS = "";
 				HEADER_SEARCH_PATHS = (
 					"\"$(SRCROOT)/swift-source/swift/include\"",
-					"\"$(SRCROOT)/swift-source/llvm/include/\"",
+					"\"$(SRCROOT)/swift-source/llvm-project/llvm/include/\"",
 					"\"$(SRCROOT)/fix_swift\"",
 				);
 				LD_NO_PIE = YES;
