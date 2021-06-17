@@ -159,13 +159,10 @@ cd swift-source/
 # clone the Swift repository into swift-source
 git clone https://github.com/apple/swift.git
 
-# checkout 
-cd swift
-git checkout 75670c17272a993ed798cee7e31c20590e94118b
-
 # Use the Swift update helper script to grab everything else 
- ./swift/utils/update-checkout --clone-with-ssh   --tag swift-5.1.4-RELEASE
+ ./swift/utils/update-checkout --clone-with-ssh --tag swift-5.1.4-RELEASE
 ```
+
 Comment out any remaining problematic code after a build, remove methods in `Metadata.h` as needed (i.e. problematic ARC bridging code on line 700)
 
 I've included the `libSwiftDemangling.a` static lib that I built into `dsdump/dsdump`.  If you want to build entirely from Swift source, you'll need to build this yourself. Otherwise you should be good to go to build `dsdump` via Xcode.
