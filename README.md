@@ -186,6 +186,7 @@ SHA256: 83eebd025b43b58a486235e1bec70a3239995be409605e3ff19bdae07adff917
 ### TODO list for v1
 
 * Full ARM64e support
+* M1 support 
 * Crashes
 * iOS 15/Monterey support
 * In process support (TODO TODO guess that means a libdsdump.a)
