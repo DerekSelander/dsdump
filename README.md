@@ -182,3 +182,12 @@ SHA256: 83eebd025b43b58a486235e1bec70a3239995be409605e3ff19bdae07adff917
 * [https://opensource.apple.com/source/dyld/dyld-635.2/src/dyldInitialization.cpp.auto.html](https://opensource.apple.com/source/dyld/dyld-635.2/src/dyldInitialization.cpp.auto.html) Specifically the THREADED code for ARM64e
 * [https://opensource.apple.com/source/objc4/](https://opensource.apple.com/source/objc4/) Specifically, the objc_class swift_class structs (and all the property, protocol, method, ivar, etc structs)
 * [https://github.com/apple/swift](https://github.com/apple/swift) 
+
+### TODO list for v1
+
+* Full ARM64e support
+* Crashes
+* iOS 15/Monterey support
+* In process support (TODO TODO guess that means a libdsdump.a)
+  * Basic dsc listing with options to `dlopen` from cmdline
+* header files
