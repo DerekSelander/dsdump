@@ -61,7 +61,7 @@ There are many great sources out there that already cover this topic well.
 And if you want to pay money for some Mach-O tutorials...
 
 * <a href="https://store.raywenderlich.com/products/advanced-apple-debugging-and-reverse-engineering" target="_blank">Advanced Apple Debugging and Reverse Engineering, Chp 18, 19</a> (written by yours truly)
-* <a href="http://www.newosxbook.com/index.php" target="_blank">MacOS and iOS Internals, Volume I: User Mode, Chp 5</a>
+* <a href="http://www.newosxbook.com/index.php" target="_blank">MacOS and iOS Internals, Volume I: User Mode, Chp 6</a>
 
 
 But this stuff won't stick unless you play around with it and do the experiments. Time to get your hands dirty.
