@@ -52,7 +52,7 @@
             auto opcount = insn.detail->x86.op_count;
             if (opcount == 2 && // Is there 2 operands?
                 ops[0].type == X86_OP_REG && ops[0].reg == X86_REG_RAX && // is the first operand setting RAX?
-                ops[1].type == X86_OP_MEM && ops[1].mem.base == X86_REG_RIP) {// is the second operand grabing memory from RIP?
+                ops[1].type == X86_OP_MEM && ops[1].mem.base == X86_REG_RIP) {// is the second operand grabbing memory from RIP?
                 auto displacement = ops[1].mem.disp + insn.size;
                 auto resolved = displacement + insn.address;
                 return reinterpret_cast<uintptr_t*>(resolved);

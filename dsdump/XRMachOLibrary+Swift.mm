@@ -370,7 +370,7 @@ void test(uintptr_t address) {
     }
     [self dumpProtocolsForTypeContextDescriptor:descriptor];
     
-    // print Propteries
+    // print Properties
     if (xref_options.verbose < VERBOSE_3) {
         putchar('\n');
         return;
@@ -408,7 +408,7 @@ void test(uintptr_t address) {
         demangledName = outDemangledstring.c_str();
         color = DSCOLOR_GREEN;
         
-        libName = (char*)self.depdencies[bindSymbol.libOrdinal].UTF8String;
+        libName = (char*)self.dependencies[bindSymbol.libOrdinal].UTF8String;
            
     } else {
         // If here, locally implemented

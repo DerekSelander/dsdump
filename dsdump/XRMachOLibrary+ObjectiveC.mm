@@ -198,7 +198,7 @@ NSDictionary <NSString*, NSNumber*> *blacklistedSelectors = nil;
             // Print the libraries of Objc classes if verbose 4 //
             //////////////////////////////////////////////////////
             if (xref_options.verbose > VERBOSE_3) {
-                char *libName = objcReference && objcReference.libOrdinal ? (char*)self.depdencies[objcReference.libOrdinal].UTF8String : NULL;
+                char *libName = objcReference && objcReference.libOrdinal ? (char*)self.dependencies[objcReference.libOrdinal].UTF8String : NULL;
                 if (libName) {
                     printf(" %s%s%s", dcolor(DSCOLOR_YELLOW), libName, color_end());
                 }

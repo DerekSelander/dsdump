@@ -110,7 +110,7 @@ BOOL FindLibraryInTask(pid_t task, pid_t pid, const char *search_string, uuid_t 
             continue;
         }
         
-        // First checkk for the name of the string
+        // First check for the name of the string
         // If we got this far, let's go after the UUID
         // DYLD has a uuidArray, but that's only for non-shared cache modules
         if (strstr(path, search_string) && isUUIDMatch(task, (vm_address_t)imageArray64[i].imageLoadAddress, uuid)) {

@@ -393,7 +393,7 @@ Execute the following:
 lolgrep:/tmp$  lldb ex -s <(echo -e "b main\n run\n x/2wx 0x00000100001000")
 ```
 
-There's a lot going on in this command. You're using LLDB to debug the **ex** executable. The `-s` option says to perform the following actions from a script. The `<()` command is a trick called [process substitution](http://tldp.org/LDP/abs/html/process-sub.html) to make the output of a proces be treated as a file. This would be the same thing as making a file with the following contents:
+There's a lot going on in this command. You're using LLDB to debug the **ex** executable. The `-s` option says to perform the following actions from a script. The `<()` command is a trick called [process substitution](http://tldp.org/LDP/abs/html/process-sub.html) to make the output of a process be treated as a file. This would be the same thing as making a file with the following contents:
 
 ```bash
 b main
@@ -405,7 +405,7 @@ The above script will set a breakpoint on the `main` function, then start up the
 
 The `x` command is an LLDB command whose syntax was cherry picked over from [GDB](https://en.wikipedia.org/wiki/GNU_Debugger). The `x` command will examine memory at the provided address.  The `wx` says to format the dereferenced memory in "word" size (4 bytes) and format the dereferenced output in hexadecimal. The 2 says to do it twice, once at address `0x0000000100001000` and once at address `0x0000000100001004`
 
-The output should not be suprising:
+The output should not be surprising:
 
 ```bash
 (lldb)  x/2wx 0x00000100001000
@@ -432,7 +432,7 @@ These are the virtual addresses that match the virtual addresses given by the `n
 
 Ohhhh but it gets a bit more confusing than that. In addition to the virtual load address, the OS can shift a loaded image's virtual addresses at runtime to a different starting base address to help mitigate attacks. This is called **Address Space Layout Randomization** or simply **ASLR**.  
 
-Since an image can have a different address everytime it loads, this means that referencing virtual addresses needs to be able to reference addresses not based on an absolute virtual address value, but via a relative load address from the current memory address. This is known as a Position Independent Executable or **PIE**.  
+Since an image can have a different address every time it loads, this means that referencing virtual addresses needs to be able to reference addresses not based on an absolute virtual address value, but via a relative load address from the current memory address. This is known as a Position Independent Executable or **PIE**.  
 
 By default, every `MH_EXECUTE` you compile is position independent (I'm using `clang-1100.0.33.8` for this writeup). You can confirm this with the following experiment:
 
@@ -583,7 +583,7 @@ lolgrep:/tmp$ nm ex3
                  U dyld_stub_binder
 ```
 
-You'll see undefined external symbols preceeded by a uppercase 'U'. It's `dyld`'s job to find the corresponding symbol in the appropriate library based upon the symbol table information. For the local symbols, you'll see a 'T' for (`__TEXT`) for `someFunction` and `main` and `D` (`__DATA`) for `someData`. We'll talk more about this a couple paragraphs down...
+You'll see undefined external symbols preceded by a uppercase 'U'. It's `dyld`'s job to find the corresponding symbol in the appropriate library based upon the symbol table information. For the local symbols, you'll see a 'T' for (`__TEXT`) for `someFunction` and `main` and `D` (`__DATA`) for `someData`. We'll talk more about this a couple paragraphs down...
 
 ---
 <a name="symbol_table_implementation"></a>
@@ -795,7 +795,7 @@ Now, **`strip`** the ex4 image
 lolgrep:/tmp$ strip ex4
 ```
 
-Stripping the symbol table will remove uneeded symbols. Dump the symbol table:
+Stripping the symbol table will remove unneeded symbols. Dump the symbol table:
 
 ```bash
 lolgrep:/tmp$  nm ex4
@@ -1123,7 +1123,7 @@ Rerun the earlier command and inspect the `objc_class` struct's `bits` value:
 
 The `bits` param has now changed to the `class_rw_t* | FAST_IS_SWIFT_STABLE`
 
-> *If you're building out an Objective-C runtime introspection tool, and you're testing the tool on itself, make sure you know the correct struct that resides in the `bits` value*. I burned *a lot* of hours working with the wrong struct by accidentially initializing Objective-C classes by `po`'ing them in LLDB 🤦‍♂️
+> *If you're building out an Objective-C runtime introspection tool, and you're testing the tool on itself, make sure you know the correct struct that resides in the `bits` value*. I burned *a lot* of hours working with the wrong struct by accidentally initializing Objective-C classes by `po`'ing them in LLDB 🤦‍♂️
 
 Fortunately, the `class_ro_t` and the `class_rw_t` struct both have `int32_t flags` value right at the beginning. The `flags` member can tell you if the class is initialized via the value is (1 << 31, AKA 0x80000000).
 
@@ -1141,7 +1141,7 @@ The 0x8 in the most significant bit means the class has already been initialized
 ## 3.5 The class_ro_t struct
 ---
 
-The `class_ro_t` struct is the "key" value to exploring an Objective-C class. It's the gateway to the class's name, it's methods, it's properties, it's instance variables, etc. And *unlike* the `class_rw_t` struct, this value is located in the `__DATA.__objc_const` Mach-O section, meaning one can query this information programatically on disk.  
+The `class_ro_t` struct is the "key" value to exploring an Objective-C class. It's the gateway to the class's name, it's methods, it's properties, it's instance variables, etc. And *unlike* the `class_rw_t` struct, this value is located in the `__DATA.__objc_const` Mach-O section, meaning one can query this information programmatically on disk.  
 
 Here's a *simplified* `class_ro_t` layout:
 
@@ -1683,7 +1683,7 @@ You'll get output that looks similar to this:
  }
 ```
 
-This part gets interesting for reverse engineering: Swift *does not include overriden Objective-C methods in it's metadata*.
+This part gets interesting for reverse engineering: Swift *does not include overridden Objective-C methods in it's metadata*.
 
 Let me say that again: The following Swift bridged code **does not get picked up by the Swift metadata**:
 

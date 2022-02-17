@@ -99,7 +99,7 @@
         char * chr = &self.str_symbols[symbol.n_un.n_strx];
         
         if (xref_options.verbose >= VERBOSE_1) {
-            printf(" 0x%-8lx  %s%s%s: %s%-40s%s\n", base + (align_size * i), yellow, [self.depdencies[libIndex] UTF8String], end, cyan, chr, end);
+            printf(" 0x%-8lx  %s%s%s: %s%-40s%s\n", base + (align_size * i), yellow, [self.dependencies[libIndex] UTF8String], end, cyan, chr, end);
         } else {
             printf(" 0x%-8lx  %s%-40s%s\n", base + (align_size * i), cyan, chr, end);
         }
@@ -219,7 +219,7 @@ void print_symbol(XRMachOLibrary *object, struct nlist_64 * _Nonnull sym, uintpt
             if (libIndex == DYNAMIC_LOOKUP_ORDINAL) {
                 libName = "?????????";
             } else {
-                libName = xref_options.verbose == 1 ? basename((char*)[object.depdencies[libIndex] UTF8String]) : [object.depdencies[libIndex] UTF8String];
+                libName = xref_options.verbose == 1 ? basename((char*)[object.dependencies[libIndex] UTF8String]) : [object.dependencies[libIndex] UTF8String];
             }
             output_len += printf("%s%s%s: ", dcolor(DSCOLOR_YELLOW), libName, color_end());
         }

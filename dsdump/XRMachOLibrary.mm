@@ -126,7 +126,7 @@ namespace dshelpers {
     }
 }
 
-/// Using mmap to specify an address that's not in dsdump's virtual memory and also not in inspected exectuables virtual memory
+/// Using mmap to specify an address that's not in dsdump's virtual memory and also not in inspected executables virtual memory
 static void ensureSafeAddressForMMap(size_t memory_size) {
     vm_address_t address = MMAP_POTENTIAL_START;
     vm_size_t vmsize = 0;
@@ -162,8 +162,8 @@ static void ensureSafeAddressForMMap(size_t memory_size) {
         self.path = path;
         
         __unused uintptr_t fatOffset = 0, fatSize = 0;
-        self.depdencies = [NSMutableArray array];
-        [self.depdencies addObject:(NSString *)[NSNull null]];
+        self.dependencies = [NSMutableArray array];
+        [self.dependencies addObject:(NSString *)[NSNull null]];
         
         self.sectionCommandsArray = [NSMutableArray array];
         [self.sectionCommandsArray addObject:(NSNumber*)[NSNull null]];
@@ -235,7 +235,7 @@ static void ensureSafeAddressForMMap(size_t memory_size) {
                     struct dylib_command *dylib_cmd = (struct dylib_command *)cur;
                     NSString * libPath = [NSString stringWithUTF8String:(char *)(cur + dylib_cmd->dylib.name.offset)];
                     [pathsSet addObject:libPath];
-                    [self.depdencies addObject:libPath];
+                    [self.dependencies addObject:libPath];
                     
                 } else if (load_cmd->cmd == LC_BUILD_VERSION) {
                     

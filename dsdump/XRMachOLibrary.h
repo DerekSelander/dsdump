@@ -65,7 +65,7 @@ extern "C" {
 }
 
 /// Library dependencies
-@property (nonatomic, strong) NSMutableArray <NSString *>*depdencies;
+@property (nonatomic, strong) NSMutableArray <NSString *>*dependencies;
 @property (nonatomic, copy) NSString *path;
 
 

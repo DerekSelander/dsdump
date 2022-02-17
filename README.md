@@ -43,7 +43,7 @@ OPTIONS
              tiple times)
 
      -a, --arch architecture
-             Specify the arichtecture if file is FAT. Understands x86_64h,
+             Specify the architecture if file is FAT. Understands x86_64h,
              x86_64, arm64, arm64e
 
      -u, --undefined
@@ -129,7 +129,7 @@ SEE ALSO
      nm(1), objdump(1), vmmap(1)
 
 BUGS
-     There's a situation where occassionally dsdump will think the parent
+     There's a situation where occasionally dsdump will think the parent
      class is a RO_ROOT where it will in fact won't be. I'll print this out
      for now so I can hunt it down
 
