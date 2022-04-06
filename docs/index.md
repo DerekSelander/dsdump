@@ -393,7 +393,7 @@ Execute the following:
 lolgrep:/tmp$  lldb ex -s <(echo -e "b main\n run\n x/2wx 0x00000100001000")
 ```
 
-There's a lot going on in this command. You're using LLDB to debug the **ex** executable. The `-s` option says to perform the following actions from a script. The `<()` command is a trick called [process substitution](http://tldp.org/LDP/abs/html/process-sub.html) to make the output of a proces be treated as a file. This would be the same thing as making a file with the following contents:
+There's a lot going on in this command. You're using LLDB to debug the **ex** executable. The `-s` option says to perform the following actions from a script. The `<()` command is a trick called [process substitution](http://tldp.org/LDP/abs/html/process-sub.html) to make the output of a process be treated as a file. This would be the same thing as making a file with the following contents:
 
 ```bash
 b main
@@ -957,6 +957,7 @@ struct objc_class {
     mask_t _mask;                  // size 4 bytes, offset +0x14
     mask_t _occupied;              // size 4 bytes, offset +0x18
     uintptr_t bits;                // size 8 bytes, offset +0x20
+}
 ``` 
 
 * The `isa` references the `objc_class` data. This is a clever layout because not only do heap allocated instances have the `isa` at offset 0, but so do all `objc_class`'s have an `isa` at offset 0. This is subtle, but important so this is going into emphasized text: 
@@ -1141,7 +1142,7 @@ The 0x8 in the most significant bit means the class has already been initialized
 ## 3.5 The class_ro_t struct
 ---
 
-The `class_ro_t` struct is the "key" value to exploring an Objective-C class. It's the gateway to the class's name, it's methods, it's properties, it's instance variables, etc. And *unlike* the `class_rw_t` struct, this value is located in the `__DATA.__objc_const` Mach-O section, meaning one can query this information programatically on disk.  
+The `class_ro_t` struct is the "key" value to exploring an Objective-C class. It's the gateway to the class's name, its methods, its properties, its instance variables, etc. And *unlike* the `class_rw_t` struct, this value is located in the `__DATA.__objc_const` Mach-O section, meaning one can query this information programatically on disk.  
 
 Here's a *simplified* `class_ro_t` layout:
 
@@ -1336,7 +1337,7 @@ Again, observe the `NSArray` class being bound to address `0x1000010D0` (or equi
 
 Finally! You got to Swift! Unlike all the previous concepts, exploring Swift types is evolving at a rapid pace. So much so that I must say that this information will likely get stale in less than a year. 
 
-*This information only pertains to Swift 5.x, it will likely be obsolete when Swift 6.x roles around*
+*This information only pertains to Swift 5.x, it will likely be obsolete when Swift 6.x rolls around*
 
 ---
 <a name="swift_types"></a>
@@ -1388,6 +1389,7 @@ struct NominalClassDescriptor {
     uint32_t NumImmediateMembers // Number of additional members stored after this class (aka NumImmediateMembers * sizeof(void*) payload)        
     uint32_t NumFields // Number of properties stored in this class   
     uint32_t FieldOffsetVectorOffset; // The offset of the field offset vector for this struct's stored properties in its metadata
+}
 ```
 
 You'll explore this `NominalClassDescriptor` struct in a Swift program. Create **ex8.swift** with the following code:
