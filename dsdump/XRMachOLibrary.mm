@@ -353,7 +353,7 @@ static void ensureSafeAddressForMMap(size_t memory_size) {
         } else if (magic == FAT_MAGIC || magic == FAT_CIGAM) {
             // Could only have gotten here if --arch is not specified
             dprintf(STDERR_FILENO, "%sMultiple arches found: %s%s\n", dcolor(DSCOLOR_RED), [self printAllArchitectures].UTF8String, color_end());
-            dprintf(STDERR_FILENO, "%sUse --arches (-a) (or ARCH env var) to specify arch%s\n",  dcolor(DSCOLOR_RED), color_end());
+            dprintf(STDERR_FILENO, "%sUse --arch (-a) (or ARCH env var) to specify arch%s\n",  dcolor(DSCOLOR_RED), color_end());
             exit(1);
         } else if (magic == FAT_MAGIC_64 || magic == FAT_CIGAM_64) {
             printf("FAT MAGIC 64 headers not implemented... tell Derek what module is using this\n");
