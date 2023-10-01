@@ -2,6 +2,8 @@
 
 # Building a class-dump in <del>2019</del> 2020
 
+>**Note**: This article has become outdated with some statements becoming innacurate. I've decided to leave this up as it can still useful for learning but take everything with a grain of salt
+
 Building out a "class-dump"-like introspection tool for Apple platforms has changed considerably since the original [class-dump](http://stevenygard.com/projects/class-dump/) came out. Learning these new (and old) technologies can be quite intimidating due to the steep learning curve and somewhat hard to find documentation.
 
 This article *attempts* to explain the complete process of programmatically inspecting a [Mach-O](https://en.wikipedia.org/wiki/Mach-O) (Apple) binary to display the compiled Swift types and Objective-C classes by discussing the following:
