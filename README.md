@@ -1,3 +1,7 @@
+NOTE: around ~2021 Apple introduced new binding opcodes which I haven't gotten around to updating yet for dsdump. This results in bad output for objc class dumps.
+I recommend you check out [@blacktop](https://twitter.com/blacktop__)'s [ipsw](https://github.com/blacktop/ipsw) instead 
+
+
 ## dsdump 
 An improved nm + objc/swift class-dump ([writeup](https://derekselander.github.io/dsdump/))
 
